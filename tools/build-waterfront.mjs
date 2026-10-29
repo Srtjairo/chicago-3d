@@ -3,6 +3,7 @@
 // estimates traced against the official maps listed in sources, not a new survey.
 import {readFileSync,writeFileSync} from 'node:fs';
 import clip from './vendor/polygon-clipping.cjs';
+import {addSouthGrant} from './south-grant.mjs';
 import {ORIGIN} from '../js/coverage.js';
 import {configureShore,SHORE_POINTS,rng,samplePath,shoreX} from '../js/geo.js';
 import {inPoly,distanceToLine} from '../js/waterfront-data.js';
@@ -34,10 +35,6 @@ surface('petrillo-audience','paving',poly([[620,330],[655,302],[700,306],[734,34
 anchors.push({id:'petrillo',x:648,z:358,w:37,d:29,h:12,kind:'shell',sourceIds:['890804-0']});
 lawn('grant-formal-west',rect(310,430,583,960));
 lawn('buckingham-gardens',rect(620,430,865,960));
-lawn('upper-hutchinson',rect(475,1005,585,1510));
-lawn('lower-hutchinson',rect(625,1005,860,1510));
-lawn('south-grant-groves',rect(280,1005,420,1590));
-lawn('arvey-field',rect(625,1450,835,1590));
 // Wide east/west fountain axis and the north/south formal promenades.
 surface('buckingham-plaza','paving',poly([[665,610],[692,610],[692,585],[785,585],[785,610],[815,610],[840,650],[840,726],[815,765],[785,765],[785,790],[692,790],[692,765],[665,765],[640,726],[640,650]]),.89);
 for(const z of [466,563,815,920]){
@@ -56,20 +53,13 @@ route('fountain-ring',circle(739,688,66,64)[0],5);
 for(const z of [490,905])route('west-gardens-'+z,[[318,z],[408,z],[408,z+36],[318,z+36],[318,z]],5);
 // Congress Plaza's paired bowed lawns west of the sunken rail corridor.
 for(const z of [625,757]){surface('congress-plaza-'+z,'paving',circle(370,z,45),.84);lawn('congress-lawn-'+z,circle(370,z,34));}
-surface('rail-cut','ballast',rect(431,425,459,1600),.76,false);
-for(const x of [437,445,453])paths.push({id:'rail-'+x,kind:'rail',mode:'none',width:1.5,points:[[x,.9,430],[x,.9,1600]]});
-for(const z of [560,690,980,1230,1400]){surface('rail-bridge-'+z,'paving',rect(423,z-7,468,z+7),1.04,false);}
-// Twelve representative lower-field diamonds, four upper-field diamonds.
-for(const [row,z]of [1060,1200,1340].entries())for(const [col,x]of [665,815].entries())for(const dz of [-1,1]){
- const home=[x,z+dz*29],ang=dz<0?0:Math.PI,rr=25;
- const ring=[home,...Array.from({length:17},(_,i)=>{const a=ang+Math.PI/4+i*Math.PI/2/16;return [home[0]+rr*Math.cos(a),home[1]+rr*Math.sin(a)];})];
- surface('lower-diamond-'+row+'-'+col+'-'+dz,'clay',poly(ring),.82);
- anchors.push({id:'backstop-'+row+'-'+col+'-'+dz,kind:'backstop',x:home[0],z:home[1],angle:ang});
-}
-for(const z of [1060,1170,1340,1440])surface('upper-diamond-'+z,'clay',poly([[490,z],[510,z-20],[535,z],[510,z+20]]),.82);
-for(const [i,r]of [rect(625,1005,855,1425)[0],rect(475,1005,582,1490)[0],rect(623,155,851,391)[0]].entries())route('field-perimeter-'+i,r,5);
-for(const x of [315,410,475,575,626,855])treeRow([[x,435],[x,1585]],19,1.05);
-for(const z of [452,950,1008,1430,1580])treeRow([[320,z],[850,z]],18,1.15);
+surface('rail-cut','ballast',rect(431,425,459,970),.76,false);
+for(const x of [437,445,453])paths.push({id:'rail-'+x,kind:'rail',mode:'none',width:1.5,points:[[x,.9,430],[x,.9,970]]});
+for(const z of [560,690,980])surface('rail-bridge-'+z,'paving',rect(423,z-7,468,z+7),1.04,false);
+route('butler-perimeter',rect(623,155,851,391)[0],5);
+for(const x of [315,410,475,575,626,855])treeRow([[x,435],[x,945]],19,1.05);
+for(const z of [452,950])treeRow([[320,z],[850,z]],18,1.15);
+addSouthGrant({surface,route,lawn,treeRow,anchors,poly,circle,rect});
 // Maggie Daley: northern ribbon and climbing rocks, central lawn, southeast play garden.
 const ribbon=smooth([[650,-150],[687,-155],[698,-199],[742,-207],[768,-188],[754,-156],[773,-121],[753,-99],[710,-108],[693,-129],[655,-118]],true);
 route('maggie-ribbon',ribbon,8,'walk',1.04,'ribbon');
@@ -128,11 +118,11 @@ for(let i=0;i<95;i++){const x=1010+rand()*430,z=220+rand()*1120;if(!land.some(p=
 // Grove placement uses the same lawn polygons and excludes paths, footprints,
 // sports fields and formal central axes. No random trees scattered across fields.
 for(const f of features.filter(f=>f.kind==='grass'&&/maggie|jane|polk|millennium|groves/.test(f.id))){for(const p of f.polygons){const xs=p[0].map(v=>v[0]),zs=p[0].map(v=>v[1]);for(let x=Math.min(...xs)+8;x<Math.max(...xs);x+=16)for(let z=Math.min(...zs)+8;z<Math.max(...zs);z+=17){if(!inPoly(x,z,p)||rand()>.55)continue;if(f.id==='millennium-grounds'&&x>430&&z<130||f.id==='maggie-daley'&&x>662&&x<807&&z>-200&&z<75)continue;trees.push([x+(rand()-.5)*6,z+(rand()-.5)*6,.85+rand()*.5,.72]);}}}
-const treeFree=features.filter(f=>f.id!=='navy-pier-deck'&&['pool','paving','play','ribbon','sand','clay'].includes(f.kind)).flatMap(f=>f.polygons);
+const treeFree=features.filter(f=>f.id!=='navy-pier-deck'&&['pool','paving','play','ribbon','sand','clay','court','skate','dog','service','ballast'].includes(f.kind)).flatMap(f=>f.polygons);
 const filteredTrees=trees.filter(([x,z,s])=>land.some(p=>inPoly(x,z,p))&&!treeFree.some(p=>inPoly(x,z,p))&&((x>1490&&z>-1145&&z<-995)||!masks.some(p=>inPoly(x,z,p)))&&!paths.some(p=>p.kind!=='rail'&&distanceToLine(x,z,p.points.map(p=>[p[0],p[2]]))<p.width/2+4.2*s)&&!anchors.some(a=>a.w&&Math.abs(a.x-x)<a.w/2+4&&Math.abs(a.z-z)<a.d/2+4)&&Math.hypot(x-739,z-688)>96);
 const replacementIds=city.buildings.filter(b=>{const r=b.rings[0],x=r.reduce((s,p)=>s+p[0],0)/r.length,z=r.reduce((s,p)=>s+p[1],0)/r.length;return x>1490&&x<2420&&z>-1145&&z<-995;}).map(b=>b.id);
 replacementIds.push(...anchors.flatMap(a=>a.sourceIds||[]));
-const sources=[{name:'City of Chicago waterways',url:'https://data.cityofchicago.org/d/knfe-65pw',use:'measured shoreline polygons; original 2014 snapshot, retains peninsula, harbor openings and breakwater islands'},{name:'Cook County 2022 building footprints',url:city.sources[0].url,use:'measured footprint anchors; pier facade subdivisions and roof forms visually estimated'},{name:'Navy Pier 2026 map',url:'https://navypier.org/wp-content/uploads/2025/10/navy-pier-map-2026.png',use:'current built locations, marina, program'},{name:'Field Operations Navy Pier',url:'https://www.fieldoperations.net/project/navy-pier',use:'Wave Wall, paving, planting and furniture appearance'},{name:'Maggie Daley official map',url:'https://www.maggiedaleypark.com/assets/doc/MDP_ParkMap_1123-7705da9d0d.pdf',use:'ribbon, climbing/play forms, gardens, lawns and paths'},{name:'Grant Park',url:'https://www.chicagoparkdistrict.com/parks-facilities/grant-ulysses-park',use:'built park features, excludes future framework proposals'},{name:'Lakefront Trail Grant Park aerial map',url:'https://www.chicagoparkdistrict.com/media/26906',use:'visual tracing of separated trails, fountain gardens and harbor arrangement'},{name:'Lakefront Trail Oak to Ohio aerial map',url:'https://www.chicagoparkdistrict.com/media/26861',use:'visual tracing of beaches, Olive Park pools and separated routes'}];
+const sources=[{name:'Southern Grant Park aerial alignment',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',use:'Viewed 2026-10-29; acquisition date not supplied. Visual estimates of built fields/courts/rail/groves; official Park District facility pages cross-check named features. Raster not redistributed.'},{name:'Agora',url:'https://www.chicagoparkdistrict.com/parks-facilities/agora-artwork',use:'106 nine-foot figures; individual placement illustrative'},{name:'Grant Skate Park',url:'https://www.chicagoparkdistrict.com/parks-facilities/grant-skate-park',use:'Existing skate plaza; ramp profiles visually estimated'},{name:'City of Chicago waterways',url:'https://data.cityofchicago.org/d/knfe-65pw',use:'measured shoreline polygons; original 2014 snapshot, retains peninsula, harbor openings and breakwater islands'},{name:'Cook County 2022 building footprints',url:city.sources[0].url,use:'measured footprint anchors; pier facade subdivisions and roof forms visually estimated'},{name:'Navy Pier 2026 map',url:'https://navypier.org/wp-content/uploads/2025/10/navy-pier-map-2026.png',use:'current built locations, marina, program'},{name:'Field Operations Navy Pier',url:'https://www.fieldoperations.net/project/navy-pier',use:'Wave Wall, paving, planting and furniture appearance'},{name:'Maggie Daley official map',url:'https://www.maggiedaleypark.com/assets/doc/MDP_ParkMap_1123-7705da9d0d.pdf',use:'ribbon, climbing/play forms, gardens, lawns and paths'},{name:'Grant Park',url:'https://www.chicagoparkdistrict.com/parks-facilities/grant-ulysses-park',use:'built park features, excludes future framework proposals'},{name:'Lakefront Trail Grant Park aerial map',url:'https://www.chicagoparkdistrict.com/media/26906',use:'visual tracing of separated trails, fountain gardens and harbor arrangement'},{name:'Lakefront Trail Oak to Ohio aerial map',url:'https://www.chicagoparkdistrict.com/media/26861',use:'visual tracing of beaches, Olive Park pools and separated routes'}];
 const riverSurfaces=city.water.filter(w=>!w.name.includes('LAKE')).flatMap(w=>clip.intersection(w.rings,rect(-12000,-9000,1160,9000)));
 const data={version:1,origin:ORIGIN,bounds,sources,riverSurfaces,accuracy:'Shoreline and existing footprints are surveyed source geometry. Landscape shapes, subdivisions, heights, tree placements and docked boats are illustrative visual estimates, typically 5–20 m plan accuracy. Typical summer, not live occupancy.',land,terrain,zones,features,paths,anchors,docks,boats:boats.filter(([x,z])=>!land.some(p=>inPoly(x,z,p))),trees:filteredTrees,replacementIds:[...new Set(replacementIds)]};
 writeFileSync(new URL('../assets/waterfront.json',import.meta.url),JSON.stringify(data,(_,v)=>typeof v==='number'?Math.round(v*100)/100:v));

@@ -1,9 +1,10 @@
-import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js?v=0cd67ffee42a15b0';
+import {siteAt} from './site-data.js?v=196332b19f6f2af2';
+import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js?v=196332b19f6f2af2';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=0cd67ffee42a15b0';
-import { addTrees } from './terrain.js?v=0cd67ffee42a15b0';
-import { rng } from './geo.js?v=0cd67ffee42a15b0';
+import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=196332b19f6f2af2';
+import { addTrees } from './terrain.js?v=196332b19f6f2af2';
+import { rng } from './geo.js?v=196332b19f6f2af2';
 
 export function prepareWorld(ctx) {
   const water = ctx.data.water.filter((w) => !w.name.includes('LAKE')).map((w) => ({ ...w, bounds: boundsOf(w.rings[0]) }));
@@ -71,11 +72,15 @@ export function buildStreets(scene,ctx) {
       const a=path[i-1],p=path[i],dx=p[0]-a[0],dz=p[2]-a[2],len=Math.hypot(dx,dz);if(len<1)continue;
       const side=i%2===0?1:-1,off=side*(width/2+2);
       const x=p[0]-dz/len*off,z=p[2]+dx/len*off;
-      if(ctx.isRiver(x,z)||landscapeAt(x,z)||waterfrontAt(x,z)&&!waterfrontLand(x,z))continue;
+      if(siteAt(ctx,x,z)||ctx.isRiver(x,z)||landscapeAt(x,z)||waterfrontAt(x,z)&&!waterfrontLand(x,z))continue;
       // Reject positions inside the measured footprints, including overhanging podiums.
       if(ctx.measuredBuildings.some(b=>x>b.x0-1&&x<b.x1+1&&z>b.z0-1&&z<b.z1+1&&inPolygon(x,z,b.rings)))continue;
       posts.push([x,3.6,z,0.16,7,0.16]);lamps.push([x,7.2,z,1.3,0.18,0.7]);
-      if(rand()<0.65) trees.push([x+dz/len*5,z-dx/len*5,0.6+rand()*0.16]);
+      if(rand()<0.65){
+        // Move along the sidewalk, never five metres inward into the traffic lane.
+        const tx=x+dx/len*5,tz=z+dz/len*5;
+        if(!siteAt(ctx,tx,tz)&&!ctx.measuredBuildings.some(b=>tx>b.x0-1&&tx<b.x1+1&&tz>b.z0-1&&tz<b.z1+1&&inPolygon(tx,tz,b.rings)))trees.push([tx,tz,0.6+rand()*0.16]);
+      }
       if(rand()<0.2) furniture.push([x,0.9,z,1.6,0.45,0.55,Math.atan2(dx,dz)]);
     }
   }

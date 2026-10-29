@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {polygonGeometry,boxBatch,segmentBox} from './city-data.js?v=0cd67ffee42a15b0';
-import {addTrees} from './terrain.js?v=0cd67ffee42a15b0';
-import {grassTexture} from './textures.js?v=0cd67ffee42a15b0';
-import {rng} from './geo.js?v=0cd67ffee42a15b0';
-import {registerRoute,distanceToLine} from './waterfront-data.js?v=0cd67ffee42a15b0';
+import {polygonGeometry,boxBatch,segmentBox} from './city-data.js?v=196332b19f6f2af2';
+import {addTrees} from './terrain.js?v=196332b19f6f2af2';
+import {buildSouthGrant} from './south-grant.js?v=196332b19f6f2af2';
+import {grassTexture} from './textures.js?v=196332b19f6f2af2';
+import {rng} from './geo.js?v=196332b19f6f2af2';
+import {registerRoute,distanceToLine} from './waterfront-data.js?v=196332b19f6f2af2';
 
-const colors={grass:0xd2e6a7,path:0xd6cdb7,paving:0xc9c4b8,flowers:0x907f98,planting:0x547a40,sand:0xe7ce97,clay:0xb18c61,ballast:0x565954,ribbon:0xa9b8b2,play:0xccb45f,court:0x5b8e7c,pool:0x438f96,cycle:0x6d7771};
+const colors={grass:0xd2e6a7,path:0xd6cdb7,paving:0xc9c4b8,flowers:0x907f98,planting:0x547a40,sand:0xe7ce97,clay:0xb18c61,ballast:0x565954,rail:0x4e5553,ribbon:0xa9b8b2,play:0xccb45f,court:0x5b8e7c,pool:0x438f96,cycle:0x6d7771,skate:0xc7bdab,dog:0xc0b9a5,service:0x777b76};
 export function buildWaterfront(scene,ctx){
  const data=ctx.waterfront,group=new THREE.Group();group.name='waterfront';scene.add(group);
  const chunks=new Map(),detail=new THREE.Group();detail.name='waterfront-furniture';group.add(detail);
@@ -80,7 +81,8 @@ export function buildWaterfront(scene,ctx){
  const pools=[[seats,0x94724d,'seating'],[rails,0x526563,'rails'],[timber,0xad8b61,'timber'],[stone,0xc4bdab,'stone'],[steel,0x626d69,'steel'],[white,0xe0d7c4,'terraces'],[play,0xffffff,'play-details'],[planting,0x678951,'planting']];
  for(const [items,color,name]of pools)if(items.length){const m=boxBatch(items,color,'waterfront-'+name);(name==='seating'||name==='rails'||name==='play-details'?detail:group).add(m);}
  buildMooredBoats(group,data.boats,ctx);
- ctx.waterfrontDetailUpdate=camera=>{detail.visible=camera.position.y<1200&&Math.hypot(camera.position.x-1400,camera.position.z+450)<3500;};
+ const south=buildSouthGrant(group,data);
+ ctx.waterfrontDetailUpdate=camera=>{south.visible=Math.hypot(camera.position.x-590,camera.position.y,camera.position.z-1300)<2500;detail.visible=camera.position.y<1200&&Math.hypot(camera.position.x-1400,camera.position.z+450)<3500;};
  ctx.waterfrontStats={trees:data.trees.length,mooredBoats:data.boats.length,routes:data.paths.filter(p=>p.mode!=='none').length};
 }
 function pointIn(x,z,rings){let inside=false;for(const r of rings){let v=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const a=r[i],b=r[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])v=!v;}inside=inside!==v;}return inside;}

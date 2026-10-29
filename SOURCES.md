@@ -10,9 +10,9 @@ The detailed downtown core uses public geographic data. The outer skyline, mater
 
 Required City attribution: This site provides applications using data that has been modified for use from its original source, www.cityofchicago.org, the official website of the City of Chicago.
 
-`node tools/import-city.mjs` regenerates `assets/downtown.json`. It caches downloaded source responses under ignored `.cache/`, keyed by the complete query URL including bounds and pagination. Overlapping queries deduplicate building and street source IDs. The shipped asset contains 3,507 footprint features and 2,742 street segments before runtime filtering and landmark replacements; it is about 1.24 MB uncompressed. Browser clients fetch this bundled asset once and do not contact GIS APIs.
+`node tools/import-city.mjs` regenerates `assets/downtown.json`. It caches downloaded source responses under ignored `.cache/`, keyed by the complete query URL including bounds and pagination. Overlapping queries deduplicate building and street source IDs. The shipped asset contains 3,678 footprint features and 2,828 street segments before runtime filtering and landmark replacements; it is about 1.3 MB uncompressed. Browser clients fetch this bundled asset once and do not contact GIS APIs.
 
-The original source envelope is longitude −87.650 to −87.598, latitude 41.8654 to 41.9035. A second query covers the Fulton Market extension with 80 m padding. `js/coverage.js` defines the measured area shared by importing, buildings, roads, procedural exclusion and the map: downtown x −1800 to 2400 / z −2300 to 1800, plus Fulton Market x −2450 to −1750 / z −1250 to −400. Local projection uses origin −87.62786, 41.88202, with 82,950 metres per degree longitude and 110,574 metres per degree latitude. Footprints are simplified to 0.7 m tolerance. Very small features are discarded; missing heights use an explicitly flagged 12 m estimate. Materials are assigned stylistically rather than surveyed. One Prudential Plaza's main mass is corrected to 183.2 m so its antenna is not rendered as an oversized building.
+The original source envelope is longitude −87.650 to −87.598, latitude 41.8654 to 41.9035. A second query covers the Fulton Market extension with 80 m padding. `js/coverage.js` defines the measured area shared by importing, buildings, roads, procedural exclusion and the map: downtown x −1800 to 2400 / z −2300 to 1800, plus Fulton Market x −2550 to −1750 / z −1250 to −150. Local projection uses origin −87.62786, 41.88202, with 82,950 metres per degree longitude and 110,574 metres per degree latitude. Footprints are simplified to 0.7 m tolerance. Very small features are discarded; missing heights use an explicitly flagged 12 m estimate. Materials are assigned stylistically rather than surveyed. One Prudential Plaza's main mass is corrected to 183.2 m so its antenna is not rendered as an oversized building.
 
 ## Architectural references
 
@@ -31,7 +31,7 @@ These are simplified, code-generated models. Detailed cornices, balconies, crown
 
 ## Summer waterfront
 
-`node tools/build-waterfront.mjs` produces the bundled `assets/waterfront.json` from the existing geographic snapshot and authored landscape outlines. It runs offline using vendored **polygon-clipping 0.15.7 (MIT)**; that library is a build tool and is not loaded by visitors. The approximately 162 KB asset includes its projection, source URLs, accuracy notes, land polygons, landscape surfaces, paths, architectural anchors, source replacement IDs, trees, docks and representative moored boats.
+`node tools/build-waterfront.mjs` produces the bundled `assets/waterfront.json` from the existing geographic snapshot and authored landscape outlines. It runs offline using vendored **polygon-clipping 0.15.7 (MIT)**; that library is a build tool and is not loaded by visitors. The approximately 204 KB asset includes its projection, source URLs, accuracy notes, land polygons, landscape surfaces, paths, architectural anchors, source replacement IDs, trees, docks and representative moored boats.
 
 Within x 200–3000 / z −2600–1610, land is the polygon difference of the coverage envelope and the complete City water geometry, including holes and separate rings. This replaces the old westernmost-intersection shoreline approximation and restores the Jardine peninsula without closing the harbors. The old terrain park rectangles and generic Navy Pier sheds are removed. The rest of the city retains its existing terrain. Museum Campus is outside the landscape pass.
 
@@ -63,12 +63,45 @@ These display-limited desktop samples meet the ≤10% median/p95 regression thre
 
 Both offices are selectable in the list and scene labels, and marked on the map. Their models replace exactly one source footprint each, have explicit collision bounds and distance-based detail, and add no dynamic lights or shadow casters. The opening view, 18-stop guided tour and city-life budgets are unchanged.
 
+## Southern park, nighttime facades and neighborhood sites
+
+Checked **2026-10-29**. `tools/south-grant.mjs` extends the shared waterfront asset with the landscape between Balbo and Roosevelt. The former repeated lawns/diamonds and straight southern rail strip are replaced. Four Upper Hutchinson and twelve Lower Hutchinson infields, 14 pickleball courts, six tennis courts, the dog enclosure, service yard, Arvey lawn, curved rail corridor and pedestrian bridge align with the built landscape in [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer). The export's actual Web Mercator extent is recorded in the generator; image acquisition date was not supplied. Interpretations are cross-checked with the [Park District facilities](https://www.chicagoparkdistrict.com/parks-facilities/grant-ulysses-park). Images are local review references and are not distributed.
+
+[Agora](https://www.chicagoparkdistrict.com/parks-facilities/agora-artwork) has 106 instanced, approximately nine-foot headless torso/leg forms; individual figure placement and shapes are illustrative. The [Grant Skate Park](https://www.chicagoparkdistrict.com/parks-facilities/grant-skate-park) has estimated low bank/quarter-pipe/ledge/stair geometry within its traced concrete plaza. Logan's mound and equestrian silhouette, Rosenberg's small fountain pavilion, the 8th Street fountain, and Spirit of Music garden are simplified exterior interpretations. Real open fields remain open. No Columbus statue, proposed People's Plaza, or Museum Campus additions are included.
+
+`node tools/build-sites.mjs` generates **assets/sites.json**, the shared registry of source-ID replacements, building parts, parcel surfaces, 32 parked vehicles in identified lots, furniture, public-frontage routes and collision volumes. It records reference dates and individual accuracy notes. New models use the source parcel or a traced previously vacant parcel; they do not clear a radius around a street-address point. Rendering, pedestrian exclusion, the orientation map and camera collisions consume this registry.
+
+- **Willis / Catalog:** [Gensler's completed project](https://www.gensler.com/projects/willis-tower-repositioning) and [Thornton Tomasetti](https://www.thorntontomasetti.com/project/willis-tower-repositioning) inform the low podium, planted roof terraces and 75 × 90 ft curved skylight. Geometry is estimated within County footprint `889662-0`, which the tower already replaces. Podiums have their own low collision volumes. The nine 75 ft tubes and mechanical bands remain; antenna tips are corrected to 527 m instead of overshooting by 8 m. The card separately reports 442 m / 1,451 ft roof and 527 m / 1,729 ft antenna tip. Four small west-facing Skydeck boxes are included.
+- **LaSalle:** Relativity keeps its verified 92.1 m height and 20th-floor card; shallow jambs, joints, sills, doors and roof details are added. The Rookery replaces **889481-0**, east of LaSalle, north of Relativity, at [55 m](https://www.skyscrapercenter.com/chicago/the-rookery/9584). Federal Reserve replaces `891409-0`, retaining the surveyed high point but distinguishing its [classical base and subsequent additions](https://www.chicagofed.org/utilities/about-us/visit-us). Facade subdivisions and mass setbacks are visual estimates.
+- **Carpenter/Kinzie:** OnDean's loading doors and window framing are refined; the [broker portfolio](https://images1.showcase.com/d2/HpUM9D1N0Wk-TzwYOeTIvQGhUAfbQCioWBi73nFsJjo/document.pdf) identifies 1044–48 Kinzie (`860467-0`), 415 Aberdeen (`860519-0`) and the parking immediately north of OnDean. The small building south of Kinzie remains, with parking confined to the clear area south of it. Office identity still comes from the project owner, with no invented office facts or company signs.
+- **Fulton Market:** [1K Fulton](https://mchughconcrete.com/projects/1k-fulton/) replaces `864627-0`; [800 Fulton](https://www.som.com/projects/800-fulton/) replaces `865280-0`; [345 Morgan](https://esadesign.com/portfolio/345-north-morgan/) replaces `863053-0`; [400 Aberdeen](https://www.trammellcrow.com/newsroom/tcc-signs-two-expansions-one-hq-lease-at-fulton-labs-in-chicago) replaces `860020-0`. The 800 Fulton published heights conflict, so this model retains the county's 86.3 m high point and estimates stepped masses/bracing. [360 Green](https://www.gensler.com/projects/360-north-green), completed in 2024, occupies a vacant 2022 parcel north of the rail corridor; its dual tower form uses the published 121.6 m height with estimated setbacks. [The Fulton, completed April 2026](https://www.skender.com/news-media/skender-wraps-construction-on-the-fulton-535000-sf-mixed-use-office-building/), occupies the formerly empty half-block **east of Sangamon**, from Fulton to Lake. Its 11-story height/setbacks are visual estimates; the retained former Schwinn factory (`868056-0`) is modeled separately with a low glass connector. Other vacant lots remain vacant. Lake Street's elevated structure continues to the western coverage edge, with an estimated Morgan station setting and no additional moving trains.
+
+Facade lighting profiles use stable source-ID seeds in both measured geometry and distant boxes. Prominent office profiles target approximately 39–47% lit eligible windows; lower masonry/warehouse occupancy varies separately. The shader filters the same four-bay/floor clusters with pixel derivatives, retains floor bands when resolved, and converges to average illumination for truly subpixel cells. Roof normals stay dark, Willis mechanical bands remain unlit, and lights fade through the shared dusk/night uniform. No textures or reference photographs are downloaded at runtime, and no window lights, bloom, particles or new shadow casters are introduced.
+
+Three new district views are **South Grant Park**, **Fulton Market**, and **Willis Tower base**. The opening view, 18-stop tour, office selections and budgets of 720 walkers, 80 cyclists, 480 cars, four trains and eight moving boats are retained. Geometry checks include explicit source IDs, intersections with retained buildings, route sampling, parking-lot membership, courts/tree exclusions, Agora count and generated asset consistency. `tools/review.html` compares `.cache/detail-baseline/docs/` with the candidate using seven fixed view/light cases and three warmed 8-second foreground samples per build.
+
+Detail-release performance acceptance, 2026-10-29: archived revision `0cd67ffee42a15b0` versus rendering candidate `fac9c620942c2a03`, foreground/focused Chrome on Windows with an NVIDIA RTX 4070, 1200 × 740, pinned tier 0. Every view settled for five seconds, followed by three samples with three seconds of warm-up and eight seconds of measurement each. All 42 sample medians were **6.9 ms**. The table lists all three p95 values and peak draw calls; skyline night uses full night, all other cases midday. The release only changes card text encoding and the preview image after this rendering benchmark.
+
+| Fixed view | Previous p95 samples (ms) | New p95 samples (ms) | Previous / new peak calls |
+| --- | --- | --- | --- |
+| Skyline day | 7.1 / 7.0 / 7.1 | 7.1 / 7.1 / 7.1 | 627 / 776 |
+| Skyline night | 7.0 / 7.1 / 7.0 | 7.1 / 7.1 / 7.1 | 650 / 776 |
+| South Grant Park | 7.0 / 7.0 / 7.1 | 7.1 / 7.1 / 7.1 | 441 / 480 |
+| Willis base | 7.0 / 7.0 / 7.0 | 7.1 / 7.1 / 7.0 | 306 / 383 |
+| Relativity | 7.0 / 7.0 / 7.1 | 7.0 / 7.0 / 7.0 | 392 / 414 |
+| OnDean | 7.0 / 7.0 / 7.0 | 7.0 / 7.0 / 7.1 | 139 / 190 |
+| Fulton Market | 7.0 / 7.0 / 7.0 | 7.0 / 7.1 / 7.1 | 452 / 611 |
+
+The largest p95 increase is approximately 1.4%, below the 10% threshold. These samples are display-rate limited; the increased geometry/draw calls may cost more on weaker hardware, and no MacBook performance claim is made. Distant measured buildings retain one instanced draw per cell, with per-instance facade profiles. No additional shadow casters or dynamic lights were introduced.
+
 ## Validate and publish
 
 ```sh
 node tools/build-site.mjs https://srtjairo.github.io/chicago-3d/
 node tools/check.mjs
 node tools/check-city.mjs
+node tools/check-waterfront.mjs
+node tools/check-sites.mjs
 node tools/serve.mjs 8080
 ```
 

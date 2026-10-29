@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { rng } from './geo.js?v=0cd67ffee42a15b0';
-import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=0cd67ffee42a15b0';
+import { rng } from './geo.js?v=196332b19f6f2af2';
+import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=196332b19f6f2af2';
 
 const palette=[0xe8e4da,0x364655,0x8b3f36,0x293138,0xafa997,0xd5ad44,0x587475,0x6e7384];
 function pool(scene,name,geometry,material,count){const m=new THREE.InstancedMesh(geometry,material,count);m.name=name;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;scene.add(m);return m;}
@@ -41,7 +41,7 @@ export function buildCityLife(scene,ctx,camera) {
     const along=makeRoute(left).length,across=road.width+3.6;
     const p=road.path[0],q=road.path.at(-1),axis=Math.abs(q[0]-p[0])>Math.abs(q[2]-p[2])?0:1;
     // Buildings determine usable sidewalks; don't route people through a podium.
-    if(r.points.some(p=>ctx.measuredBuildings.some(b=>p[0]>b.x0&&p[0]<b.x1&&p[2]>b.z0&&p[2]<b.z1)))continue;
+    if(r.points.some(p=>ctx.collisionBuildings.some(b=>p[0]>b.x0&&p[0]<b.x1&&p[2]>b.z0&&p[2]<b.z1)))continue;
     walks.push({...r,crossings:[{d:along,length:across,id:Number(road.to),axis},{d:along*2+across,length:across,id:Number(road.from),axis}]});
   }
   const promenade=ctx.riverwalkPath;

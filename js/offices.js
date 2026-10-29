@@ -38,7 +38,7 @@ export function buildOfficeArchitecture(scene,ctx){
       const stone=mat(0xc7c0ad),trim=mat(0xb8b09c),glass=mat(0x30444d,{roughness:.28,metalness:.25});
       // The full-block stone mass, with the LaSalle facade facing west (-X).
       batch(g,[box(95,19,54.2,.5)],stone,'relativity-banking-base');
-      batch(g,[box(95,67,54.2,.5,19),box(92.6,6.1,52,.5,86)],facadeMaterial({color:0xc9c3b3,glass:0x34464b,cell:[3.4,3.85],winA:[.46,.56],seed:231,lit:.24}),'relativity-office-floors');
+      batch(g,[box(95,67,54.2,.5,19),box(92.6,6.1,52,.5,86)],facadeMaterial({color:0xc9c3b3,glass:0x34464b,cell:[3.4,3.85],winA:[.46,.56],seed:231,lit:.38}),'relativity-office-floors');
       batch(g,[box(92.6,.15,52,.5,91.95),box(95,.1,54.2,.5,85.9)],stone,'relativity-roof-caps');
       const bands=[];
       for(const [y,h,w,d]of [[.5,.6,95.4,54.6],[14.4,.7,95.4,54.6],[18.5,.65,96.2,55.2],[21.6,.45,95.8,54.8],[84.9,.65,96,55],[89.5,.65,93.5,52.8],[91.5,.6,93.5,52.8]])bands.push(box(w,h,d,.5,y));
@@ -62,6 +62,10 @@ export function buildOfficeArchitecture(scene,ctx){
       const pediment=new THREE.ExtrudeGeometry(triangle,{depth:1.5,bevelEnabled:false});pediment.rotateY(-Math.PI/2).translate(-47.8,0,0);columns.push(pediment);
       windows.length=0;for(const z of [-7,0,7])windows.push(box(.12,4.4,3,-47.06,.6,z));
       batch(detail,windows,glass,'relativity-doors');
+      // Shallow stone joints, upper bay jambs and window sills catch daylight.
+      for(let y=1.6;y<18;y+=1.4)for(const side of [-1,1])frames.push(box(95,.035,.05,.5,y,side*27.22));
+      for(let z=-24;z<26;z+=3.4){frames.push(box(.32,62,.25,-47.12,22,z));for(let y=24;y<84;y+=3.85)frames.push(box(.4,.13,1.7,-47.2,y,z+1.5));}
+      for(const side of [-1,1])for(let x=-44;x<47;x+=3.4)frames.push(box(.25,62,.3,x,22,side*27.17));
       batch(detail,[...bands,...frames,...columns],trim,'relativity-stone-details');
       batch(detail,[box(13,1,7,12,91.1,-12),box(5,.65,4,25,91.45,8)],mat(0x767b78),'relativity-roof');
     }else{
@@ -84,6 +88,8 @@ export function buildOfficeArchitecture(scene,ctx){
       const doors=[box(.14,3,1.6,16.34,0,8),box(.14,4.6,6.2,16.34,0,-13),box(4,5.3,.14,-13,0,17.73)];
       batch(g,doors,frame,'ondean-entrances');
       for(let y=.6;y<4.6;y+=.45)mullions.push(box(.18,.035,6,16.43,y,-13));
+      for(let y=.7;y<5.2;y+=.4)mullions.push(box(3.8,.035,.18,-13,y,17.82));
+      for(const side of [-1,1])mullions.push(box(.3,4.8,.3,16.4,0,-13+side*3.3));
       batch(detail,mullions,frame,'ondean-window-frames');
       const coping=[];for(const side of [-1,1])coping.push(box(.15,.45,35.5,side*16.35,8.65),box(32.8,.45,.15,0,8.65,side*17.72));
       batch(detail,coping,mat(0x84918b,{metalness:.4}),'ondean-parapet');

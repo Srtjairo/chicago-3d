@@ -6,6 +6,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 import { LANDMARKS, toAddress, configureShore } from './geo.js';
+import {loadSites} from './site-data.js';
+import {buildSites} from './sites.js';
 import {loadWaterfront} from './waterfront-data.js';
 import {buildWaterfront} from './waterfront.js';
 import { loadCityData } from './city-data.js';
@@ -61,6 +63,7 @@ async function init() {
   status('Loading Chicago’s real building footprints');
   ctx.data = await loadCityData();
   ctx.waterfront=await loadWaterfront();
+  ctx.sites=await loadSites();
   configureShore(ctx.data);
   prepareWorld(ctx);
 
@@ -76,6 +79,7 @@ async function init() {
   buildOfficeArchitecture(scene, ctx);
   buildCity(scene, ctx);
   buildStreets(scene, ctx);
+  buildSites(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
   rebuildBeacons(scene, ctx);
 
@@ -177,6 +181,7 @@ async function init() {
     controls.update();
     ctx.cityDetailUpdate?.(camera, perf.level);
     ctx.officeDetailUpdate?.(camera);
+    ctx.siteDetailUpdate?.(camera);
     ctx.waterfrontDetailUpdate?.(camera);
     ctx.life.update(dt);
     explorer.update(dt);

@@ -2,7 +2,7 @@
 export const ORIGIN = [-87.62786, 41.88202];
 export const COVERAGE_RECTS = [
   { id: 'downtown', minX: -1800, maxX: 2400, minZ: -2300, maxZ: 1800 },
-  { id: 'fulton-market', minX: -2450, maxX: -1750, minZ: -1250, maxZ: -400 },
+  { id: 'fulton-market', minX: -2550, maxX: -1750, minZ: -1250, maxZ: -150 },
 ];
 export const COVERAGE = {
   minX: Math.min(...COVERAGE_RECTS.map(r => r.minX)), maxX: Math.max(...COVERAGE_RECTS.map(r => r.maxX)),

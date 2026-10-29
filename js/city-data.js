@@ -74,13 +74,13 @@ const FAMILIES = [
 ];
 export function buildMeasuredCity(scene, ctx) {
   const group = new THREE.Group(); group.name = 'measured-city';
-  const materials = FAMILIES.map((f) => facadeMaterial({ ...f, lit: 0.28, features:true }));
+  const materials = FAMILIES.map((f,i) => facadeMaterial({ ...f, lightingProfile:i===3||i===4?'office':'mixed', features:true }));
   const chunks = new Map(), details = new Map(), distant = new Map(), chunkViews = new Map();
   const rand = rng(2022); const boxes = ctx.cityBoxes;
   const buildings = [];
   for (const b of ctx.data.buildings) {
     const v = boundsOf(b.rings[0]);
-    if (!inCoverage(v.x, v.z) || REPLACED.has(b.id) || ctx.waterfront.replacementIds.includes(b.id)) continue;
+    if (!inCoverage(v.x, v.z) || REPLACED.has(b.id) || ctx.waterfront.replacementIds.includes(b.id) || ctx.sites.replacementIds.includes(b.id)) continue;
     // Navy Pier and Millennium Park already have hand-built structures.
     if ((v.x > 280 && v.x < 610 && v.z > -220 && v.z < 60)) continue;
     // One Prudential's antenna belongs above its roof, not across its whole footprint.
@@ -94,7 +94,7 @@ export function buildMeasuredCity(scene, ctx) {
     geometry.setAttribute('aSeed',new THREE.Float32BufferAttribute(new Float32Array(geometry.attributes.position.count).fill(Number(b.id.split('-')[0])%10007),1));
     chunks.get(key).push(geometry);
     if(!distant.has(cell))distant.set(cell,[]);
-    distant.get(cell).push([v.x,h/2+.6,v.z,v.w,h,v.d,0,FAMILIES[family].color,FAMILIES[family].style||0]);
+    distant.get(cell).push([v.x,h/2+.6,v.z,v.w,h,v.d,0,FAMILIES[family].color,FAMILIES[family].style||0,Number(b.id.split('-')[0])%10007,family]);
     if (!details.has(cell)) details.set(cell, { roof: [], trim: [], entry: [], x: Math.floor(v.x / 600) * 600 + 300, z: Math.floor(v.z / 600) * 600 + 300 });
     const detail = details.get(cell);
     // Top outline follows the actual footprint, including courtyard edges.
@@ -114,13 +114,20 @@ export function buildMeasuredCity(scene, ctx) {
     const family = Number(key.split(':')[1]);
     const m = new THREE.Mesh(geometry, materials[family]); m.name = 'footprints-' + key;
     m.receiveShadow = true; geometry.computeBoundingSphere(); group.add(m);
-    const cell=key.split(':')[0];if(!chunkViews.has(cell))chunkViews.set(cell,{near:[],far:null});chunkViews.get(cell).near.push(m);
+    const cell=key.split(':')[0];if(!chunkViews.has(cell))chunkViews.set(cell,{near:[],far:[]});chunkViews.get(cell).near.push(m);
   }
-  const distantMaterial=facadeMaterial({color:0xffffff,glass:0x30434d,instanced:true,cell:[2.5,3.9]});
+  // One draw per far cell; per-instance profiles preserve the near material's
+  // lighting grid and occupancy without multiplying distant draw calls by family.
+  const distantMaterial=facadeMaterial({color:0xffffff,instanced:true,features:true,profiles:true});
   for(const [cell,items]of distant){
     const m=boxBatch(items,0xffffff,'distant-'+cell,distantMaterial);
-    m.geometry.setAttribute('aStyle',new THREE.InstancedBufferAttribute(new Float32Array(items.map(v=>v[8])),1));
-    group.add(m);chunkViews.get(cell).far=m;
+    const attr=(name,values,size)=>m.geometry.setAttribute(name,new THREE.InstancedBufferAttribute(new Float32Array(values),size));
+    attr('aStyle',items.map(v=>v[8]),1);attr('aSeed',items.map(v=>v[9]),1);
+    attr('aCell',items.flatMap(v=>FAMILIES[v[10]].cell),2);
+    attr('aWin',items.flatMap(v=>FAMILIES[v[10]].winA||[.48,.55]),2);
+    attr('aLit',items.map(v=>v[10]===3||v[10]===4?.43:.28),1);
+    attr('aGlass',items.flatMap(v=>new THREE.Color(FAMILIES[v[10]].glass).toArray()),3);
+    group.add(m);chunkViews.get(cell).far.push(m);
   }
   const detailGroups = [];
   for (const [cell, data] of details) {
@@ -131,7 +138,7 @@ export function buildMeasuredCity(scene, ctx) {
   ctx.cityDetailUpdate = (camera, level) => {
     for (const [cell,d] of details) {
       const distance=Math.hypot(camera.position.x-d.x,camera.position.z-d.z),v=chunkViews.get(cell),far=distance>(level>=3?2300:3300);
-      v.near.forEach(m=>m.visible=!far);v.far.visible=far;
+      v.near.forEach(m=>m.visible=!far);v.far.forEach(m=>m.visible=far);
     }
     for (const d of detailGroups) d.group.visible = Math.hypot(camera.position.x-d.x,camera.position.z-d.z) < (level >= 3 ? 1000 : 1600) && camera.position.y < 1700;
   };

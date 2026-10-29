@@ -110,6 +110,8 @@ export const LANDMARKS = [
   {
     id: 'willis', name: 'Willis Tower', aka: 'Sears Tower until 2009', x: -672, z: 344, r: 50, h: 527, roof: 442,
     ft: 1451, year: 1973, addr: '233 S Wacker Dr',
+    facts:[['Roof height','1,451 ft · 442 m'],['Antenna tip','1,729 ft · 527 m'],['Opened','1973'],['Address','233 S Wacker Dr']],
+    collision:{x0:-706.5,x1:-637.5,z0:309.5,z1:378.5},
     desc: 'Nine square tubes bundled together, ending at floors 50, 66, 90 and 108. It was the tallest building in the world for 25 years.',
     view: { az: -0.35, dist: 900, el: 0.32 },
   },

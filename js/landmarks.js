@@ -83,7 +83,7 @@ function willis(ctx) {
   };
   const mat = facadeMaterial({
     color: 0x1a1b1e, glass: 0x2a241e, cell: [1.52, fl], winA: [0.7, 0.74], winB: [0.7, 0.74],
-    lit: 0.36, roughness: 0.45, metalness: 0.6, glassRough: 0.08, seed: 11,
+    lit: 0.43, roughness: 0.45, metalness: 0.6, glassRough: 0.08, seed: 11,
   });
   const band = new THREE.MeshStandardMaterial({ color: 0x0b0b0c, roughness: 0.7, metalness: 0.4 });
   const mech = [29.5, 65.5, 88.5, 104.5];
@@ -100,11 +100,11 @@ function willis(ctx) {
   g.add(mesh(box(t * 1.6, 8, t * 0.8), band, -t * 0.5, L.roof, 0));
   const white = new THREE.MeshStandardMaterial({ color: 0xe9e9e6, roughness: 0.5, metalness: 0.3 });
   for (const ax of [-t * 1.05, t * 0.05]) {
-    const a = antenna(L.h - L.roof, 1.9, 0.45, white);
+    const a = antenna(L.h - L.roof - 8, 1.9, 0.45, white);
     a.position.set(ax, L.roof + 8, 0);
     a.castShadow = true;
     g.add(a);
-    ctx.beacons.push(new THREE.Vector3(L.x + ax, SLAB_TOP + L.h + 8, L.z));
+    ctx.beacons.push(new THREE.Vector3(L.x + ax, SLAB_TOP + L.h, L.z));
   }
   g.position.set(L.x, SLAB_TOP, L.z);
   return g;

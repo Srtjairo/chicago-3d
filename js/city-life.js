@@ -41,7 +41,7 @@ export function buildCityLife(scene,ctx,camera) {
     const along=makeRoute(left).length,across=road.width+3.6;
     const p=road.path[0],q=road.path.at(-1),axis=Math.abs(q[0]-p[0])>Math.abs(q[2]-p[2])?0:1;
     // Buildings determine usable sidewalks; don't route people through a podium.
-    if(r.points.some(p=>ctx.measuredBuildings.some(b=>p[0]>b.x0&&p[0]<b.x1&&p[2]>b.z0&&p[2]<b.z1)))continue;
+    if(r.points.some(p=>ctx.collisionBuildings.some(b=>p[0]>b.x0&&p[0]<b.x1&&p[2]>b.z0&&p[2]<b.z1)))continue;
     walks.push({...r,crossings:[{d:along,length:across,id:Number(road.to),axis},{d:along*2+across,length:across,id:Number(road.from),axis}]});
   }
   const promenade=ctx.riverwalkPath;
