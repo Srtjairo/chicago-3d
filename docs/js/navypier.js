@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { NAVY_PIER, WHEEL } from './geo.js?v=89cbf690b5719dd4';
-import { facadeMaterial } from './textures.js?v=89cbf690b5719dd4';
+import { NAVY_PIER, WHEEL } from './geo.js?v=a7ff8a2dbf8997c7';
+import { facadeMaterial } from './textures.js?v=a7ff8a2dbf8997c7';
 
 const DECK = 3;
 

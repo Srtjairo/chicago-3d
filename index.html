@@ -171,7 +171,7 @@
   #gpu-note {
     position: fixed; z-index: 6; left: 50%; transform: translateX(-50%);
     top: calc(var(--pad) + env(safe-area-inset-top, 0px)); width: min(440px, calc(100% - 2 * var(--pad)));
-    padding: 14px 44px 14px 16px; background: var(--glass-strong); border-color: rgba(239, 51, 64, 0.55);
+    padding: 14px 44px 14px 16px; box-sizing: border-box; background: var(--glass-strong); border-color: rgba(239, 51, 64, 0.55);
   }
   #gpu-note[hidden] { display: none; }
   #gpu-note strong { display: block; margin-bottom: 4px; font: 800 18px/1.1 var(--font-display); letter-spacing: 0.03em; text-transform: uppercase; color: var(--star-red); }

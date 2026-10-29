@@ -3,8 +3,8 @@ import { Water } from 'three/addons/objects/Water.js';
 import {
   BLOCK, STREET, EXTENT, SHORE_POINTS, RIVER, GRANT_PARK, COLUMBUS_X, PARK_CROSS_STREETS,
   PLAZAS, polylineAt, rng, inGrantPark, RIVER_PATHS,
-} from './geo.js?v=89cbf690b5719dd4';
-import { waterNormals, grassTexture } from './textures.js?v=89cbf690b5719dd4';
+} from './geo.js?v=a7ff8a2dbf8997c7';
+import { waterNormals, grassTexture } from './textures.js?v=a7ff8a2dbf8997c7';
 
 const SLAB_TOP = 0.6;
 
