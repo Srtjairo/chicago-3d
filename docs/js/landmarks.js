@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js';
-import { facadeMaterial } from './textures.js';
-import { SLAB_TOP } from './terrain.js';
+import { LANDMARKS } from './geo.js?v=89cbf690b5719dd4';
+import { facadeMaterial } from './textures.js?v=89cbf690b5719dd4';
+import { SLAB_TOP } from './terrain.js?v=89cbf690b5719dd4';
 
 const byId = Object.fromEntries(LANDMARKS.map((l) => [l.id, l]));
 
@@ -277,7 +277,7 @@ function marinaCity(ctx) {
   const parking = new THREE.MeshStandardMaterial({ color: 0x3a3936, roughness: 0.9 });
   // Scalloped floor plate: 16 rounded balconies around the core
   const petal = new THREE.Shape();
-  const N = 192;
+  const N = 96;
   for (let i = 0; i <= N; i++) {
     const th = (i / N) * Math.PI * 2;
     const r = 13 + 4.6 * Math.pow(Math.abs(Math.sin(th * 8)), 0.55);
@@ -304,7 +304,8 @@ function marinaCity(ctx) {
     ctx.beacons.push(new THREE.Vector3(L.x + ox, SLAB_TOP + L.h + 3, L.z));
   }
   plates.count = k;
-  plates.castShadow = plates.receiveShadow = true;
+  plates.castShadow = false;
+  plates.receiveShadow = true;
   g.add(plates);
   g.position.set(L.x, SLAB_TOP, L.z);
   return g;
@@ -370,6 +371,28 @@ function wrigley(ctx) {
     clocks.setMatrixAt(i, m);
   }
   g.add(clocks);
+  // Hour ticks and hands are one static batch, readable in the riverfront view.
+  const details = [];
+  const local = new THREE.Matrix4(), faceMatrix = new THREE.Matrix4();
+  const q = new THREE.Quaternion(), scale = new THREE.Vector3();
+  for (let side = 0; side < 4; side++) {
+    const a = side * Math.PI / 2;
+    faceMatrix.makeRotationY(a).setPosition(sx + Math.sin(a) * 8.59, 100, tz + Math.cos(a) * 8.59);
+    for (let tick = 0; tick < 12; tick++) {
+      const angle = tick * Math.PI / 6;
+      local.compose(new THREE.Vector3(Math.sin(angle) * 2.45, Math.cos(angle) * 2.45, 0.02),
+        q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle), scale.set(0.12, 0.36, 0.06));
+      details.push(new THREE.Matrix4().multiplyMatrices(faceMatrix, local));
+    }
+    for (const [angle, length] of [[-Math.PI / 3, 1.45], [Math.PI / 3, 2.1]]) {
+      local.compose(new THREE.Vector3(Math.sin(angle) * length / 2, Math.cos(angle) * length / 2, 0.08),
+        q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle), scale.set(0.16, length, 0.08));
+      details.push(new THREE.Matrix4().multiplyMatrices(faceMatrix, local));
+    }
+  }
+  const hands = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0x323330 }), details.length);
+  details.forEach((matrix, i) => hands.setMatrixAt(i, matrix));
+  g.add(hands);
   g.position.set(L.x, SLAB_TOP, L.z);
   return g;
 }

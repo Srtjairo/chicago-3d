@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js';
-import { SLAB_TOP } from './terrain.js';
+import { LANDMARKS } from './geo.js?v=89cbf690b5719dd4';
+import { SLAB_TOP } from './terrain.js?v=89cbf690b5719dd4';
 
 const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 
 export const OVERVIEW = {
-  pos: new THREE.Vector3(2350, 720, 1650),
-  target: new THREE.Vector3(-150, 140, -450),
+  pos: new THREE.Vector3(2250, 680, 1750),
+  target: new THREE.Vector3(-100, 170, -450),
 };
 
 // Pull back on portrait screens so the whole skyline fits
@@ -29,11 +29,12 @@ export class Flyer {
 
   viewFor(L) {
     const v = L.view;
+    const distance = v.dist * (this.camera.aspect < 1 ? 1.3 : 1);
     const target = new THREE.Vector3(L.x, SLAB_TOP + Math.min(L.h, L.roof * 1.05) * 0.5, L.z);
     const pos = new THREE.Vector3(
-      L.x + Math.sin(v.az) * v.dist * Math.cos(v.el),
-      target.y + Math.sin(v.el) * v.dist,
-      L.z + Math.cos(v.az) * v.dist * Math.cos(v.el),
+      L.x + Math.sin(v.az) * distance * Math.cos(v.el),
+      target.y + Math.sin(v.el) * distance,
+      L.z + Math.cos(v.az) * distance * Math.cos(v.el),
     );
     return { pos, target };
   }

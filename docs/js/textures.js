@@ -14,7 +14,7 @@ export const uNight = { value: 0 };
 export function facadeMaterial(opts = {}) {
   const o = {
     color: 0x8c8780, glass: 0x1d2630, cell: [3.2, 3.9], winA: [0.48, 0.55], winB: [0.9, 0.82],
-    lit: 0.42, style: 0, seed: 1, roughness: 0.82, metalness: 0.05, glassRough: 0.12, roofDark: 0.55,
+    lit: 0.32, style: 0, seed: 1, roughness: 0.78, metalness: 0.05, glassRough: 0.24, roofDark: 0.68,
     instanced: false, ...opts,
   };
   const mat = new THREE.MeshStandardMaterial({ color: o.color, roughness: o.roughness, metalness: o.metalness });
@@ -68,7 +68,10 @@ export function facadeMaterial(opts = {}) {
         float fWall = 1.0 - smoothstep(0.55, 0.75, abs(fN.y));
         float fU = abs(fN.x) > abs(fN.z) ? vFPos.z : vFPos.x;
         float fSide = abs(fN.x) > abs(fN.z) ? sign(fN.x) : 2.0 * sign(fN.z);
-        float fBuild = fHash(vec2(vFSeed, 7.13));
+        // Interpolated seeds differ by tiny fractions across a triangle. Quantize
+        // before hashing, otherwise the window grid changes from pixel to pixel.
+        float fSeed = floor(vFSeed + 0.5);
+        float fBuild = fHash(vec2(fSeed, 7.13));
         vec2 fCell = uCell * mix(0.9, 1.15, fBuild);
         vec2 fG = vec2(fU, vFPos.y - 0.6) / fCell;
         vec2 fF = fract(fG);
@@ -82,25 +85,25 @@ export function facadeMaterial(opts = {}) {
         fMask = mix(fMask, fAvg, fFar);
         fMask *= fWall * step(1.0, fId.y);
         // lights cluster by floor and office bay, with some single windows
-        float fR = mix(fHash(fId + vec2(vFSeed * 13.7 + fSide * 3.1, vFSeed * 5.3)), fHash(vec2(floor(fId.x / 4.0), fId.y) + vec2(vFSeed * 3.3 + fSide, 1.7)), 0.65);
-        vec3 fGlass = uGlass * mix(0.88 + 0.24 * fHash(fId.yx + vFSeed), 1.0, fFar);
+        float fR = fHash(vec2(floor(fId.x / 3.0), fId.y) + vec2(fSeed * 3.3 + fSide, 1.7));
+        vec3 fGlass = mix(uGlass, diffuseColor.rgb * 0.48, vFStyle * 0.32);
+        fGlass *= mix(0.94 + 0.12 * fHash(fId.yx + fSeed), 1.0, fFar);
+        // A little contact shading grounds the city without thousands of shadow casters.
+        diffuseColor.rgb *= mix(0.72, 1.0, smoothstep(0.0, 18.0, vFPos.y));
         diffuseColor.rgb = mix(diffuseColor.rgb * mix(1.0, uRoofDark, 1.0 - fWall), fGlass, fMask);
         // lit windows at night
         float fOn = step(fR, uLit * mix(0.7, 1.25, fBuild));
-        float fTone = fHash(fId * 1.7 + vFSeed);
-        vec3 fLamp = mix(vec3(1.0, 0.72, 0.42), vec3(0.95, 0.93, 0.85), step(0.72, fTone)) * (0.55 + 0.9 * fHash(fId.yx * 3.1));
-        // far away, light whole groups of windows at least a few pixels across, so the city sparkles instead of glowing flat
-        float fLvl = exp2(ceil(log2(max(1.0, fAA * 2.5))));
-        vec2 fGid = floor(fG / fLvl);
-        float fOnFar = step(fHash(fGid + vec2(vFSeed * 7.1 + fSide, fLvl)), uLit * 0.42);
-        vec3 fFarLit = mix(vec3(1.0, 0.74, 0.45), vec3(0.95, 0.92, 0.85), step(0.75, fHash(fGid.yx + vFSeed))) * fOnFar * 0.3;
-        vec3 fLitCol = mix(fLamp * fOn, fFarLit, fFar) * mix(fMask, 1.0, fFar * fWall);`)
+        float fTone = fHash(vec2(fId.y, fSeed));
+        vec3 fLamp = mix(vec3(1.0, 0.68, 0.36), vec3(0.8, 0.88, 1.0), step(0.78, fTone)) * (0.6 + 0.3 * fTone);
+        // Subpixel windows converge to their average instead of bright, unstable dots.
+        vec3 fFarLit = vec3(0.92, 0.72, 0.48) * uLit * 0.48;
+        vec3 fLitCol = mix(fLamp * fOn, fFarLit, fFar) * fMask;`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor = mix(roughnessFactor, uGlassRough, fMask);`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
-        metalnessFactor = mix(metalnessFactor, 0.55, fMask);`)
+        metalnessFactor = mix(metalnessFactor, 0.32, fMask);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-        totalEmissiveRadiance += fLitCol * uNight * 2.2;`);
+        totalEmissiveRadiance += fLitCol * uNight * 1.25;`);
   };
   return mat;
 }
@@ -147,12 +150,12 @@ export function grassTexture(size = 256) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#5d8a45';
+  ctx.fillStyle = '#697c50';
   ctx.fillRect(0, 0, size, size);
   const r = mulberry(3);
   for (let i = 0; i < 2600; i++) {
-    const g = 110 + r() * 50;
-    ctx.fillStyle = `rgba(${60 + r() * 40},${g},${45 + r() * 25},0.35)`;
+    const g = 105 + r() * 20;
+    ctx.fillStyle = `rgba(${85 + r() * 20},${g},${65 + r() * 15},0.14)`;
     const s = 2 + r() * 7;
     ctx.fillRect(r() * size, r() * size, s, s);
   }

@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Chicago visual checks</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<style>body{margin:0;background:#101722;color:#edf3f6;font:14px system-ui}header{display:flex;gap:12px;align-items:center;padding:12px;flex-wrap:wrap}button,select{padding:8px;background:#243448;color:inherit;border:1px solid #546477;border-radius:5px}iframe{display:block;border:0;margin:0 auto}pre{white-space:pre-wrap;margin:12px;color:#bcd6c5}</style>
+<header><strong>Chicago visual checks</strong><button id="desktop">Desktop</button><button id="phone">Phone</button>
+<select id="place" aria-label="Camera view"><option value="overview">Skyline</option><option value="wrigley">Wrigley</option><option value="bean">Cloud Gate</option><option value="navypier">Navy Pier</option><option value="fountain">Fountain</option></select>
+<select id="time" aria-label="Lighting"><option value="0.42">Golden hour</option><option value="0">Midday</option><option value="0.7">Dusk</option><option value="1">Night</option></select>
+<button id="check">Check scene</button><button id="capture">Save link preview</button></header>
+<iframe title="Chicago preview" src="/docs/" width="1200" height="740"></iframe><pre id="results">Waiting for scene…</pre>
+<script type="module">
+const frame = document.querySelector('iframe'), out = document.querySelector('#results');
+const app = () => frame.contentWindow.__chicago;
+const ready = setInterval(() => { if (app()) { clearInterval(ready); out.textContent = 'Ready'; } }, 200);
+document.querySelector('#desktop').onclick = () => { frame.width = 1200; frame.height = 740; };
+document.querySelector('#phone').onclick = () => { frame.width = 390; frame.height = 844; };
+document.querySelector('#place').onchange = async (e) => {
+  const a = app(), geo = await import('/docs/js/geo.js'), tour = await import('/docs/js/tour.js');
+  a.flyer.cancel();
+  const view = e.target.value === 'overview' ? { pos: tour.overviewPos(a.camera.aspect), target: tour.OVERVIEW.target }
+    : a.flyer.viewFor(geo.LANDMARKS.find((l) => l.id === e.target.value));
+  a.camera.position.copy(view.pos); a.controls.target.copy(view.target); a.controls.update();
+};
+document.querySelector('#time').onchange = (e) => {
+  const slider = frame.contentDocument.querySelector('#time'); slider.value = Number(e.target.value) * 1000;
+  slider.dispatchEvent(new Event('input', { bubbles: true }));
+};
+document.querySelector('#check').onclick = () => {
+  const a = app(), meshes = [], particles = [], faults = [];
+  a.scene.traverse((o) => {
+    if (o.isMesh) meshes.push(o);
+    if (o.isPoints) particles.push({name:o.name || 'unnamed',count:o.geometry.attributes.position.count});
+    if (o.geometry?.attributes.position) {
+      const array = o.geometry.attributes.position.array;
+      if (!array.every(Number.isFinite)) faults.push(o.name || 'geometry');
+    }
+    if (o.instanceMatrix && !o.instanceMatrix.array.every(Number.isFinite)) faults.push(o.name || 'instances');
+  });
+  out.textContent = JSON.stringify({finiteGeometry:faults.length === 0,faults,particles,
+    cityCastsShadow:a.scene.getObjectByName('city').castShadow, shadowSize:a.lighting.sun.shadow.mapSize.x,
+    cachedShadows:!a.renderer.shadowMap.autoUpdate,meshes:meshes.length,
+    activeCasters:meshes.filter((m)=>m.castShadow).length,canvas:[a.renderer.domElement.width,a.renderer.domElement.height],
+    horizontalOverflow:frame.contentDocument.documentElement.scrollWidth > Number(frame.width),
+    documentMode:frame.contentDocument.compatMode, tier:a.perf.level},null,2);
+};
+document.querySelector('#capture').onclick = async () => {
+  const a = app(); frame.width = 1200; frame.height = 630;
+  const tour = await import('/docs/js/tour.js'); a.flyer.cancel();
+  a.camera.position.copy(tour.OVERVIEW.pos); a.controls.target.copy(tour.OVERVIEW.target); a.controls.update();
+  a.lighting.set(0.6); a.lighting.update(1,a.controls.target);
+  a.perf.level = 0;
+  frame.contentWindow.requestAnimationFrame(async () => {
+    a.camera.aspect = 1200/630; a.camera.updateProjectionMatrix(); a.renderer.setPixelRatio(1); a.renderer.setSize(1200,630,false);
+    a.composer.setPixelRatio(1); a.composer.setSize(1200,630); a.composer.render();
+    const blob = await new Promise((resolve) => a.renderer.domElement.toBlob(resolve,'image/png'));
+    const res = await fetch('/__preview',{method:'POST',body:blob});
+    out.textContent = res.ok ? 'Saved preview.png (1200 × 630)' : await res.text();
+  });
+};
+</script></html>

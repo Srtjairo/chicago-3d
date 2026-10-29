@@ -3,13 +3,13 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 import { LANDMARKS, toAddress } from './geo.js';
 import { buildTerrain, SLAB_TOP } from './terrain.js';
 import { buildLandmarks } from './landmarks.js';
 import { buildCity } from './city.js';
+import { buildStreets } from './streets.js';
 import { buildParks } from './parks.js';
 import { buildNavyPier } from './navypier.js';
 import { Lighting, PRESETS } from './lighting.js';
@@ -21,8 +21,8 @@ const nextFrame = () => new Promise((r) => setTimeout(r, 16));
 
 const mobile = matchMedia('(max-width: 720px), (pointer: coarse)').matches;
 const quality = mobile
-  ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadow: 2048, water: 512, samples: 2 }
-  : { pixelRatio: Math.min(devicePixelRatio, 2), shadow: 4096, water: 1024, samples: 4 };
+  ? { pixelRatio: Math.min(devicePixelRatio, 1.25), shadow: 1024, water: 256, samples: 2 }
+  : { pixelRatio: Math.min(devicePixelRatio, 1.5), shadow: 2048, water: 512, samples: 2 };
 
 async function init() {
   const canvas = $('scene');
@@ -58,6 +58,7 @@ async function init() {
   await nextFrame();
   buildLandmarks(scene, ctx);
   buildCity(scene, ctx);
+  buildStreets(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
   rebuildBeacons(scene, ctx);
 
@@ -66,16 +67,13 @@ async function init() {
   buildParks(scene, ctx);
   buildNavyPier(scene, ctx);
 
-  // Post-processing: bloom makes lit windows and beacons glow after dark
+  // Keep antialiasing and color output; avoid the multi-pass bloom effect.
   const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: quality.samples });
   const composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(quality.pixelRatio);
   composer.setSize(innerWidth, innerHeight);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.2, 0.55, 0.92);
-  composer.addPass(bloom);
   composer.addPass(new OutputPass());
-  ctx.bloom = bloom;
 
   status('Setting the sun');
   await nextFrame();
@@ -128,21 +126,23 @@ async function init() {
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
     composer.setSize(w, h);
-    bloom.setSize(w / 2, h / 2);
     labelRenderer.setSize(w, h);
   };
   addEventListener('resize', onResize);
   new ResizeObserver(onResize).observe(canvas);
   onResize();
 
-  const perf = adaptiveQuality({ renderer, composer, water: ctx.water, sun: lighting.sun, bloom, onResize: () => { lastSize = ''; onResize(); } });
+  const perf = adaptiveQuality({ renderer, composer, water: ctx.water, sun: lighting.sun, onResize: () => { lastSize = ''; onResize(); } });
+  // no GPU in use means a few fps whatever the tier; tell the visitor how to turn acceleration on
+  if (perf.software) $('gpu-note').hidden = false;
+  $('gpu-note-close').addEventListener('click', () => { $('gpu-note').hidden = true; });
   const debug = new URLSearchParams(location.search).has('debug') ? setupDebug({ renderer, scene, perf, ui }) : null;
 
   // --- render loop -------------------------------------------------------------
   const clock = new THREE.Clock();
   let time = 0;
   let addrTimer = 0;
-  const tmp = new THREE.Vector3();
+  const updateLabels = labelLayout(camera, labelObjs, ui);
   function frame() {
     const raw = clock.getDelta();
     debug?.begin();
@@ -166,21 +166,7 @@ async function init() {
     if (ctx.water) ctx.water.material.uniforms.time.value += dt * 0.35;
     if (ctx.riverNormals) ctx.riverNormals.offset.set(time * 0.004, time * 0.002);
     // beacons: dim and steady by day, slow red pulse at night
-    const pulse = Math.pow(Math.max(0, Math.sin(time * 2.2)), 6);
-    ctx.beaconMat.color.setRGB(0.6 + (0.4 + 5 * pulse) * night, 0.03 + 0.2 * pulse * night, 0.02);
-
-    // fade labels with distance so the screen doesn't fill with text
-    for (const o of labelObjs) {
-      const d = tmp.copy(o.position).distanceTo(camera.position);
-      const L = o.userData.L;
-      const limit = L.h < 80 ? 1400 : 9000;
-      const op = d > limit ? 0 : Math.min(1, (limit - d) / 300);
-      // style writes cost layout work; only touch the DOM when the value actually moves
-      if (Math.abs(op - (o.userData.op ?? -1)) < 0.01) continue;
-      o.userData.op = op;
-      o.element.style.opacity = op;
-      o.element.style.pointerEvents = d > limit ? 'none' : 'auto';
-    }
+    ctx.beaconMat.color.setRGB(0.45 + 0.65 * night, 0.035, 0.025);
 
     addrTimer -= dt;
     if (addrTimer <= 0) {
@@ -189,7 +175,7 @@ async function init() {
     }
 
     composer.render();
-    if (ui.labelsOn) labelRenderer.render(scene, camera);
+    if (ui.labelsOn) { updateLabels(dt); labelRenderer.render(scene, camera); }
     debug?.end(raw);
     requestAnimationFrame(frame);
   }
@@ -200,39 +186,74 @@ async function init() {
   await nextFrame();
   $('loader').classList.add('done');
   setTimeout(() => $('loader').remove(), 900);
-  window.__chicago = { scene, camera, controls, lighting, flyer, renderer, ctx, perf };
+  window.__chicago = { scene, camera, controls, lighting, flyer, renderer, composer, ctx, perf };
 }
 
-// Adaptive quality: when frames run slow, step down render resolution and MSAA, refresh
-// the lake reflection and the shadow map only every Nth frame, then shrink the shadow map
-// and drop bloom and the frosted-glass UI blur. Steps back up when there is clear headroom
-// (high-refresh screens), so fast machines keep full quality.
-function adaptiveQuality({ renderer, composer, water, sun, bloom, onResize }) {
+// Labels stay out of the panels and out of each other's way. Ten layout checks per
+// second are plenty; the CSS2D renderer still tracks the camera each frame.
+function labelLayout(camera, objects, ui) {
+  let timer = 0;
+  const projected = new THREE.Vector3();
+  const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  return (dt) => {
+    timer -= dt;
+    if (timer > 0) return;
+    timer = 0.1;
+    const w = innerWidth, h = innerHeight;
+    const occupied = [...document.querySelectorAll('.brand, #panel, #info, .dock')]
+      .filter((e) => !e.hidden && getComputedStyle(e).opacity !== '0')
+      .map((e) => { const r = e.getBoundingClientRect(); return { x: r.x - 10, y: r.y - 10, w: r.width + 20, h: r.height + 20 }; });
+    const sorted = [...objects].sort((a, b) =>
+      (b.userData.L.id === ui.selectedId ? 10000 : b.userData.L.h) - (a.userData.L.id === ui.selectedId ? 10000 : a.userData.L.h));
+    let shown = 0;
+    for (const o of sorted) {
+      const L = o.userData.L, d = o.position.distanceTo(camera.position);
+      projected.copy(o.position).project(camera);
+      const width = o.element.offsetWidth || o.userData.width || (L.name.length * 6.4 + 26);
+      o.userData.width = width;
+      const rect = { x: (projected.x + 1) * w / 2 - width / 2, y: (1 - projected.y) * h / 2 - 12, w: width, h: 27 };
+      const visible = shown < (w < 720 ? 3 : 6) && d < (L.h < 80 ? 1100 : 6000)
+        && projected.z > -1 && projected.z < 1 && rect.x > 8 && rect.x + rect.w < w - 8 && rect.y > 8 && rect.y + rect.h < h - 8
+        && !occupied.some((r) => overlaps(rect, r));
+      o.visible = visible;
+      if (visible) { occupied.push({ ...rect, x: rect.x - 5, w: rect.w + 10 }); shown++; }
+    }
+  };
+}
+
+// Preserve antialiasing before reducing resolution. Recover on ordinary 60 Hz
+// screens only after eight stable windows, avoiding rapid tier oscillation.
+function adaptiveQuality({ renderer, composer, water, sun, onResize }) {
   const top = quality.pixelRatio, full = quality.shadow;
   const tiers = [
-    { pr: top, every: 1, msaa: true, bloom: true, shadow: full },
-    { pr: Math.min(top, 1.25), every: 1, msaa: true, bloom: true, shadow: full },
-    { pr: 1, every: 2, msaa: false, bloom: true, shadow: full / 2 },
-    { pr: 0.8, every: 2, msaa: false, bloom: false, shadow: full / 2, lite: true },
-    { pr: 0.65, every: 3, msaa: false, bloom: false, shadow: full / 4, lite: true },
+    { pr: top, every: 2, msaa: true, shadow: full },
+    { pr: Math.min(top, 1.25), every: 3, msaa: true, shadow: full },
+    { pr: 1, every: 3, msaa: true, shadow: full / 2 },
+    { pr: 0.85, every: 4, msaa: false, shadow: full / 2, lite: true },
+    { pr: 0.7, every: 4, msaa: false, shadow: full / 2, lite: true },
   ];
   const max = tiers.length - 1;
   const gl = renderer.getContext();
   const info = gl.getExtension('WEBGL_debug_renderer_info');
   const gpu = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : '';
   // software rendering (hardware acceleration off) starts at the bottom
-  let level = /swiftshader|llvmpipe|basic render|software/i.test(gpu) ? max : 0;
+  const software = /swiftshader|llvmpipe|basic render|software/i.test(gpu);
+  let level = software ? max : 0;
   let auto = true;
-  let frameNo = 0, sum = 0, count = 0, slow = 0, settle = 2, resumed = false;
+  let frameNo = 0, sum = 0, count = 0, slow = 0, fast = 0, settle = 2, resumed = false;
   // features the ?debug panel has switched off, on top of whatever the tier allows
-  const off = { bloom: false, msaa: false, reflection: false, blur: false };
+  const off = { msaa: false, reflection: false, blur: false };
   // time spent in a background tab says nothing about rendering speed
   document.addEventListener('visibilitychange', () => { sum = count = 0; resumed = true; });
 
   if (water) {
     const reflect = water.onBeforeRender;
+    let firstReflection = true;
     water.onBeforeRender = function (...args) {
-      if (!off.reflection && frameNo % tiers[level].every === 0) reflect.apply(this, args);
+      if (!off.reflection && (firstReflection || frameNo % tiers[level].every === 0)) {
+        reflect.apply(this, args);
+        firstReflection = false;
+      }
     };
   }
 
@@ -240,8 +261,8 @@ function adaptiveQuality({ renderer, composer, water, sun, bloom, onResize }) {
     const t = tiers[level];
     renderer.setPixelRatio(t.pr);
     composer.setPixelRatio(t.pr);
-    renderer.shadowMap.autoUpdate = t.every === 1;
-    bloom.enabled = t.bloom && !off.bloom;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     // a changed sample count only takes effect once the render targets are rebuilt
     const samples = t.msaa && !off.msaa ? quality.samples : 0;
     for (const rt of [composer.renderTarget1, composer.renderTarget2]) {
@@ -258,16 +279,15 @@ function adaptiveQuality({ renderer, composer, water, sun, bloom, onResize }) {
   apply();
 
   return {
-    gpu, off, apply, tiers,
+    gpu, software, off, apply, tiers,
     get level() { return level; },
     // setting a tier by hand pins it; set auto back to true to let the controller take over
     set level(l) { level = THREE.MathUtils.clamp(l, 0, max); auto = false; apply(); },
     get auto() { return auto; },
-    set auto(a) { auto = a; sum = count = slow = 0; settle = 1; },
+    set auto(a) { auto = a; sum = count = slow = fast = 0; settle = 1; },
     tick(dt) {
       frameNo++;
-      if (!renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = frameNo % tiers[level].every === 0;
-      if (document.hidden || !auto) return;
+      if (document.hidden || !document.hasFocus() || !auto) { sum = count = slow = fast = 0; return; }
       if (resumed) { resumed = false; return; }
       sum += Math.min(dt, 0.5); count++; // cap so one long hitch can't dominate a window
       if (sum < 1) return; // judge in ~1 s windows
@@ -275,9 +295,10 @@ function adaptiveQuality({ renderer, composer, water, sun, bloom, onResize }) {
       sum = count = 0;
       if (settle > 0) { settle--; return; } // skip the windows right after a change
       slow = fps < 45 ? slow + 1 : 0;
+      fast = fps > 57 ? fast + 1 : 0;
       // far too slow: drop two tiers at once without waiting for a second window
-      if (level < max && (fps < 25 || slow >= 2)) { level = Math.min(max, level + (fps < 25 ? 2 : 1)); slow = 0; settle = 1; apply(); }
-      else if (fps > 90 && level > 0) { level--; settle = 2; apply(); }
+      if (level < max && (fps < 25 || slow >= 2)) { level = Math.min(max, level + (fps < 25 ? 2 : 1)); slow = fast = 0; settle = 2; apply(); }
+      else if (fast >= 8 && level > 0 && !software) { level--; fast = 0; settle = 4; apply(); }
     },
   };
 }
@@ -300,13 +321,12 @@ function setupDebug({ renderer, scene, perf, ui }) {
   const recompileAll = () => scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
 
   const switches = [
-    ['Bloom', (on) => { perf.off.bloom = !on; perf.apply(); }],
     ['MSAA', (on) => { perf.off.msaa = !on; perf.apply(); }],
-    ['Shadows', (on) => { renderer.shadowMap.enabled = on; recompileAll(); }],
+    ['Shadows', (on) => { renderer.shadowMap.enabled = on; renderer.shadowMap.needsUpdate = true; recompileAll(); }],
     ['Lake reflection', (on) => { perf.off.reflection = !on; }],
     ['UI blur', (on) => { perf.off.blur = !on; perf.apply(); }],
     ['Labels', (on) => { ui.labelsOn = on; $('labels').hidden = !on; $('labels-btn').setAttribute('aria-pressed', String(on)); }],
-    ['Filler city', (on) => { scene.getObjectByName('city').visible = on; }],
+    ['Filler city', (on) => { scene.getObjectByName('city').visible = on; scene.getObjectByName('rooftops').visible = on; }],
     ['Window shader', (on) => facades.forEach(([o, m]) => { o.material = on ? m : plain.get(m); })],
   ];
   const box = $('dbg-switches');
@@ -318,7 +338,7 @@ function setupDebug({ renderer, scene, perf, ui }) {
   }
 
   const tier = $('dbg-tier');
-  perf.tiers.forEach((t, i) => tier.add(new Option(`${i} · px ${t.pr}${t.msaa ? '' : ' · no MSAA'}${t.bloom ? '' : ' · no bloom'}`, String(i))));
+  perf.tiers.forEach((t, i) => tier.add(new Option(`${i} · px ${t.pr}${t.msaa ? '' : ' · no MSAA'}`, String(i))));
   tier.addEventListener('change', () => {
     if (tier.value === 'auto') perf.auto = true;
     else perf.level = Number(tier.value);
@@ -354,7 +374,7 @@ function rebuildBeacons(scene, ctx) {
 }
 
 function setupUI({ flyer, lighting, controls, labelObjs }) {
-  const ui = { labelsOn: true };
+  const ui = { labelsOn: true, selectedId: null };
   const slider = $('time');
   const presetBtns = [...document.querySelectorAll('[data-preset]')];
   const timeLabel = $('time-label');
@@ -389,7 +409,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
     const li = document.createElement('li');
     const metric = L.id === 'grantpark' ? `${L.acres} acres` : L.id === 'navypier' ? `${L.ft.toLocaleString()} ft long` : `${L.ft.toLocaleString()} ft`;
     li.innerHTML = `<button type="button" data-id="${L.id}"><span class="lm-name">${L.name}</span><span class="lm-meta">${metric}</span></button>`;
-    li.querySelector('button').addEventListener('click', () => { ui.select(L.id); if (mobile) $('panel').classList.remove('open'); });
+    li.querySelector('button').addEventListener('click', () => { ui.select(L.id); if (innerWidth <= 720) $('panel').classList.remove('open'); });
     list.appendChild(li);
   }
   $('panel-toggle').addEventListener('click', () => $('panel').classList.toggle('open'));
@@ -397,6 +417,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
   // Info card
   const card = $('info');
   ui.showInfo = (L, touring = false) => {
+    ui.selectedId = L.id;
     $('info-name').textContent = L.name;
     $('info-aka').textContent = L.aka || '';
     $('info-aka').hidden = !L.aka;
@@ -413,7 +434,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
     card.hidden = false;
     document.querySelectorAll('#landmark-list button').forEach((b) => b.classList.toggle('active', b.dataset.id === L.id));
   };
-  ui.hideInfo = () => { card.hidden = true; };
+  ui.hideInfo = () => { card.hidden = true; ui.selectedId = null; document.querySelectorAll('#landmark-list button.active').forEach((b) => b.classList.remove('active')); };
   $('info-close').addEventListener('click', ui.hideInfo);
 
   // Tour

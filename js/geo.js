@@ -39,6 +39,24 @@ export const RIVER = {
   width: { main: 62, north: 48, south: 52 },
 };
 
+// Rendering, bridges and building setbacks all use the same sampled centerline.
+export function samplePath(points, steps = 8) {
+  const out = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[Math.max(0, i - 1)], b = points[i];
+    const c = points[i + 1], d = points[Math.min(points.length - 1, i + 2)];
+    for (let j = 0; j < steps; j++) {
+      const t = j / steps;
+      out.push([0, 1].map((k) => 0.5 * ((2 * b[k]) + (-a[k] + c[k]) * t
+        + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t * t
+        + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * t * t * t)));
+    }
+  }
+  out.push([...points[points.length - 1]]);
+  return out;
+}
+export const RIVER_PATHS = Object.fromEntries(['main', 'north', 'south'].map((key) => [key, samplePath(RIVER[key])]));
+
 function segDist(px, pz, ax, az, bx, bz) {
   const dx = bx - ax, dz = bz - az;
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / (dx * dx + dz * dz)));
@@ -49,7 +67,7 @@ function segDist(px, pz, ax, az, bx, bz) {
 export function distToRiver(x, z) {
   let d = Infinity;
   for (const key of ['main', 'north', 'south']) {
-    const pts = RIVER[key];
+    const pts = RIVER_PATHS[key];
     for (let i = 1; i < pts.length; i++) {
       d = Math.min(d, segDist(x, z, pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]) - RIVER.width[key] / 2);
     }
@@ -110,7 +128,7 @@ export const LANDMARKS = [
     id: 'wrigley', name: 'Wrigley Building', aka: '', x: 210, z: -815, r: 48, h: 133.5, roof: 129.5,
     ft: 438, year: 1921, addr: '400–410 N Michigan Ave',
     desc: 'Two towers in glazed white terra-cotta, about 250,000 pieces in six shades that brighten toward the top. The south tower’s clock tower is modeled on the Giralda in Seville, and the building has been floodlit at night since its completion.',
-    view: { az: 1.3, dist: 280, el: 0.28 },
+    view: { az: 0.5, dist: 330, el: 0.34 },
   },
   {
     id: 'stregis', name: 'St. Regis Chicago', aka: 'Vista Tower', x: 855, z: -544, r: 50, h: 363, roof: 363,

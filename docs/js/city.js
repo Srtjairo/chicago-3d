@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import {
   BLOCK, STREET, EXTENT, distToRiver, heightAt, isLake, inGrantPark, landmarkInRect, rng, NAVY_PIER,
-} from './geo.js';
-import { facadeMaterial, glowSprite } from './textures.js';
-import { SLAB_TOP, addTrees } from './terrain.js';
+} from './geo.js?v=89cbf690b5719dd4';
+import { facadeMaterial, glowSprite } from './textures.js?v=89cbf690b5719dd4';
+import { SLAB_TOP, addTrees } from './terrain.js?v=89cbf690b5719dd4';
 
 // Building palettes: [color, glass, style]  style 0 = masonry, 1 = curtain wall
 const PALETTE = [
@@ -22,6 +22,7 @@ export function buildCity(scene, ctx) {
   const rand = rng(1871); // the year of the Great Chicago Fire
   const blocks = [];      // [x, z, w, d, color]
   const boxes = [];       // [x, y0, z, w, h, d, color, style]
+  const roofs = [];
   const trees = [];
   const half = (BLOCK - STREET) / 2;
 
@@ -56,16 +57,16 @@ export function buildCity(scene, ctx) {
         for (let i = 0; i < 10; i++) trees.push([x0 + 8 + rand() * (x1 - x0 - 16), z0 + 8 + rand() * (z1 - z0 - 16), 0.7 + rand() * 0.4]);
         continue;
       }
-      fillBlock(boxes, rand, x0 + 3, z0 + 3, x1 - 3, z1 - 3, hMax, far);
+      fillBlock(boxes, roofs, rand, x0 + 3, z0 + 3, x1 - 3, z1 - 3, hMax, far);
       // street trees on outer lots
-      if (far && rand() < 0.5) {
-        for (let tx = x0 + 6; tx < x1; tx += 18) trees.push([tx, z0 + 2, 0.7]);
+      if (far && rand() < 0.3) {
+        for (let tx = x0 + 8; tx < x1 - 8; tx += 32) trees.push([tx, z0 + 4, 0.7]);
       }
     }
   }
 
   // Sidewalk slabs (streets are the gaps between them)
-  const slabMat = new THREE.MeshStandardMaterial({ color: 0x9a968e, roughness: 0.92 });
+  const slabMat = new THREE.MeshStandardMaterial({ color: 0xa6a399, roughness: 0.92 });
   const slabs = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), slabMat, blocks.length);
   const m = new THREE.Matrix4();
   blocks.forEach(([x, z, w, d], i) => {
@@ -79,7 +80,7 @@ export function buildCity(scene, ctx) {
   const geo = new THREE.BoxGeometry(1, 1, 1);
   geo.translate(0, 0.5, 0);
   const style = new Float32Array(boxes.length);
-  const mat = facadeMaterial({ instanced: true, color: 0xffffff, lit: 0.4 });
+  const mat = facadeMaterial({ instanced: true, color: 0xffffff, lit: 0.3, glass: 0x435765 });
   const city = new THREE.InstancedMesh(geo, mat, boxes.length);
   const c = new THREE.Color();
   boxes.forEach(([x, y0, z, w, h, d, col, st], i) => {
@@ -90,24 +91,36 @@ export function buildCity(scene, ctx) {
     style[i] = st;
   });
   geo.setAttribute('aStyle', new THREE.InstancedBufferAttribute(style, 1));
-  city.castShadow = city.receiveShadow = true;
+  city.castShadow = false;
+  city.receiveShadow = true;
   city.name = 'city';
   scene.add(city);
   ctx.buildingCount = boxes.length;
+  ctx.cityBoxes = boxes;
+
+  // Rooftop plant rooms give the skyline scale without another expensive shader.
+  const roofMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshStandardMaterial({ color: 0x777b7a, roughness: 0.88 }), roofs.length);
+  roofs.forEach(([x, y, z, w, h, d], i) => {
+    m.compose(new THREE.Vector3(x, SLAB_TOP + y + h / 2, z), new THREE.Quaternion(), new THREE.Vector3(w, h, d));
+    roofMesh.setMatrixAt(i, m);
+  });
+  roofMesh.name = 'rooftops';
+  scene.add(roofMesh);
 
   // Rooftop beacons on the tallest filler towers
-  boxes.filter((b) => b[1] + b[4] > 200).forEach((b) => ctx.beacons.push(new THREE.Vector3(b[0], SLAB_TOP + b[1] + b[4] + 1, b[2])));
+  boxes.filter((b) => b[1] + b[4] > 260).forEach((b) => ctx.beacons.push(new THREE.Vector3(b[0], SLAB_TOP + b[1] + b[4] + 1, b[2])));
 
   addTrees(scene, trees, rand);
   buildStreetLights(scene, ctx, blocks);
 }
 
 function pick(rand, glassy) {
-  const options = PALETTE.filter((p) => (glassy ? p[2] === 1 : true));
+  const options = PALETTE.filter((p) => p[2] === (glassy ? 1 : 0));
   return options[Math.floor(rand() * options.length)];
 }
 
-function fillBlock(out, rand, x0, z0, x1, z1, hMax, far) {
+function fillBlock(out, roofs, rand, x0, z0, x1, z1, hMax, far) {
   const w = x1 - x0, d = z1 - z0;
   const r = rand();
   const lots = [];
@@ -116,7 +129,8 @@ function fillBlock(out, rand, x0, z0, x1, z1, hMax, far) {
     const n = 2 + Math.floor(rand() * 3);
     for (let i = 0; i < n; i++) {
       const a = x0 + (w / n) * i;
-      lots.push([a + 1, z0, a + w / n - 1, z1]);
+      const mid = (z0 + z1) / 2;
+      lots.push([a + 1, z0, a + w / n - 1, mid - 5], [a + 1, mid + 5, a + w / n - 1, z1]);
     }
   } else if (r < 0.35 || w < 60 || d < 60) {
     lots.push([x0, z0, x1, z1]);
@@ -158,6 +172,10 @@ function fillBlock(out, rand, x0, z0, x1, z1, hMax, far) {
         out.push([cx, h, cz, (lw - inset) * 0.7, 6 + rand() * 18, (ld - inset) * 0.7, col, st]);
       }
     }
+    if (!far && h > 35) {
+      const [rx, ry, rz, rw, rh, rd] = out[out.length - 1];
+      roofs.push([rx + rw * 0.12, ry + rh + 0.12, rz - rd * 0.12, Math.min(12, rw * 0.3), 2.4 + rand() * 2.5, Math.min(14, rd * 0.3)]);
+    }
   }
 }
 
@@ -166,12 +184,13 @@ function buildStreetLights(scene, ctx, blocks) {
   const pos = [];
   // lamps along Grant Park's walks and Lake Shore Drive
   for (const [x0, z0, x1, z1] of ctx.parkRects || []) {
-    for (let x = x0; x <= x1; x += 28) pos.push(x, 5, z0 - 2, x, 5, z1 + 2);
-    for (let z = z0; z <= z1; z += 28) pos.push(x0 - 2, 5, z, x1 + 2, 5, z);
+    for (let x = x0; x <= x1; x += 65) pos.push(x, 5, z0 - 2, x, 5, z1 + 2);
+    for (let z = z0; z <= z1; z += 65) pos.push(x0 - 2, 5, z, x1 + 2, 5, z);
   }
   for (const [x, z, w, d] of blocks) {
-    const near = Math.hypot(x + 100, z + 300) < 3200;
-    const step = near ? 30 : 45;
+    const near = Math.hypot(x + 100, z + 300) < 2200;
+    if (!near) continue;
+    const step = 85;
     for (let t = -w / 2; t <= w / 2; t += step) {
       pos.push(x + t, 7, z - d / 2 - 2);
       if (near) pos.push(x + t, 7, z + d / 2 + 2);
@@ -183,10 +202,11 @@ function buildStreetLights(scene, ctx, blocks) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: new THREE.Color(2.2, 1.35, 0.6), size: 16, map: glowSprite(), sizeAttenuation: true, transparent: true,
+    color: new THREE.Color(1.2, 0.8, 0.45), size: 6, map: glowSprite(), sizeAttenuation: true, transparent: true,
     opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
   });
   const pts = new THREE.Points(g, mat);
+  pts.name = 'street-lights';
   pts.frustumCulled = false;
   scene.add(pts);
   ctx.streetLights = mat;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Water } from 'three/addons/objects/Water.js';
 import {
   BLOCK, STREET, EXTENT, SHORE_POINTS, RIVER, GRANT_PARK, COLUMBUS_X, PARK_CROSS_STREETS,
-  PLAZAS, polylineAt, rng, inGrantPark,
+  PLAZAS, polylineAt, rng, inGrantPark, RIVER_PATHS,
 } from './geo.js';
 import { waterNormals, grassTexture } from './textures.js';
 
@@ -15,7 +15,7 @@ export function buildTerrain(scene, ctx) {
   const land = new THREE.Shape([new THREE.Vector2(-12000, 9000), ...pts, new THREE.Vector2(-12000, -9000)]);
   const ground = new THREE.Mesh(
     new THREE.ShapeGeometry(land),
-    new THREE.MeshStandardMaterial({ color: 0x3b3d42, roughness: 0.95 }),
+    new THREE.MeshStandardMaterial({ color: 0x45494b, roughness: 0.95 }),
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -26,7 +26,7 @@ export function buildTerrain(scene, ctx) {
     textureWidth: ctx.quality.water, textureHeight: ctx.quality.water,
     waterNormals: waterNormals(),
     sunDirection: new THREE.Vector3(0.3, 0.8, 0.5).normalize(),
-    sunColor: 0xffffff, waterColor: 0x0d3a4d, distortionScale: 2.4, fog: true,
+    sunColor: 0xffffff, waterColor: 0x0d3a4d, distortionScale: 1.4, fog: true,
   });
   water.material.uniforms.size.value = 2.2;
   // the stock shader adds a flat grey to reflections, which reads as fog on the lake at night
@@ -66,23 +66,22 @@ function strip(points, width, y) {
   return g;
 }
 
-function smooth(pts, steps = 8) {
-  const curve = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, 'centripetal');
-  return curve.getPoints(pts.length * steps).map((v) => [v.x, v.z]);
-}
-
 function buildRiver(scene, ctx) {
   // The famous green Chicago River
   const normals = waterNormals(128);
   normals.repeat.set(0.02, 0.02);
   const mat = new THREE.MeshStandardMaterial({
-    color: 0x1f4a3a, roughness: 0.16, metalness: 0.0, envMapIntensity: 0.45, normalMap: normals, normalScale: new THREE.Vector2(0.3, 0.3),
+    color: 0x285957, roughness: 0.27, metalness: 0.15, envMapIntensity: 0.7, normalMap: normals, normalScale: new THREE.Vector2(0.14, 0.14),
     side: THREE.DoubleSide,
   });
   ctx.riverNormals = normals;
   const group = new THREE.Group();
+  const bankMat = new THREE.MeshStandardMaterial({ color: 0xa69f90, roughness: 0.9, side: THREE.DoubleSide });
   for (const key of ['main', 'north', 'south']) {
-    const g = strip(smooth(RIVER[key]), RIVER.width[key], 0.18);
+    const bank = new THREE.Mesh(strip(RIVER_PATHS[key], RIVER.width[key] + 14, 0.12), bankMat);
+    bank.receiveShadow = true;
+    group.add(bank);
+    const g = strip(RIVER_PATHS[key], RIVER.width[key], 0.18);
     // planar UVs so the normal map tiles in world space
     const p = g.attributes.position;
     const uv = [];
@@ -98,17 +97,17 @@ function buildRiver(scene, ctx) {
   const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x5a5d61, roughness: 0.7, metalness: 0.3 });
   const bridgeGeo = new THREE.BoxGeometry(1, 1, 1);
   const mats = [];
-  const main = smooth(RIVER.main);
+  const main = RIVER_PATHS.main;
   for (let x = -625; x <= 1000; x += BLOCK) {
     const z = polylineAt(main, 0, x);
     if (z !== null) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(STREET + 2, 1.6, RIVER.width.main + 30)));
   }
-  const south = smooth(RIVER.south);
+  const south = RIVER_PATHS.south;
   for (let z = -375; z <= 2250; z += BLOCK) {
     const x = polylineAt(south, 1, z);
     if (x !== null) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(RIVER.width.south + 30, 1.6, STREET + 2)));
   }
-  const north = smooth(RIVER.north);
+  const north = RIVER_PATHS.north;
   for (let z = -4500; z <= -750; z += BLOCK * 2) {
     const x = polylineAt(north, 1, z);
     if (x !== null) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(RIVER.width.north + 30, 1.6, STREET + 2)));
@@ -117,6 +116,7 @@ function buildRiver(scene, ctx) {
   mats.forEach((m, i) => bridges.setMatrixAt(i, m));
   bridges.castShadow = bridges.receiveShadow = true;
   scene.add(bridges);
+  ctx.bridges = mats;
 }
 
 function buildParks(scene, ctx) {
@@ -194,26 +194,37 @@ function buildParks(scene, ctx) {
   };
   for (const [x0, z0, x1, z1] of rects) {
     const area = (x1 - x0) * (z1 - z0);
-    const n = Math.floor(area / 380);
+    const n = Math.floor(area / 850);
     for (let i = 0; i < n; i++) {
       const x = x0 + 8 + rand() * (x1 - x0 - 16);
       const z = z0 + 8 + rand() * (z1 - z0 - 16);
       if (blocked(x, z)) continue;
+      // Leave the diagonal walks clear and gather trees around lawn edges.
+      const u = (x - x0) / (x1 - x0), v = (z - z0) / (z1 - z0);
+      if (z0 >= 120 && (Math.abs(u - v) < 0.035 || Math.abs(u + v - 1) < 0.035)) continue;
+      if (u > 0.2 && u < 0.8 && v > 0.18 && v < 0.82 && rand() < 0.72) continue;
       trees.push([x, z, 0.75 + rand() * 0.6]);
     }
     // street trees around each park block
-    for (let x = x0 + 6; x < x1; x += 14) { trees.push([x, z0 + 5, 0.8]); trees.push([x, z1 - 5, 0.8]); }
-    for (let z = z0 + 6; z < z1; z += 14) { trees.push([x0 + 5, z, 0.8]); trees.push([x1 - 5, z, 0.8]); }
+    for (let x = x0 + 8; x < x1 - 8; x += 24) { trees.push([x, z0 + 6, 0.85]); trees.push([x, z1 - 6, 0.9]); }
+    for (let z = z0 + 8; z < z1 - 8; z += 24) { trees.push([x0 + 6, z, 0.9]); trees.push([x1 - 6, z, 0.85]); }
   }
   addTrees(scene, trees, rand);
   ctx.treeCount = trees.length;
 }
 
 export function addTrees(scene, trees, rand) {
-  const canopyGeo = new THREE.IcosahedronGeometry(1, 1);
+  const canopyGeo = new THREE.SphereGeometry(1, 10, 7);
+  const cp = canopyGeo.attributes.position;
+  for (let i = 0; i < cp.count; i++) {
+    const x = cp.getX(i), y = cp.getY(i), z = cp.getZ(i);
+    const swell = 1 + 0.13 * Math.sin(x * 8 + y * 4) * Math.sin(z * 7 - y * 3);
+    cp.setXYZ(i, x * swell, y * swell, z * swell);
+  }
+  canopyGeo.computeVertexNormals();
   const trunkGeo = new THREE.CylinderGeometry(0.25, 0.35, 1, 5);
   trunkGeo.translate(0, 0.5, 0);
-  const canopy = new THREE.InstancedMesh(canopyGeo, new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true }), trees.length);
+  const canopy = new THREE.InstancedMesh(canopyGeo, new THREE.MeshStandardMaterial({ roughness: 1 }), trees.length);
   const trunk = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 }), trees.length);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
@@ -221,15 +232,15 @@ export function addTrees(scene, trees, rand) {
   trees.forEach(([x, z, s], i) => {
     const r = 4.2 * s;
     q.setFromEuler(new THREE.Euler(0, rand() * 6.28, 0));
-    m.compose(new THREE.Vector3(x, SLAB_TOP + 3.2 * s + r * 0.75, z), q, new THREE.Vector3(r, r * 0.85, r));
+    m.compose(new THREE.Vector3(x, SLAB_TOP + 3.2 * s + r * 0.75, z), q, new THREE.Vector3(r * (0.85 + rand() * 0.3), r * (0.85 + rand() * 0.4), r));
     canopy.setMatrixAt(i, m);
     m.compose(new THREE.Vector3(x, SLAB_TOP, z), q, new THREE.Vector3(1, 3.6 * s, 1));
     trunk.setMatrixAt(i, m);
-    c.setHSL(0.24 + rand() * 0.07, 0.38 + rand() * 0.2, 0.2 + rand() * 0.1);
+    c.setHSL(0.22 + rand() * 0.08, 0.25 + rand() * 0.15, 0.17 + rand() * 0.08);
     canopy.setColorAt(i, c);
   });
-  canopy.castShadow = true;
-  canopy.receiveShadow = true;
+  canopy.castShadow = false;
+  canopy.receiveShadow = false;
   scene.add(canopy, trunk);
 }
 

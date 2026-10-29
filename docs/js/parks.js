@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PLAZAS } from './geo.js';
-import { SLAB_TOP } from './terrain.js';
-import { glowSprite } from './textures.js';
+import { PLAZAS, rng } from './geo.js?v=89cbf690b5719dd4';
+import { SLAB_TOP } from './terrain.js?v=89cbf690b5719dd4';
+import { glowSprite } from './textures.js?v=89cbf690b5719dd4';
 
 const BASE = SLAB_TOP + 0.45;
 
@@ -23,6 +23,8 @@ function cloudGate(scene) {
   g.computeVertexNormals();
   g.scale(10, 5, 6.5);
   g.translate(0, 5, 0);
+  g.computeBoundingBox();
+  g.translate(0, -g.boundingBox.min.y, 0); // the two feet meet the plaza
   const chrome = new THREE.MeshStandardMaterial({ color: 0xc9ced3, metalness: 1, roughness: 0.07 });
   const bean = new THREE.Mesh(g, chrome);
   bean.position.set(PLAZAS.bean.x, BASE, PLAZAS.bean.z);
@@ -134,15 +136,16 @@ function buckingham(scene, ctx) {
 
   // Water jets: one tall center jet plus rings of smaller jets
   const jets = [];
-  const add3 = (ox, oy, oz, vx, vy, vz, n) => { for (let i = 0; i < n; i++) jets.push([ox, oy, oz, vx, vy, vz, Math.random()]); };
-  for (let i = 0; i < 3; i++) add3(0, 14, 0, 0, 29, 0, 220);           // about 45 m tall
-  for (let k = 0; k < 16; k++) {
-    const a = k / 16 * Math.PI * 2;
-    add3(Math.cos(a) * 15, 4, Math.sin(a) * 15, -Math.cos(a) * 3.2, 9, -Math.sin(a) * 3.2, 22);
+  const rand = rng(1927);
+  const add3 = (ox, oy, oz, vx, vy, vz, n) => { for (let i = 0; i < n; i++) jets.push([ox, oy, oz, vx, vy, vz, rand()]); };
+  add3(0, 14, 0, 0, 29, 0, 72);
+  for (let k = 0; k < 8; k++) {
+    const a = k / 8 * Math.PI * 2;
+    add3(Math.cos(a) * 15, 4, Math.sin(a) * 15, -Math.cos(a) * 3.2, 9, -Math.sin(a) * 3.2, 8);
   }
   for (let k = 0; k < 4; k++) {
     const a = k * Math.PI / 2 + Math.PI / 4;
-    add3(Math.cos(a) * 24, 4, Math.sin(a) * 24, -Math.cos(a) * 4.5, 10, -Math.sin(a) * 4.5, 40);
+    add3(Math.cos(a) * 24, 4, Math.sin(a) * 24, -Math.cos(a) * 4.5, 10, -Math.sin(a) * 4.5, 12);
   }
   const pos = new Float32Array(jets.length * 3);
   const geo = new THREE.BufferGeometry();
@@ -151,12 +154,16 @@ function buckingham(scene, ctx) {
     color: 0xe8f6ff, size: 1.3, map: glowSprite(), transparent: true, opacity: 0.85, depthWrite: false,
   });
   const spray = new THREE.Points(geo, mat);
+  spray.name = 'fountain-spray';
   spray.position.set(x, BASE, z);
   spray.frustumCulled = false;
   scene.add(spray);
 
   const G = 9.8;
+  let lastUpdate = -1;
   ctx.updaters.push((time, night) => {
+    if (time - lastUpdate < 1 / 30) return;
+    lastUpdate = time;
     for (let i = 0; i < jets.length; i++) {
       const [ox, oy, oz, vx, vy, vz, ph] = jets[i];
       const T = (2 * vy) / G + Math.sqrt(2 * oy / G) * 0.6;

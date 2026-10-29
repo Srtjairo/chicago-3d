@@ -9,13 +9,13 @@
 <meta property="og:title" content="Downtown Chicago in 3D">
 <meta property="og:description" content="Fly around a 3D model of downtown Chicago: Willis Tower, the Hancock, Grant Park, the river and Navy Pier, from midday to night, with a guided tour.">
 <meta property="og:url" content="https://srtjairo.github.io/chicago-3d/">
-<meta property="og:image" content="https://srtjairo.github.io/chicago-3d/preview.png">
+<meta property="og:image" content="https://srtjairo.github.io/chicago-3d/preview.png?v=89cbf690b5719dd4">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Downtown Chicago in 3D">
 <meta name="twitter:description" content="Fly around a 3D model of downtown Chicago: Willis Tower, the Hancock, Grant Park, the river and Navy Pier, from midday to night, with a guided tour.">
-<meta name="twitter:image" content="https://srtjairo.github.io/chicago-3d/preview.png">
+<meta name="twitter:image" content="https://srtjairo.github.io/chicago-3d/preview.png?v=89cbf690b5719dd4">
 <title>Downtown Chicago 3D</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,6 +40,7 @@
     --pad: 16px;
   }
   html, body { height: 100%; }
+  *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.45 var(--font-body);
     overflow: hidden; -webkit-font-smoothing: antialiased;
@@ -51,7 +52,7 @@
 
   .glass {
     background: var(--glass); border: 1px solid var(--edge); border-radius: var(--r);
-    backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
   }
 
@@ -72,6 +73,7 @@
   .hud { margin-top: 10px; display: grid; grid-template-columns: auto auto; gap: 2px 10px; font: 500 12px/1.4 var(--font-mono); }
   .hud dt { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10.5px; align-self: center; }
   .hud dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .brand .hint { font-size: 10px; letter-spacing: 0.04em; margin-top: 9px; opacity: 0.8; }
 
   /* Landmark panel */
   #panel {
@@ -160,7 +162,7 @@
   .tag {
     pointer-events: auto; display: inline-flex; align-items: center; gap: 6px; transform: translateY(-50%);
     padding: 4px 9px 4px 7px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(10, 13, 20, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    background: rgba(10, 13, 20, 0.82);
     font: 600 12px/1 var(--font-body); color: var(--ink); cursor: pointer; white-space: nowrap; transition: opacity 0.3s;
   }
   .tag:hover { background: rgba(10, 13, 20, 0.85); border-color: var(--flag-blue); }
@@ -182,6 +184,22 @@
   /* Low quality tiers drop the frosted glass: blurring the live 3D view behind every panel and label costs GPU time */
   .lite .glass, .lite .tag { backdrop-filter: none; -webkit-backdrop-filter: none; }
   .lite .glass { background: var(--glass-strong); }
+
+  /* Shown when the browser renders without a graphics card */
+  #gpu-note {
+    position: fixed; z-index: 6; left: 50%; transform: translateX(-50%);
+    top: calc(var(--pad) + env(safe-area-inset-top, 0px)); width: min(440px, calc(100% - 2 * var(--pad)));
+    padding: 14px 44px 14px 16px; background: var(--glass-strong); border-color: rgba(239, 51, 64, 0.55);
+  }
+  #gpu-note[hidden] { display: none; }
+  #gpu-note strong { display: block; margin-bottom: 4px; font: 800 18px/1.1 var(--font-display); letter-spacing: 0.03em; text-transform: uppercase; color: var(--star-red); }
+  #gpu-note p { margin: 0; font-size: 13.5px; color: #d3dbe3; }
+  #gpu-note b { color: var(--ink); font-weight: 600; }
+  #gpu-note-close {
+    position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--edge); background: transparent; cursor: pointer; font-size: 15px; line-height: 1; color: var(--muted);
+  }
+  #gpu-note-close:hover { color: var(--ink); }
 
   /* Performance panel, shown only with ?debug in the URL */
   #debug {
@@ -210,6 +228,12 @@
     .flag svg { width: 11px; height: 11px; }
     .hud { margin-top: 6px; }
     .dock { grid-template-columns: 1fr; padding: 10px 12px; }
+    .time { grid-template-columns: 92px 1fr; gap: 8px; }
+    .time-head { min-width: 0; }
+    .time-head small { white-space: nowrap; font-size: 9px; }
+    #time-label { font-size: 17px; }
+    .presets { gap: 4px; flex-wrap: nowrap; }
+    .chip { padding: 3px 6px; font-size: 11px; }
     .actions { justify-content: space-between; }
     .act .txt { display: none; }
     #tour-btn .txt { display: inline; }
@@ -222,6 +246,7 @@
     #panel.open { transform: none; opacity: 1; pointer-events: auto; }
     #info { left: var(--pad); right: var(--pad); width: auto; bottom: calc(170px + env(safe-area-inset-bottom, 0px)); padding: 14px 16px; }
     #info-desc { font-size: 13px; }
+    #gpu-note { top: calc(96px + env(safe-area-inset-top, 0px)); }
     .tag { font-size: 11px; }
   }
   @media (max-width: 720px) and (max-height: 640px) {
@@ -258,6 +283,7 @@
   <dl class="hud">
     <dt>Grid</dt><dd id="hud-addr">0 N/S &middot; 0 E/W</dd>
   </dl>
+  <p class="hint">Drag to explore &middot; Scroll to zoom</p>
 </header>
 
 <aside id="panel" class="glass" aria-label="Landmarks">
@@ -306,6 +332,12 @@
   </div>
 </nav>
 
+<section id="gpu-note" class="glass" hidden role="alert">
+  <strong>Graphics acceleration is off</strong>
+  <p>Your browser is drawing this 3D view without your graphics card, so it will run slowly. In Chrome or Edge, open <b>Settings &rarr; System</b>, turn on <b>Use graphics acceleration when available</b>, then relaunch the browser.</p>
+  <button id="gpu-note-close" type="button" aria-label="Dismiss">&times;</button>
+</section>
+
 <aside id="debug" class="glass" hidden aria-label="Performance debug">
   <pre id="dbg-stats">measuring…</pre>
   <label>Quality tier<select id="dbg-tier"><option value="auto">Auto</option></select></label>
@@ -320,6 +352,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=89cbf690b5719dd4"></script>
 </body>
 </html>

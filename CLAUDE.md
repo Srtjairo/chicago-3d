@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A browser-viewable 3D model of downtown Chicago (Willis Tower, Hancock, Grant Park, river, lakefront, Navy Pier) built with plain Three.js r160. There is no package.json, no tests and no linter, and no build step for development: `index.html` plus ES modules in `js/`. The only build is `tools/build-site.mjs`, which makes the public copy (see Publishing). Three.js loads from jsDelivr through the import map in `index.html` (`three` and `three/addons/` pinned to `0.160.0`).
+A browser-viewable 3D model of downtown Chicago built with plain Three.js r160. There is no package.json or linter: `index.html` plus ES modules in `js/`. `tools/build-site.mjs` makes the public copy; `node tools/check.mjs` checks river geometry, landmark views and deployed dependency versions. Three.js loads from jsDelivr through the import map (`three` and `three/addons/` pinned to `0.160.0`).
 
 ## Running it
 
 ES modules won't load from `file://`, so serve the folder over HTTP and open `http://localhost:8080`:
 
 ```bash
-npx --yes http-server -c-1 -p 8080 .
+node tools/serve.mjs 8080
 ```
 
 Python isn't installed on this machine; Node is. `.claude/launch.json` (gitignored) has three preview configs:
@@ -23,14 +23,16 @@ For debugging, `window.__chicago` exposes `{ scene, camera, controls, lighting, 
 
 A hidden browser tab throttles `requestAnimationFrame`, so animations and environment-map updates lag there. That's not a bug in the code. The Claude app's browser pane can also stop delivering frames entirely while a long `javascript_tool` script blocks the page, so don't benchmark with busy-loops there.
 
-**Adaptive quality (`perf`, `adaptiveQuality()` in `main.js`).** The controller judges the frame rate in ~1 s windows. When it averages under ~45 fps over two windows, it steps down one of 5 tiers; under ~25 fps it drops two tiers after a single window. Going down, the tiers lower the pixel ratio and turn off MSAA, refresh the lake reflection (`water.onBeforeRender` is wrapped) and the shadow map only every 2nd/3rd frame, shrink the shadow map, and finally drop bloom and the frosted-glass `backdrop-filter` (the `lite` class on `body`).
-- It steps back up only above ~90 fps, so on a 60 Hz screen a downgrade sticks for the session.
-- Time in a hidden tab is ignored. A software renderer (SwiftShader etc.) starts at the lowest tier.
+**Adaptive quality (`perf`, `adaptiveQuality()` in `main.js`).** Under ~45 fps for two one-second windows it steps down one tier; under ~25 fps it drops two. The five tiers lower pixel ratio, slow lake reflections from every second to every fourth frame, reduce shadow resolution, and finally drop MSAA and UI blur.
+- It steps up after eight consecutive windows above 57 fps, including on 60 Hz screens.
+- Hidden or unfocused tabs are ignored. Software renderers start at the lowest tier and show the graphics-acceleration notice.
+- Desktop starts with 2048 shadows, 512 reflections and 2x MSAA; phones use 1024 shadows and 256 reflections. Shadows are cached and refreshed only when the light or snapped focus changes. Trees, filler buildings and Marina City's balcony plates do not cast shadows.
+- Bloom and stars were removed. Fountain spray has 184 points, updated at most 30 times per second; street lights are sparse and confined to the central area. Prefer static instanced detail over additional effects.
 - `perf.gpu` holds the GPU string and `perf.level` the tier. Setting `perf.level` (0–4) pins that tier; `perf.auto = true` hands control back.
 - The frame step is capped at 0.1 s and OrbitControls damping is rescaled by `dt`, so motion stays real-time down to 10 fps. Below that cap, low fps shows as slow motion rather than choppiness.
 - On the user's RTX 4070 the site runs at 110–145 fps at full quality. If it lags in their own browser, check `perf.gpu`: Windows may be running the browser on integrated graphics.
 
-**`?debug` panel.** Adding `?debug` to the URL (works on the live site too) shows fps, ms per frame, JS time, tier, canvas size, draw calls, triangles and the GPU string. It also has a tier picker and switches that turn off one cost at a time: bloom, MSAA, shadows, lake reflection, UI blur, labels, filler city, and the window shader. Use it to find what is slow on a specific machine. In the Claude browser pane, the lake reflection accounts for about a third of draw calls and triangles.
+**`?debug` panel.** Adding `?debug` shows fps, frame time, JS time, tier, canvas size, draw calls, triangles and GPU. Switches isolate MSAA, shadows, lake reflection, UI blur, labels, filler city and window shading. Only compare performance with foreground tabs, matching views and quality tiers; cached reflection/shadow frames have different draw counts.
 
 ## Publishing
 
@@ -49,6 +51,9 @@ The build:
 - wraps `index.html` in a full document (doctype, so the public copy runs in standards mode)
 - adds Open Graph/Twitter link-preview tags and a favicon
 - copies `js/` and `preview.png`
+- versions the entry module, every relative module dependency and the preview URL with a source/content hash; `docs/revision.json` identifies the deployed release
+
+Run `node tools/check.mjs` after building. For visual QA, serve the repo and open `/tools/review.html`; it supports phone sizing, fixed camera/light presets, geometry checks and a local-only PNG capture endpoint for the link preview.
 
 `preview.png` (1200×630) is the link-preview image: a dusk shot (`lighting.set(0.64)`, camera pulled in and lowered from the overview) grabbed from `renderer.domElement` inside a `requestAnimationFrame`, then downscaled on a 2D canvas.
 
@@ -84,25 +89,25 @@ The list, labels and info card are data-driven.
 
 **Build pipeline (`js/main.js`).** `init()` creates the renderer, camera and OrbitControls, then calls the builders in order:
 
-`buildTerrain → buildLandmarks → buildCity → (rebuildBeacons) → buildParks → buildNavyPier → Lighting`
+`buildTerrain → buildLandmarks → buildCity → buildStreets → (rebuildBeacons) → buildParks → buildNavyPier → Lighting`
 
-It then sets up the CSS2D labels and the UI, and runs the render loop through an `EffectComposer` (RenderPass → UnrealBloomPass → OutputPass). Builders share a `ctx` object that carries cross-module state:
+It sets up collision-avoiding CSS2D labels and the UI, and renders through `EffectComposer` (RenderPass → OutputPass). Builders share a `ctx` object:
 - `ctx.quality`: settings tuned per device
 - `ctx.beacons`: Vector3 positions of red aviation lights. `buildCity` adds more, which is why `main.js` rebuilds the beacon InstancedMesh afterwards.
 - `ctx.glows`: `{ mat, day, night }` entries; `emissiveIntensity` is interpolated by time of day
 - `ctx.updaters`: per-frame callbacks `(time, night)` for the fountain spray and the Ferris wheel
-- `ctx.water`, `ctx.riverNormals`, `ctx.streetLights`, `ctx.bloom`, `ctx.parkRects`
+- `ctx.water`, `ctx.riverNormals`, `ctx.streetLights`, `ctx.parkRects`, `ctx.bridges`, `ctx.cityBoxes`
 
 **Facade shader (`js/textures.js` → `facadeMaterial`).** Every building, landmarks and the instanced filler city alike, uses a `MeshStandardMaterial` patched with `onBeforeCompile`. It draws windows procedurally from world position and normal, so geometry needs no UVs.
-- Distant windows are averaged using `fwidth`. At night they switch to coarse lit "groups" so the city sparkles instead of glowing flat.
+- Seeds are quantized before hashing to avoid interpolated-seed noise. Distant windows converge to their area average using `fwidth`; nearby night windows light in office groups.
 - The shared uniform `uNight` (0 = day, 1 = night) drives lit windows.
 - The instanced filler city uses `instanced: true`, which reads a per-instance `aStyle` attribute (0 masonry, 1 curtain wall) and `gl_InstanceID` as the seed. This needs WebGL2.
 
 **Filler city (`js/city.js`).** Walks the 125 m street grid (`BLOCK`, `STREET`). It skips cells in the lake, in Grant Park, on Navy Pier, or near the river, and trims blocks that touch the river. Each remaining cell gets a sidewalk slab; cells holding a landmark get only the slab. Filler buildings are emitted into one InstancedMesh (a single draw call). The street-light Points are built from the same blocks plus `ctx.parkRects`.
 
-**Lighting (`js/lighting.js`).** Time of day is one scalar, `t ∈ [0,1]`, interpolated across `KEYS` keyframes: sun elevation and azimuth, light colors and intensities, exposure, fog, `night`, bloom strength, sky parameters, water color, and `env`. `PRESETS` maps the UI chips to `t` values.
-- The visible sky is three.js `Sky`, with its fragment shader patched to add `uGain` and night horizon/zenith tints.
-- Reflections (`scene.environment`) do not come from the Sky. They come from a separate gradient-dome scene (`makeEnvDome`) run through PMREM, regenerated at most every 0.25 s when `envDirty`. A sky-based environment map kept the scene bright at night.
+**Lighting (`js/lighting.js`).** Time of day is one scalar, `t ∈ [0,1]`, interpolating sun direction, light colors/intensities, exposure, fog, night, sky, water and environment strength. `PRESETS` maps the UI chips to `t` values.
+- The visible sky uses a lightweight gradient shader with a small analytic sun. Its horizon matches the fog color, avoiding a hard seam at the finite terrain edge.
+- Environment reflections use a gradient dome plus one merged batch of simplified nearby building silhouettes, baked through PMREM at most every 0.5 s when time changes. There is no live cube camera. The silhouettes are approximate reflections, not an exact scene capture.
 - The sun's shadow camera follows the orbit target, snapped to 40 m steps.
 
 **Water.** Lake Michigan uses the three.js `Water` addon. Its fragment shader is patched to replace a constant grey reflection term with `waterColor`. The river is a separate MeshStandardMaterial strip with a scrolling normal map.
