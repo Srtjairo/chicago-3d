@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js?v=24f1a2e542d1b3b4';
+import { LANDMARKS } from './geo.js?v=3baef5c6c5a12709';
 export const DISTRICTS={
   river:{name:'River & bridges',pos:[420,245,-420],target:[-100,65,-640]},
   loop:{name:'The Loop',pos:[-1000,420,1050],target:[-230,65,170]},

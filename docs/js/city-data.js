@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { facadeMaterial } from './textures.js?v=24f1a2e542d1b3b4';
-import { LANDMARKS, rng } from './geo.js?v=24f1a2e542d1b3b4';
+import { facadeMaterial } from './textures.js?v=3baef5c6c5a12709';
+import { LANDMARKS, rng } from './geo.js?v=3baef5c6c5a12709';
 
 export const COVERAGE = { minX: -1800, maxX: 2400, minZ: -2300, maxZ: 1800 };
 export const inCoverage = (x, z, margin = 0) => x > COVERAGE.minX - margin && x < COVERAGE.maxX + margin && z > COVERAGE.minZ - margin && z < COVERAGE.maxZ + margin;

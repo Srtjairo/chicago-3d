@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=24f1a2e542d1b3b4';
-import { addTrees } from './terrain.js?v=24f1a2e542d1b3b4';
-import { rng } from './geo.js?v=24f1a2e542d1b3b4';
+import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=3baef5c6c5a12709';
+import { addTrees } from './terrain.js?v=3baef5c6c5a12709';
+import { rng } from './geo.js?v=3baef5c6c5a12709';
 
 export function prepareWorld(ctx) {
   const water = ctx.data.water.filter((w) => !w.name.includes('LAKE')).map((w) => ({ ...w, bounds: boundsOf(w.rings[0]) }));

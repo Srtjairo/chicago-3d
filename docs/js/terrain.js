@@ -3,9 +3,9 @@ import { Water } from 'three/addons/objects/Water.js';
 import {
   BLOCK, STREET, EXTENT, SHORE_POINTS, RIVER, GRANT_PARK, COLUMBUS_X, PARK_CROSS_STREETS,
   PLAZAS, polylineAt, rng, inGrantPark, RIVER_PATHS,
-} from './geo.js?v=24f1a2e542d1b3b4';
-import { waterNormals, grassTexture } from './textures.js?v=24f1a2e542d1b3b4';
-import { inCoverage } from './city-data.js?v=24f1a2e542d1b3b4';
+} from './geo.js?v=3baef5c6c5a12709';
+import { waterNormals, grassTexture } from './textures.js?v=3baef5c6c5a12709';
+import { inCoverage } from './city-data.js?v=3baef5c6c5a12709';
 
 const SLAB_TOP = 0.6;
 
