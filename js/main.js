@@ -135,13 +135,17 @@ async function init() {
   new ResizeObserver(onResize).observe(canvas);
   onResize();
 
+  const perf = adaptiveQuality({ renderer, composer, water: ctx.water, onResize: () => { lastSize = ''; onResize(); } });
+
   // --- render loop -------------------------------------------------------------
   const clock = new THREE.Clock();
   let time = 0;
   let addrTimer = 0;
   const tmp = new THREE.Vector3();
   function frame() {
-    const dt = Math.min(clock.getDelta(), 0.05);
+    const raw = clock.getDelta();
+    perf.tick(raw);
+    const dt = Math.min(raw, 0.05);
     time += dt;
     flyer.update(dt);
     controls.update();
@@ -186,7 +190,65 @@ async function init() {
   await nextFrame();
   $('loader').classList.add('done');
   setTimeout(() => $('loader').remove(), 900);
-  window.__chicago = { scene, camera, controls, lighting, flyer, renderer, ctx };
+  window.__chicago = { scene, camera, controls, lighting, flyer, renderer, ctx, perf };
+}
+
+// Adaptive quality: when frames run slow, step down render resolution, then refresh
+// the lake reflection and the shadow map only every Nth frame. Steps back up when
+// there is clear headroom (high-refresh screens), so fast machines keep full quality.
+function adaptiveQuality({ renderer, composer, water, onResize }) {
+  const top = quality.pixelRatio;
+  const tiers = [
+    { pr: top, every: 1 },
+    { pr: Math.min(top, 1.25), every: 1 },
+    { pr: 1, every: 2 },
+    { pr: 0.8, every: 2 },
+    { pr: 0.65, every: 3 },
+  ];
+  const gl = renderer.getContext();
+  const info = gl.getExtension('WEBGL_debug_renderer_info');
+  const gpu = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : '';
+  // software rendering (hardware acceleration off) starts at the bottom
+  let level = /swiftshader|llvmpipe|basic render|software/i.test(gpu) ? tiers.length - 1 : 0;
+  let frameNo = 0, sum = 0, count = 0, slow = 0, settle = 2, resumed = false;
+  // time spent in a background tab says nothing about rendering speed
+  document.addEventListener('visibilitychange', () => { sum = count = 0; resumed = true; });
+
+  if (water) {
+    const reflect = water.onBeforeRender;
+    water.onBeforeRender = function (...args) {
+      if (frameNo % tiers[level].every === 0) reflect.apply(this, args);
+    };
+  }
+
+  function apply() {
+    const t = tiers[level];
+    renderer.setPixelRatio(t.pr);
+    composer.setPixelRatio(t.pr);
+    renderer.shadowMap.autoUpdate = t.every === 1;
+    onResize();
+  }
+  apply();
+
+  return {
+    gpu,
+    get level() { return level; },
+    set level(l) { level = THREE.MathUtils.clamp(l, 0, tiers.length - 1); apply(); },
+    tick(dt) {
+      frameNo++;
+      if (!renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = frameNo % tiers[level].every === 0;
+      if (document.hidden) return;
+      if (resumed) { resumed = false; return; }
+      sum += Math.min(dt, 0.5); count++; // cap so one long hitch can't dominate a window
+      if (sum < 1) return; // judge in ~1 s windows
+      const avg = sum / count;
+      sum = count = 0;
+      if (settle > 0) { settle--; return; } // skip the windows right after a change
+      if (avg > 1 / 45) slow++; else slow = 0;
+      if (slow >= 2 && level < tiers.length - 1) { level++; slow = 0; settle = 1; apply(); }
+      else if (avg < 1 / 90 && level > 0) { level--; settle = 2; apply(); }
+    },
+  };
 }
 
 function rebuildBeacons(scene, ctx) {

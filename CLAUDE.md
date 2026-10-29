@@ -16,7 +16,9 @@ npx --yes http-server -c-1 -p 8080 .
 
 Python isn't installed on this machine; Node is. `.claude/launch.json` defines a `chicago` preview config, but it points at a Node server script in a temporary scratchpad that may no longer exist. Swap in the command above if it fails.
 
-For debugging, `window.__chicago` exposes `{ scene, camera, controls, lighting, flyer, renderer, ctx }`. For example, `__chicago.lighting.set(1)` switches to night. A hidden browser tab throttles `requestAnimationFrame`, so animations and environment-map updates lag there. That's not a bug in the code.
+For debugging, `window.__chicago` exposes `{ scene, camera, controls, lighting, flyer, renderer, ctx, perf }`. For example, `__chicago.lighting.set(1)` switches to night.
+
+`perf` is the adaptive-quality controller (`adaptiveQuality()` in `main.js`). It judges the frame rate in ~1 s windows and, when it averages under ~45 fps, steps down through tiers: lower pixel ratio first, then refreshing the lake reflection and the shadow map only every 2nd/3rd frame. It steps back up only above ~90 fps, so on a 60 Hz screen a downgrade sticks for the session. A software renderer (SwiftShader etc.) starts at the lowest tier. Read `perf.gpu` for the GPU string and `perf.level` for the tier; set `perf.level` (0–4) to force a tier. A hidden browser tab throttles `requestAnimationFrame`, so animations and environment-map updates lag there. That's not a bug in the code.
 
 ## Publishing
 
