@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js?v=3baef5c6c5a12709';
+import { LANDMARKS } from './geo.js?v=35b31ee84a7f8c36';
+import { COVERAGE } from './coverage.js?v=35b31ee84a7f8c36';
 export const DISTRICTS={
   river:{name:'River & bridges',pos:[420,245,-420],target:[-100,65,-640]},
   loop:{name:'The Loop',pos:[-1000,420,1050],target:[-230,65,170]},
@@ -17,7 +18,7 @@ export function setupExplorer({ctx,camera,controls,flyer,ui}){
   syncLife();life.onclick=()=>{ctx.life.paused=!ctx.life.paused;syncLife();};
   const orientation=host.querySelector('#orientation');host.querySelector('#map-toggle').onclick=(e)=>{orientation.hidden=!orientation.hidden;e.currentTarget.setAttribute('aria-expanded',String(!orientation.hidden));};
   const canvas=host.querySelector('canvas'),draw=canvas.getContext('2d');
-  const px=x=>(x+1850)/4400*320,pz=z=>(z+2350)/4200*220;
+  const px=x=>(x-COVERAGE.minX+100)/(COVERAGE.maxX-COVERAGE.minX+200)*320,pz=z=>(z-COVERAGE.minZ+100)/(COVERAGE.maxZ-COVERAGE.minZ+200)*220;
   const base=document.createElement('canvas');base.width=320;base.height=220;const b=base.getContext('2d');
   b.fillStyle='#1e2a31';b.fillRect(0,0,320,220);
   b.strokeStyle='#53616a';b.lineWidth=.65;

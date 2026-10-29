@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { uNight } from './textures.js?v=3baef5c6c5a12709';
-import { LANDMARKS, PLAZAS } from './geo.js?v=3baef5c6c5a12709';
+import { uNight } from './textures.js?v=35b31ee84a7f8c36';
+import { LANDMARKS, PLAZAS } from './geo.js?v=35b31ee84a7f8c36';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Time of day runs from 0 (midday) to 1 (night). Values between keyframes are interpolated.

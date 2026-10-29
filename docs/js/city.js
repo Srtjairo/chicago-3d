@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {
   BLOCK, STREET, EXTENT, distToRiver, heightAt, isLake, inGrantPark, landmarkInRect, rng, NAVY_PIER,
-} from './geo.js?v=3baef5c6c5a12709';
-import { facadeMaterial, glowSprite } from './textures.js?v=3baef5c6c5a12709';
-import { SLAB_TOP, addTrees } from './terrain.js?v=3baef5c6c5a12709';
-import { inCoverage, buildMeasuredCity } from './city-data.js?v=3baef5c6c5a12709';
+} from './geo.js?v=35b31ee84a7f8c36';
+import { facadeMaterial, glowSprite } from './textures.js?v=35b31ee84a7f8c36';
+import { SLAB_TOP, addTrees } from './terrain.js?v=35b31ee84a7f8c36';
+import { inCoverage, buildMeasuredCity } from './city-data.js?v=35b31ee84a7f8c36';
 
 // Building palettes: [color, glass, style]  style 0 = masonry, 1 = curtain wall
 const PALETTE = [

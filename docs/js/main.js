@@ -5,19 +5,20 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { LANDMARKS, toAddress, configureShore } from './geo.js?v=3baef5c6c5a12709';
-import { loadCityData } from './city-data.js?v=3baef5c6c5a12709';
-import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=3baef5c6c5a12709';
-import { buildSignatureArchitecture } from './architecture.js?v=3baef5c6c5a12709';
-import { buildCityLife } from './city-life.js?v=3baef5c6c5a12709';
-import { setupExplorer } from './explorer.js?v=3baef5c6c5a12709';
-import { buildTerrain, SLAB_TOP } from './terrain.js?v=3baef5c6c5a12709';
-import { buildLandmarks } from './landmarks.js?v=3baef5c6c5a12709';
-import { buildCity } from './city.js?v=3baef5c6c5a12709';
-import { buildParks } from './parks.js?v=3baef5c6c5a12709';
-import { buildNavyPier } from './navypier.js?v=3baef5c6c5a12709';
-import { Lighting, PRESETS } from './lighting.js?v=3baef5c6c5a12709';
-import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=3baef5c6c5a12709';
+import { LANDMARKS, toAddress, configureShore } from './geo.js?v=35b31ee84a7f8c36';
+import { loadCityData } from './city-data.js?v=35b31ee84a7f8c36';
+import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=35b31ee84a7f8c36';
+import { buildSignatureArchitecture } from './architecture.js?v=35b31ee84a7f8c36';
+import { buildOfficeArchitecture } from './offices.js?v=35b31ee84a7f8c36';
+import { buildCityLife } from './city-life.js?v=35b31ee84a7f8c36';
+import { setupExplorer } from './explorer.js?v=35b31ee84a7f8c36';
+import { buildTerrain, SLAB_TOP } from './terrain.js?v=35b31ee84a7f8c36';
+import { buildLandmarks } from './landmarks.js?v=35b31ee84a7f8c36';
+import { buildCity } from './city.js?v=35b31ee84a7f8c36';
+import { buildParks } from './parks.js?v=35b31ee84a7f8c36';
+import { buildNavyPier } from './navypier.js?v=35b31ee84a7f8c36';
+import { Lighting, PRESETS } from './lighting.js?v=35b31ee84a7f8c36';
+import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=35b31ee84a7f8c36';
 
 const $ = (id) => document.getElementById(id);
 const status = (msg) => { $('load-msg').textContent = msg; };
@@ -69,6 +70,7 @@ async function init() {
   await nextFrame();
   buildLandmarks(scene, ctx);
   buildSignatureArchitecture(scene, ctx);
+  buildOfficeArchitecture(scene, ctx);
   buildCity(scene, ctx);
   buildStreets(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
@@ -101,10 +103,10 @@ async function init() {
     const el = document.createElement('button');
     el.className = 'tag';
     el.type = 'button';
-    el.innerHTML = `<span class="tag-dot"></span><span class="tag-name">${L.aka && L.id === 'hancock' ? 'Hancock Center' : L.name}</span>`;
+    el.innerHTML = `<span class="tag-dot"></span><span class="tag-name">${L.aka && L.id === 'hancock' ? 'Hancock Center' : L.name}${L.labelSubtitle?`<small>${L.labelSubtitle}</small>`:''}</span>`;
     el.addEventListener('click', () => select(L.id));
     const obj = new CSS2DObject(el);
-    const top = L.id === 'grantpark' || L.id === 'navypier' ? 30 : L.h + 18;
+    const top = L.id === 'grantpark' || L.id === 'navypier' ? 30 : L.h + (L.labelOffset??18);
     obj.position.set(L.x, SLAB_TOP + top, L.z);
     obj.userData.L = L;
     scene.add(obj);
@@ -170,6 +172,7 @@ async function init() {
     controls.dampingFactor = 1 - Math.pow(1 - 0.06, dt * 60);
     controls.update();
     ctx.cityDetailUpdate?.(camera, perf.level);
+    ctx.officeDetailUpdate?.(camera);
     ctx.life.update(dt);
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city
@@ -230,7 +233,8 @@ function labelLayout(camera, objects, ui) {
       projected.copy(o.position).project(camera);
       const width = o.element.offsetWidth || o.userData.width || (L.name.length * 6.4 + 26);
       o.userData.width = width;
-      const rect = { x: (projected.x + 1) * w / 2 - width / 2, y: (1 - projected.y) * h / 2 - 12, w: width, h: 27 };
+      const height=o.element.offsetHeight||27;
+      const rect = { x: (projected.x + 1) * w / 2 - width / 2, y: (1 - projected.y) * h / 2 - height/2, w: width, h: height };
       const visible = shown < (w < 720 ? 3 : 6) && d < (L.h < 80 ? 1100 : 6000)
         && projected.z > -1 && projected.z < 1 && rect.x > 8 && rect.x + rect.w < w - 8 && rect.y > 8 && rect.y + rect.h < h - 8
         && !occupied.some((r) => overlaps(rect, r));
@@ -426,7 +430,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
   const list = $('landmark-list');
   for (const L of LANDMARKS) {
     const li = document.createElement('li');
-    const metric = L.id === 'grantpark' ? `${L.acres} acres` : L.id === 'navypier' ? `${L.ft.toLocaleString()} ft long` : `${L.ft.toLocaleString()} ft`;
+    const metric = L.listMeta ?? (L.id === 'grantpark' ? `${L.acres} acres` : L.id === 'navypier' ? `${L.ft.toLocaleString()} ft long` : `${L.ft.toLocaleString()} ft`);
     li.innerHTML = `<button type="button" data-id="${L.id}"><span class="lm-name">${L.name}</span><span class="lm-meta">${metric}</span></button>`;
     li.querySelector('button').addEventListener('click', () => { ui.select(L.id); if (innerWidth <= 720) $('panel').classList.remove('open'); });
     list.appendChild(li);
@@ -440,13 +444,15 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
     $('info-name').textContent = L.name;
     $('info-aka').textContent = L.aka || '';
     $('info-aka').hidden = !L.aka;
-    const facts = [];
+    const facts = L.facts ? [...L.facts] : [];
+    if (!L.facts) {
     if (L.id === 'grantpark') facts.push(['Area', `${L.acres} acres`]);
     else if (L.id === 'fountain') facts.push(['Center jet', `${L.ft} ft · ${Math.round(L.h)} m`]);
     else if (L.id === 'navypier') facts.push(['Length', `${L.ft.toLocaleString()} ft`]);
     else facts.push(['Height', `${L.ft.toLocaleString()} ft · ${Math.round(L.h)} m`]);
     facts.push([L.id === 'grantpark' ? 'Established' : 'Opened', String(L.year)]);
     facts.push(['Address', L.addr]);
+    }
     $('info-facts').innerHTML = facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
     $('info-desc').textContent = L.desc;
     $('info-step').hidden = !touring;

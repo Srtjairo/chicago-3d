@@ -2,9 +2,10 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>body{margin:0;background:#101722;color:#edf3f6;font:14px system-ui}header{display:flex;gap:12px;align-items:center;padding:12px;flex-wrap:wrap}button,select{padding:8px;background:#243448;color:inherit;border:1px solid #546477;border-radius:5px}iframe{display:block;border:0;margin:0 auto}pre{white-space:pre-wrap;margin:12px;color:#bcd6c5}</style>
 <header><strong>Chicago visual checks</strong><button id="desktop">Desktop</button><button id="phone">Phone</button>
+<select id="build" aria-label="Build"><option value="/docs/">Working build</option><option value="/.cache/baseline/docs/">Previous release (local archive)</option></select>
 <select id="place" aria-label="Camera view"><option value="overview">Skyline</option><option value="wrigley">Wrigley</option><option value="bean">Cloud Gate</option><option value="navypier">Navy Pier</option><option value="fountain">Fountain</option></select>
 <select id="time" aria-label="Lighting"><option value="0.42">Golden hour</option><option value="0">Midday</option><option value="0.7">Dusk</option><option value="1">Night</option></select>
-<button id="check">Check scene</button><button id="motion">Audit motion</button><button id="benchmark">Measure 8 seconds</button><button id="capture">Save link preview</button></header>
+<button id="check">Check scene</button><button id="offices">Check offices</button><button id="motion">Audit motion</button><button id="benchmark">Measure 8 seconds</button><button id="capture">Save link preview</button></header>
 <iframe title="Chicago preview" src="/docs/" width="1200" height="740"></iframe><pre id="results">Waiting for scene…</pre>
 <script type="module">
 const frame = document.querySelector('iframe'), out = document.querySelector('#results');
@@ -12,6 +13,7 @@ const app = () => frame.contentWindow.__chicago;
 const ready = setInterval(async () => { if (app()) { clearInterval(ready); out.textContent = 'Ready'; const geo=await import('/docs/js/geo.js');for(const L of geo.LANDMARKS)if(!document.querySelector(`#place option[value="${L.id}"]`)){const o=document.createElement('option');o.value=L.id;o.textContent=L.name;document.querySelector('#place').append(o);} const explorer=await import('/docs/js/explorer.js');for(const [key,d]of Object.entries(explorer.DISTRICTS)){const o=document.createElement('option');o.value='district:'+key;o.textContent=d.name;document.querySelector('#place').append(o);} } }, 200);
 document.querySelector('#desktop').onclick = () => { frame.width = 1200; frame.height = 740; };
 document.querySelector('#phone').onclick = () => { frame.width = 390; frame.height = 844; };
+document.querySelector('#build').onchange=e=>{frame.src=e.target.value;out.textContent='Loading selected build…';};
 document.querySelector('#place').onchange = async (e) => {
   const a = app(), geo = await import('/docs/js/geo.js'), tour = await import('/docs/js/tour.js');
   a.flyer.cancel();
@@ -45,6 +47,22 @@ document.querySelector('#check').onclick = () => {
     measuredBuildings:a.ctx.measuredBuildings.length,roads:a.ctx.roads.length,life:a.ctx.life.stats,walkRoutes:a.ctx.life.walks.length,
     camera:a.camera.position.toArray(),roadTraffic:a.ctx.life.cars.slice(0,5).map(c=>[c.edge.id,c.d]),
     facadeMaterials:meshes.filter(m=>m.name.startsWith('footprints-')).slice(0,2).map(m=>({normal:[...m.geometry.attributes.normal.array.slice(0,12)],style:m.material.userData.facade.uStyle.value}))},null,2);
+};
+document.querySelector('#offices').onclick=async()=>{
+  const a=app(),THREE=await import('three'),{LANDMARKS}=await import('/docs/js/geo.js'),{TOUR,Flyer,OVERVIEW}=await import('/docs/js/tour.js'),{pointInRing}=await import('/docs/js/city-data.js');
+  const cross=(o,p,q)=>(p[0]-o[0])*(q[1]-o[1])-(p[1]-o[1])*(q[0]-o[0]);
+  const hull=points=>{points.sort((p,q)=>p[0]-q[0]||p[1]-q[1]);const half=ps=>{const h=[];for(const p of ps){while(h.length>1&&cross(h.at(-2),h.at(-1),p)<=0)h.pop();h.push(p);}return h;};const lo=half(points),hi=half([...points].reverse());return [...lo.slice(0,-1),...hi.slice(0,-1)];};
+  const intersects=(p,q)=>p.some(v=>pointInRing(...v,q))||q.some(v=>pointInRing(...v,p))||p.some((v,i)=>q.some((w,j)=>cross(v,p[(i+1)%p.length],w)*cross(v,p[(i+1)%p.length],q[(j+1)%q.length])<-.0001&&cross(w,q[(j+1)%q.length],v)*cross(w,q[(j+1)%q.length],p[(i+1)%p.length])<-.0001));
+  out.textContent=JSON.stringify(LANDMARKS.filter(l=>['relativity','ondean'].includes(l.id)).map(l=>{
+    const object=a.scene.getObjectByName(l.id),bounds=new THREE.Box3().setFromObject(object),view=a.flyer.viewFor(l);
+    const points=[],v=new THREE.Vector3();object.traverse(o=>{const p=o.geometry?.attributes.position;if(p)for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);points.push([v.x,v.z]);}});const outline=hull(points);
+    const overlaps=a.ctx.measuredBuildings.filter(b=>bounds.max.x>b.x0&&bounds.min.x<b.x1&&bounds.max.z>b.z0&&bounds.min.z<b.z1&&intersects(outline,b.rings[0])).map(b=>b.id);
+    const roadOverlaps=a.ctx.roads.filter(r=>r.path.some((p,i)=>{if(!i)return false;const q=r.path[i-1],w=r.width/2;if(Math.max(p[0],q[0])+w<bounds.min.x||Math.min(p[0],q[0])-w>bounds.max.x||Math.max(p[2],q[2])+w<bounds.min.z||Math.min(p[2],q[2])-w>bounds.max.z)return false;const dx=p[0]-q[0],dz=p[2]-q[2],n=Math.hypot(dx,dz);if(n<.01)return false;const nx=-dz/n*w,nz=dx/n*w;return intersects(outline,[[q[0]+nx,q[2]+nz],[p[0]+nx,p[2]+nz],[p[0]-nx,p[2]-nz],[q[0]-nx,q[2]-nz]]);})).map(r=>r.name);
+    const cameraInside=a.ctx.collisionBuildings.filter(b=>view.pos.x>b.x0&&view.pos.x<b.x1&&view.pos.z>b.z0&&view.pos.z<b.z1&&view.pos.y<b.h).map(b=>b.id);
+    const camera=a.camera.clone(),controls={target:OVERVIEW.target.clone()},flyer=new Flyer(camera,controls,a.ctx);camera.position.copy(OVERVIEW.pos);flyer.reducedMotion=false;flyer.flyTo(view.pos,view.target);let flightCollisions=0;while(flyer.anim){flyer.update(1/60);if(a.ctx.collisionBuildings.some(b=>camera.position.x>b.x0&&camera.position.x<b.x1&&camera.position.z>b.z0&&camera.position.z<b.z1&&camera.position.y<b.h+.6))flightCollisions++;}
+    flyer.reducedMotion=true;flyer.flyTo(OVERVIEW.pos,OVERVIEW.target);const reducedMotionImmediate=!flyer.anim&&camera.position.equals(OVERVIEW.pos);
+    return {id:l.id,bounds:[bounds.min.toArray(),bounds.max.toArray()],overlaps,roadOverlaps,cameraInside,flightCollisions,reducedMotionImmediate,collisionRegistered:a.ctx.collisionBuildings.some(b=>b.id===l.id),genericFootprintRemoved:!a.ctx.measuredBuildings.some(b=>l.footprintIds.includes(b.id)),inGuidedTour:TOUR.includes(l.id),view:view.pos.toArray()};
+  }),null,2);
 };
 document.querySelector('#benchmark').onclick=()=>{
   const a=app(),times=[],calls=[],start=performance.now();let last=start;const before=a.ctx.life.stats.steps;

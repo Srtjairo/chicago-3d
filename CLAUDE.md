@@ -82,15 +82,17 @@ Change positions here, not in the builders.
 
 **Adding landmarks.** Research, model, register and visually verify the building. A landmark needs:
 1. an entry in `LANDMARKS` (`geo.js`)
-2. a builder in `landmarks.js` or `architecture.js`
-3. registration in that builder's map/list, and its corresponding source footprint ID in `REPLACED` (`city-data.js`) so the measured mass does not overlap it
-4. its id in `TOUR` (`tour.js`)
+2. a builder in `landmarks.js`, `architecture.js` or `offices.js`
+3. registration in that builder's map/list, and its corresponding source footprint ID in `footprintIds` on the landmark (automatically included in `REPLACED` by `city-data.js`) so the measured mass does not overlap it
+4. explicit `collision` bounds for low buildings that would otherwise fall below the 100 m collision cutoff
+
+Only add a landmark to `TOUR` when requested. Relativity and OnDean are intentionally selectable only; preserve the existing 18-stop itinerary. Optional `facts` replaces the normal height/year/address card fields; optional `listMeta` supplies a list subtitle without requiring `ft` or `year`. `labelSubtitle` and `labelOffset` customize the scene tag. A view can set a local `focus` offset, facade sampling `width` and collision `clearance` for narrow street-canyon views; other landmarks retain the original camera behavior.
 
 The list, labels and info card are data-driven.
 
 **Build pipeline (`js/main.js`).** `init()` creates the renderer, camera and OrbitControls, then calls the builders in order:
 
-`loadCityData → configureShore → prepareWorld → buildTerrain → buildWaterGeometry → buildLandmarks → buildSignatureArchitecture → buildCity → buildStreets → rebuildBeacons → buildParks → buildNavyPier → buildCityLife → Lighting → setupExplorer`
+`loadCityData → configureShore → prepareWorld → buildTerrain → buildWaterGeometry → buildLandmarks → buildSignatureArchitecture → buildOfficeArchitecture → buildCity → buildStreets → rebuildBeacons → buildParks → buildNavyPier → buildCityLife → Lighting → setupExplorer`
 
 It sets up collision-avoiding CSS2D labels and the UI, and renders through `EffectComposer` (RenderPass → OutputPass). Builders share a `ctx` object:
 - `ctx.quality`: settings tuned per device
@@ -107,6 +109,8 @@ It sets up collision-avoiding CSS2D labels and the UI, and renders through `Effe
 - Merged measured buildings use `features: true` and per-vertex `aSeed` to keep lighting patterns distinct while sharing materials.
 
 **City (`js/city.js`, `js/city-data.js`).** Inside the downtown coverage, measured footprint extrusions replace the procedural grid, except for individually curated landmarks. Outside it, the simpler 125 m grid fills the distant skyline in one InstancedMesh. Do not put synthetic blocks back inside the measured coverage.
+
+`js/coverage.js` owns the shared coverage union, projection and map envelope. The Fulton Market rectangle overlaps downtown and reaches OnDean without filling the entire western strip. Import caches hash complete query URLs; source IDs deduplicate the overlap. `offices.js` batches exterior geometry, generates its own brick/plaque textures and culls decorative detail beyond 1200 m. Office models add no lights, particles or shadow casters.
 
 **Street life (`js/city-world.js`, `js/city-life.js`, `js/movement.js`).** City centerlines supply road geometry, bridge ramps, directed traffic lanes and sidewalks. Riverwalk, park routes and the elevated Loop are authored approximations. There are 480 vehicles, 800 people, four six-car trains and eight boats. Signals use protected crossing intervals, vehicles keep gaps and trains dwell at stations. This is illustrative activity, not live transit or a calibrated traffic simulation. Pause city life also pauses the fountain and Ferris wheel; it leaves water shading active. Reduced-motion users start paused and skip camera flights.
 

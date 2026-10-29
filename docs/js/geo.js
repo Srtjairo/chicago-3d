@@ -199,6 +199,16 @@ LANDMARKS.push(
   {id:'mart',name:'Merchandise Mart',aka:'THE MART',x:-631,z:-720,r:115,h:103.6,roof:103.6,ft:340,year:1930,addr:'222 W Merchandise Mart Plaza',desc:'A monumental Art Deco wholesale marketplace spanning two city blocks. Its long limestone facade and central tower anchor the north bank.',view:{az:1.1,dist:480,el:0.32}},
   {id:'board',name:'Chicago Board of Trade',aka:'The head of LaSalle Street',x:-365,z:489,r:63,h:184.4,roof:175.2,ft:605,year:1930,addr:'141 W Jackson Blvd',desc:'Holabird & Root’s limestone setbacks terminate LaSalle Street. A pyramidal roof carries John Storrs’s aluminum statue of Ceres.',view:{az:3.14,dist:380,el:0.25}},
   {id:'riverside',name:'150 North Riverside',aka:'A tower on a narrow base',x:-876,z:-361,r:44,h:220.7,roof:220.7,ft:724,year:2017,addr:'150 N Riverside Plaza',desc:'Goettsch Partners narrowed the tower at its base to fit between railway tracks and the river, opening much of the site as public landscape.',view:{az:1.4,dist:430,el:0.23}},
+  {id:'relativity',name:'Relativity',aka:'Central Standard Building',x:-302.4,z:391,r:58,h:92.1,roof:92.1,ft:302,year:1924,
+    addr:'231 S LaSalle St, Chicago, IL 60604',listMeta:'20th floor',footprintIds:['891214-0'],
+    labelSubtitle:'Central Standard Building',collision:{x0:-353.1,x1:-252.9,z0:362.1,z1:419.9},
+    facts:[['Building height','302 ft · 92.1 m'],['Opened','1924'],['Office','20th floor'],['Address','231 S LaSalle St, Chicago, IL 60604']],
+    desc:'Relativity’s Chicago office occupies the 20th floor of the Central Standard Building. Graham, Anderson, Probst & White designed this limestone banking and office building, with its columned LaSalle Street entrance.',view:{az:-.62,dist:45,el:.5,focus:[-49,-32,0],width:0,clearance:1}},
+  {id:'ondean',name:'OnDean Family Office',aka:'410 North Carpenter',x:-2145.5,z:-794.05,r:25,h:10,roof:9.1,
+    addr:'410 N Carpenter St, Chicago, IL 60642',listMeta:'Fulton Market',labelOffset:5,footprintIds:['860470-0'],
+    collision:{x0:-2162.3,x1:-2128.7,z0:-812.2,z1:-775.9},
+    facts:[['Neighborhood','Fulton Market'],['Address','410 N Carpenter St, Chicago, IL 60642']],
+    desc:'OnDean’s office at Carpenter and Kinzie occupies a converted industrial building. Red brick, broad upper windows and a low, flat roof preserve the character of the surrounding Fulton Market blocks.',view:{az:.85,dist:110,el:.3}},
 );
 
 export function configureShore(data) {

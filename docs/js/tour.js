@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js?v=3baef5c6c5a12709';
-import { SLAB_TOP } from './terrain.js?v=3baef5c6c5a12709';
+import { LANDMARKS } from './geo.js?v=35b31ee84a7f8c36';
+import { SLAB_TOP } from './terrain.js?v=35b31ee84a7f8c36';
 
 const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 
@@ -33,18 +33,20 @@ export class Flyer {
     const v = L.view;
     const distance = v.dist * (this.camera.aspect < 1 ? 1.3 : 1);
     const target = new THREE.Vector3(L.x, SLAB_TOP + Math.min(L.h, L.roof * 1.05) * 0.5, L.z);
+    if(v.focus)target.add(new THREE.Vector3(...v.focus));
     let best=null,bestScore=Infinity;
     for(const elevation of [v.el,Math.max(v.el,.42),.62,.82])for(const delta of [0,.45,-.45,.9,-.9,1.6,-1.6,Math.PI]){
-      const az=v.az+delta,pos=new THREE.Vector3(L.x+Math.sin(az)*distance*Math.cos(elevation),target.y+Math.sin(elevation)*distance,L.z+Math.cos(az)*distance*Math.cos(elevation));
+      const az=v.az+delta,pos=new THREE.Vector3(target.x+Math.sin(az)*distance*Math.cos(elevation),target.y+Math.sin(elevation)*distance,target.z+Math.cos(az)*distance*Math.cos(elevation));
       let blocked=0;
       // Check the lower facade and both sides as well as the center. A clear
       // center ray alone can leave a wide landmark hidden behind a foreground roof.
       for(const [side,height]of [[0,.5],[0,.22],[0,.85],[-.65,.5],[.65,.5]]){
-        const tx=L.x+Math.cos(az)*L.r*side,tz=L.z-Math.sin(az)*L.r*side,ty=SLAB_TOP+L.roof*height;
+        const tx=target.x+Math.cos(az)*(v.width??L.r)*side,tz=target.z-Math.sin(az)*(v.width??L.r)*side,ty=SLAB_TOP+L.roof*height;
         for(const b of this.ctx.collisionBuildings||[]){if(b.id===L.id)continue;
           let hit=false;
           for(let t=.1;t<=1;t+=.05){const x=tx+(pos.x-tx)*t,y=ty+(pos.y-ty)*t,z=tz+(pos.z-tz)*t;
-            if(x>b.x0-5&&x<b.x1+5&&z>b.z0-5&&z<b.z1+5&&y<b.h+8){hit=true;break;}
+            const margin=v.clearance??5;
+            if(x>b.x0-margin&&x<b.x1+margin&&z>b.z0-margin&&z<b.z1+margin&&y<b.h+8){hit=true;break;}
           }
           if(hit){blocked++;break;}
         }
