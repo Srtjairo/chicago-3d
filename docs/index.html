@@ -179,6 +179,22 @@
   #loader.error svg { animation: none; }
   @keyframes spin { to { transform: rotate(60deg); } }
 
+  /* Low quality tiers drop the frosted glass: blurring the live 3D view behind every panel and label costs GPU time */
+  .lite .glass, .lite .tag { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .lite .glass { background: var(--glass-strong); }
+
+  /* Performance panel, shown only with ?debug in the URL */
+  #debug {
+    position: fixed; z-index: 5; top: 50%; transform: translateY(-50%); width: 250px; padding: 12px 14px;
+    left: calc(var(--pad) + env(safe-area-inset-left, 0px)); background: var(--glass-strong);
+    font: 500 12px/1.5 var(--font-mono);
+  }
+  #debug[hidden] { display: none; }
+  #dbg-stats { margin: 0 0 10px; white-space: pre-wrap; word-break: break-word; font: inherit; font-variant-numeric: tabular-nums; }
+  #debug select { width: 100%; margin: 4px 0 10px; font: inherit; color: var(--ink); background: var(--ground); border: 1px solid var(--edge); border-radius: 6px; padding: 3px 4px; }
+  #dbg-switches { display: grid; gap: 3px; }
+  #dbg-switches label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
   @media (prefers-reduced-motion: reduce) {
     .load-inner svg { animation: none; }
     .tag { transition: none; }
@@ -289,6 +305,12 @@
     </button>
   </div>
 </nav>
+
+<aside id="debug" class="glass" hidden aria-label="Performance debug">
+  <pre id="dbg-stats">measuring…</pre>
+  <label>Quality tier<select id="dbg-tier"><option value="auto">Auto</option></select></label>
+  <div id="dbg-switches"></div>
+</aside>
 
 <div id="loader">
   <div class="load-inner">

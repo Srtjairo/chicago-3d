@@ -14,8 +14,8 @@ export function overviewPos(aspect) {
   return OVERVIEW.target.clone().lerp(OVERVIEW.pos, aspect < 1 ? 1.55 : 1);
 }
 
-// Stops on the guided tour, in geographic order: lakefront, Loop, river, Mag Mile, Wrigleyville, pier, park
-const TOUR = ['grantpark', 'fountain', 'willis', 'marina', 'wrigley', 'trump', 'hancock', 'wrigleyfield', 'navypier', 'stregis', 'aon', 'pritzker', 'bean'];
+// Stops on the guided tour, in geographic order: lakefront, Loop, river, Mag Mile, pier, park
+const TOUR = ['grantpark', 'fountain', 'willis', 'marina', 'wrigley', 'trump', 'hancock', 'navypier', 'stregis', 'aon', 'pritzker', 'bean'];
 
 export class Flyer {
   constructor(camera, controls) {

@@ -135,7 +135,8 @@ async function init() {
   new ResizeObserver(onResize).observe(canvas);
   onResize();
 
-  const perf = adaptiveQuality({ renderer, composer, water: ctx.water, onResize: () => { lastSize = ''; onResize(); } });
+  const perf = adaptiveQuality({ renderer, composer, water: ctx.water, sun: lighting.sun, bloom, onResize: () => { lastSize = ''; onResize(); } });
+  const debug = new URLSearchParams(location.search).has('debug') ? setupDebug({ renderer, scene, perf, ui }) : null;
 
   // --- render loop -------------------------------------------------------------
   const clock = new THREE.Clock();
@@ -144,15 +145,19 @@ async function init() {
   const tmp = new THREE.Vector3();
   function frame() {
     const raw = clock.getDelta();
+    debug?.begin();
     perf.tick(raw);
-    const dt = Math.min(raw, 0.05);
+    // cap a single long hitch, but keep motion real-time down to 10 fps instead of slowing to a crawl
+    const dt = Math.min(raw, 0.1);
     time += dt;
     flyer.update(dt);
+    // OrbitControls damps once per frame; rescale so the camera glides the same at any frame rate
+    controls.dampingFactor = 1 - Math.pow(1 - 0.06, dt * 60);
     controls.update();
     // keep the camera above the ground and the target inside the city
     if (camera.position.y < 12) camera.position.y = 12;
     controls.target.x = THREE.MathUtils.clamp(controls.target.x, -5000, 4500);
-    controls.target.z = THREE.MathUtils.clamp(controls.target.z, -7800, 5000); // north far enough for Wrigley Field
+    controls.target.z = THREE.MathUtils.clamp(controls.target.z, -5000, 5000);
     controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 600);
 
     lighting.update(dt, controls.target);
@@ -169,7 +174,11 @@ async function init() {
       const d = tmp.copy(o.position).distanceTo(camera.position);
       const L = o.userData.L;
       const limit = L.h < 80 ? 1400 : 9000;
-      o.element.style.opacity = d > limit ? 0 : Math.min(1, (limit - d) / 300);
+      const op = d > limit ? 0 : Math.min(1, (limit - d) / 300);
+      // style writes cost layout work; only touch the DOM when the value actually moves
+      if (Math.abs(op - (o.userData.op ?? -1)) < 0.01) continue;
+      o.userData.op = op;
+      o.element.style.opacity = op;
       o.element.style.pointerEvents = d > limit ? 'none' : 'auto';
     }
 
@@ -181,6 +190,7 @@ async function init() {
 
     composer.render();
     if (ui.labelsOn) labelRenderer.render(scene, camera);
+    debug?.end(raw);
     requestAnimationFrame(frame);
   }
 
@@ -193,31 +203,36 @@ async function init() {
   window.__chicago = { scene, camera, controls, lighting, flyer, renderer, ctx, perf };
 }
 
-// Adaptive quality: when frames run slow, step down render resolution, then refresh
-// the lake reflection and the shadow map only every Nth frame. Steps back up when
-// there is clear headroom (high-refresh screens), so fast machines keep full quality.
-function adaptiveQuality({ renderer, composer, water, onResize }) {
-  const top = quality.pixelRatio;
+// Adaptive quality: when frames run slow, step down render resolution and MSAA, refresh
+// the lake reflection and the shadow map only every Nth frame, then shrink the shadow map
+// and drop bloom and the frosted-glass UI blur. Steps back up when there is clear headroom
+// (high-refresh screens), so fast machines keep full quality.
+function adaptiveQuality({ renderer, composer, water, sun, bloom, onResize }) {
+  const top = quality.pixelRatio, full = quality.shadow;
   const tiers = [
-    { pr: top, every: 1 },
-    { pr: Math.min(top, 1.25), every: 1 },
-    { pr: 1, every: 2 },
-    { pr: 0.8, every: 2 },
-    { pr: 0.65, every: 3 },
+    { pr: top, every: 1, msaa: true, bloom: true, shadow: full },
+    { pr: Math.min(top, 1.25), every: 1, msaa: true, bloom: true, shadow: full },
+    { pr: 1, every: 2, msaa: false, bloom: true, shadow: full / 2 },
+    { pr: 0.8, every: 2, msaa: false, bloom: false, shadow: full / 2, lite: true },
+    { pr: 0.65, every: 3, msaa: false, bloom: false, shadow: full / 4, lite: true },
   ];
+  const max = tiers.length - 1;
   const gl = renderer.getContext();
   const info = gl.getExtension('WEBGL_debug_renderer_info');
   const gpu = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : '';
   // software rendering (hardware acceleration off) starts at the bottom
-  let level = /swiftshader|llvmpipe|basic render|software/i.test(gpu) ? tiers.length - 1 : 0;
+  let level = /swiftshader|llvmpipe|basic render|software/i.test(gpu) ? max : 0;
+  let auto = true;
   let frameNo = 0, sum = 0, count = 0, slow = 0, settle = 2, resumed = false;
+  // features the ?debug panel has switched off, on top of whatever the tier allows
+  const off = { bloom: false, msaa: false, reflection: false, blur: false };
   // time spent in a background tab says nothing about rendering speed
   document.addEventListener('visibilitychange', () => { sum = count = 0; resumed = true; });
 
   if (water) {
     const reflect = water.onBeforeRender;
     water.onBeforeRender = function (...args) {
-      if (frameNo % tiers[level].every === 0) reflect.apply(this, args);
+      if (!off.reflection && frameNo % tiers[level].every === 0) reflect.apply(this, args);
     };
   }
 
@@ -226,27 +241,104 @@ function adaptiveQuality({ renderer, composer, water, onResize }) {
     renderer.setPixelRatio(t.pr);
     composer.setPixelRatio(t.pr);
     renderer.shadowMap.autoUpdate = t.every === 1;
+    bloom.enabled = t.bloom && !off.bloom;
+    // a changed sample count only takes effect once the render targets are rebuilt
+    const samples = t.msaa && !off.msaa ? quality.samples : 0;
+    for (const rt of [composer.renderTarget1, composer.renderTarget2]) {
+      if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
+    }
+    if (sun.shadow.mapSize.x !== t.shadow) {
+      sun.shadow.mapSize.set(t.shadow, t.shadow);
+      sun.shadow.map?.dispose();
+      sun.shadow.map = null;
+    }
+    document.body.classList.toggle('lite', Boolean(t.lite || off.blur));
     onResize();
   }
   apply();
 
   return {
-    gpu,
+    gpu, off, apply, tiers,
     get level() { return level; },
-    set level(l) { level = THREE.MathUtils.clamp(l, 0, tiers.length - 1); apply(); },
+    // setting a tier by hand pins it; set auto back to true to let the controller take over
+    set level(l) { level = THREE.MathUtils.clamp(l, 0, max); auto = false; apply(); },
+    get auto() { return auto; },
+    set auto(a) { auto = a; sum = count = slow = 0; settle = 1; },
     tick(dt) {
       frameNo++;
       if (!renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = frameNo % tiers[level].every === 0;
-      if (document.hidden) return;
+      if (document.hidden || !auto) return;
       if (resumed) { resumed = false; return; }
       sum += Math.min(dt, 0.5); count++; // cap so one long hitch can't dominate a window
       if (sum < 1) return; // judge in ~1 s windows
-      const avg = sum / count;
+      const fps = count / sum;
       sum = count = 0;
       if (settle > 0) { settle--; return; } // skip the windows right after a change
-      if (avg > 1 / 45) slow++; else slow = 0;
-      if (slow >= 2 && level < tiers.length - 1) { level++; slow = 0; settle = 1; apply(); }
-      else if (avg < 1 / 90 && level > 0) { level--; settle = 2; apply(); }
+      slow = fps < 45 ? slow + 1 : 0;
+      // far too slow: drop two tiers at once without waiting for a second window
+      if (level < max && (fps < 25 || slow >= 2)) { level = Math.min(max, level + (fps < 25 ? 2 : 1)); slow = 0; settle = 1; apply(); }
+      else if (fps > 90 && level > 0) { level--; settle = 2; apply(); }
+    },
+  };
+}
+
+// ?debug in the URL: live frame stats plus switches that turn off one cost at a time,
+// to find out what makes a particular machine slow
+function setupDebug({ renderer, scene, perf, ui }) {
+  $('debug').hidden = false;
+  renderer.info.autoReset = false; // the composer renders several passes; count the whole frame
+  const stats = $('dbg-stats');
+
+  const plain = new Map();
+  const facades = [];
+  scene.traverse((o) => {
+    const m = o.material;
+    if (!o.isMesh || !m?.userData?.facade) return;
+    if (!plain.has(m)) plain.set(m, new THREE.MeshStandardMaterial({ color: m.color, roughness: m.roughness, metalness: m.metalness }));
+    facades.push([o, m]);
+  });
+  const recompileAll = () => scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
+
+  const switches = [
+    ['Bloom', (on) => { perf.off.bloom = !on; perf.apply(); }],
+    ['MSAA', (on) => { perf.off.msaa = !on; perf.apply(); }],
+    ['Shadows', (on) => { renderer.shadowMap.enabled = on; recompileAll(); }],
+    ['Lake reflection', (on) => { perf.off.reflection = !on; }],
+    ['UI blur', (on) => { perf.off.blur = !on; perf.apply(); }],
+    ['Labels', (on) => { ui.labelsOn = on; $('labels').hidden = !on; $('labels-btn').setAttribute('aria-pressed', String(on)); }],
+    ['Filler city', (on) => { scene.getObjectByName('city').visible = on; }],
+    ['Window shader', (on) => facades.forEach(([o, m]) => { o.material = on ? m : plain.get(m); })],
+  ];
+  const box = $('dbg-switches');
+  for (const [name, fn] of switches) {
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" checked> ${name}`;
+    label.querySelector('input').addEventListener('change', (e) => fn(e.target.checked));
+    box.appendChild(label);
+  }
+
+  const tier = $('dbg-tier');
+  perf.tiers.forEach((t, i) => tier.add(new Option(`${i} · px ${t.pr}${t.msaa ? '' : ' · no MSAA'}${t.bloom ? '' : ' · no bloom'}`, String(i))));
+  tier.addEventListener('change', () => {
+    if (tier.value === 'auto') perf.auto = true;
+    else perf.level = Number(tier.value);
+  });
+
+  let frames = 0, acc = 0, js = 0, t0 = 0;
+  return {
+    begin() { renderer.info.reset(); t0 = performance.now(); },
+    end(dt) {
+      js += performance.now() - t0; frames++; acc += dt;
+      if (acc < 0.5) return;
+      const r = renderer.info.render, c = renderer.domElement;
+      stats.textContent = [
+        `${Math.round(frames / acc)} fps · ${(1000 * acc / frames).toFixed(1)} ms/frame`,
+        `JS ${(js / frames).toFixed(1)} ms/frame`,
+        `tier ${perf.level}${perf.auto ? ' (auto)' : ' (pinned)'} · ${c.width}×${c.height}`,
+        `${r.calls} draws · ${(r.triangles / 1e6).toFixed(2)}M tris`,
+        perf.gpu || 'GPU unknown',
+      ].join('\n');
+      frames = acc = js = 0;
     },
   };
 }
@@ -295,7 +387,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
   const list = $('landmark-list');
   for (const L of LANDMARKS) {
     const li = document.createElement('li');
-    const metric = L.id === 'grantpark' ? `${L.acres} acres` : L.seats ? `${L.seats.toLocaleString()} seats` :L.id === 'navypier' ? `${L.ft.toLocaleString()} ft long` : `${L.ft.toLocaleString()} ft`;
+    const metric = L.id === 'grantpark' ? `${L.acres} acres` : L.id === 'navypier' ? `${L.ft.toLocaleString()} ft long` : `${L.ft.toLocaleString()} ft`;
     li.innerHTML = `<button type="button" data-id="${L.id}"><span class="lm-name">${L.name}</span><span class="lm-meta">${metric}</span></button>`;
     li.querySelector('button').addEventListener('click', () => { ui.select(L.id); if (mobile) $('panel').classList.remove('open'); });
     list.appendChild(li);
@@ -312,7 +404,6 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
     if (L.id === 'grantpark') facts.push(['Area', `${L.acres} acres`]);
     else if (L.id === 'fountain') facts.push(['Center jet', `${L.ft} ft · ${Math.round(L.h)} m`]);
     else if (L.id === 'navypier') facts.push(['Length', `${L.ft.toLocaleString()} ft`]);
-    else if (L.seats) facts.push(['Capacity', L.seats.toLocaleString()], ['Center field', `${L.ft} ft · ${Math.round(L.ft * 0.3048)} m`]);
     else facts.push(['Height', `${L.ft.toLocaleString()} ft · ${Math.round(L.h)} m`]);
     facts.push([L.id === 'grantpark' ? 'Established' : 'Opened', String(L.year)]);
     facts.push(['Address', L.addr]);

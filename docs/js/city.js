@@ -91,6 +91,7 @@ export function buildCity(scene, ctx) {
   });
   geo.setAttribute('aStyle', new THREE.InstancedBufferAttribute(style, 1));
   city.castShadow = city.receiveShadow = true;
+  city.name = 'city';
   scene.add(city);
   ctx.buildingCount = boxes.length;
 

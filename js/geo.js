@@ -166,13 +166,6 @@ export const LANDMARKS = [
     desc: 'A 3,300-foot pier into Lake Michigan with the 196-foot Centennial Wheel near its base.',
     view: { az: 2.6, dist: 900, el: 0.3 },
   },
-  {
-    // 5.8 km north of the Loop, past the filler city; the ground plane already reaches this far
-    id: 'wrigleyfield', name: 'Wrigley Field', aka: 'Weeghman Park when it opened', x: -2298, z: -7314, r: 120, h: 50, roof: 27,
-    ft: 400, seats: 41649, year: 1914, addr: '1060 W Addison St',
-    desc: 'Built in 1914 for a Federal League team, it has been home to the Cubs since 1916. The outfield ivy and the hand-turned center-field scoreboard both date from 1937, and lights for night games only arrived in 1988.',
-    view: { az: -0.62, dist: 360, el: 0.5 },
-  },
 ];
 
 export function toAddress(x, z) {

@@ -23,11 +23,14 @@ For debugging, `window.__chicago` exposes `{ scene, camera, controls, lighting, 
 
 A hidden browser tab throttles `requestAnimationFrame`, so animations and environment-map updates lag there. That's not a bug in the code. The Claude app's browser pane can also stop delivering frames entirely while a long `javascript_tool` script blocks the page, so don't benchmark with busy-loops there.
 
-**Adaptive quality (`perf`, `adaptiveQuality()` in `main.js`).** The controller judges the frame rate in ~1 s windows. When it averages under ~45 fps over two windows, it steps down through 5 tiers: lower pixel ratio first, then refreshing the lake reflection (`water.onBeforeRender` is wrapped) and the shadow map only every 2nd/3rd frame.
+**Adaptive quality (`perf`, `adaptiveQuality()` in `main.js`).** The controller judges the frame rate in ~1 s windows. When it averages under ~45 fps over two windows, it steps down one of 5 tiers; under ~25 fps it drops two tiers after a single window. Going down, the tiers lower the pixel ratio and turn off MSAA, refresh the lake reflection (`water.onBeforeRender` is wrapped) and the shadow map only every 2nd/3rd frame, shrink the shadow map, and finally drop bloom and the frosted-glass `backdrop-filter` (the `lite` class on `body`).
 - It steps back up only above ~90 fps, so on a 60 Hz screen a downgrade sticks for the session.
 - Time in a hidden tab is ignored. A software renderer (SwiftShader etc.) starts at the lowest tier.
-- `perf.gpu` holds the GPU string and `perf.level` the tier; set `perf.level` (0–4) to force one.
-- On the user's RTX 4070 the site runs at 110–135 fps at full quality. If it lags in their own browser, check `perf.gpu`: Windows may be running the browser on integrated graphics.
+- `perf.gpu` holds the GPU string and `perf.level` the tier. Setting `perf.level` (0–4) pins that tier; `perf.auto = true` hands control back.
+- The frame step is capped at 0.1 s and OrbitControls damping is rescaled by `dt`, so motion stays real-time down to 10 fps. Below that cap, low fps shows as slow motion rather than choppiness.
+- On the user's RTX 4070 the site runs at 110–145 fps at full quality. If it lags in their own browser, check `perf.gpu`: Windows may be running the browser on integrated graphics.
+
+**`?debug` panel.** Adding `?debug` to the URL (works on the live site too) shows fps, ms per frame, JS time, tier, canvas size, draw calls, triangles and the GPU string. It also has a tier picker and switches that turn off one cost at a time: bloom, MSAA, shadows, lake reflection, UI blur, labels, filler city, and the window shader. Use it to find what is slow on a specific machine. In the Claude browser pane, the lake reflection accounts for about a third of draw calls and triangles.
 
 ## Publishing
 
