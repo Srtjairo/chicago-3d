@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A browser-viewable 3D model of downtown Chicago (Willis Tower, Hancock, Grant Park, river, lakefront, Navy Pier) built with plain Three.js r160. There is no build step, no package.json, no tests and no linter: `index.html` plus ES modules in `js/`, with Three.js loaded from jsDelivr through the import map in `index.html` (`three` and `three/addons/` pinned to `0.160.0`).
+A browser-viewable 3D model of downtown Chicago (Willis Tower, Hancock, Grant Park, river, lakefront, Navy Pier) built with plain Three.js r160. There is no package.json, no tests and no linter, and no build step for development: `index.html` plus ES modules in `js/`. The only build is `tools/build-site.mjs`, which makes the public copy (see Publishing). Three.js loads from jsDelivr through the import map in `index.html` (`three` and `three/addons/` pinned to `0.160.0`).
 
 ## Running it
 
@@ -14,30 +14,49 @@ ES modules won't load from `file://`, so serve the folder over HTTP and open `ht
 npx --yes http-server -c-1 -p 8080 .
 ```
 
-Python isn't installed on this machine; Node is. `.claude/launch.json` defines a `chicago` preview config, but it points at a Node server script in a temporary scratchpad that may no longer exist. Swap in the command above if it fails.
+Python isn't installed on this machine; Node is. `.claude/launch.json` (gitignored) has three preview configs:
+- `chicago`: the source on port 8080
+- `site`: the built `docs/` on port 8081
+- `capture`: port 8082, a scratchpad Node server with a `POST /__save` endpoint that was used to save canvas frames for `preview.png`. Its script lives in a temporary scratchpad and may be gone.
 
 For debugging, `window.__chicago` exposes `{ scene, camera, controls, lighting, flyer, renderer, ctx, perf }`. For example, `__chicago.lighting.set(1)` switches to night.
 
-`perf` is the adaptive-quality controller (`adaptiveQuality()` in `main.js`). It judges the frame rate in ~1 s windows and, when it averages under ~45 fps, steps down through tiers: lower pixel ratio first, then refreshing the lake reflection and the shadow map only every 2nd/3rd frame. It steps back up only above ~90 fps, so on a 60 Hz screen a downgrade sticks for the session. A software renderer (SwiftShader etc.) starts at the lowest tier. Read `perf.gpu` for the GPU string and `perf.level` for the tier; set `perf.level` (0–4) to force a tier. A hidden browser tab throttles `requestAnimationFrame`, so animations and environment-map updates lag there. That's not a bug in the code.
+A hidden browser tab throttles `requestAnimationFrame`, so animations and environment-map updates lag there. That's not a bug in the code. The Claude app's browser pane can also stop delivering frames entirely while a long `javascript_tool` script blocks the page, so don't benchmark with busy-loops there.
+
+**Adaptive quality (`perf`, `adaptiveQuality()` in `main.js`).** The controller judges the frame rate in ~1 s windows. When it averages under ~45 fps over two windows, it steps down through 5 tiers: lower pixel ratio first, then refreshing the lake reflection (`water.onBeforeRender` is wrapped) and the shadow map only every 2nd/3rd frame.
+- It steps back up only above ~90 fps, so on a 60 Hz screen a downgrade sticks for the session.
+- Time in a hidden tab is ignored. A software renderer (SwiftShader etc.) starts at the lowest tier.
+- `perf.gpu` holds the GPU string and `perf.level` the tier; set `perf.level` (0–4) to force one.
+- On the user's RTX 4070 the site runs at 110–135 fps at full quality. If it lags in their own browser, check `perf.gpu`: Windows may be running the browser on integrated graphics.
 
 ## Publishing
 
-The project is published as a private claude.ai Artifact: https://claude.ai/artifact/FqeJcQo5yP55qtSQfv59HU
+**Public site (primary).** https://srtjairo.github.io/chicago-3d/ is GitHub Pages for the public repo `Srtjairo/chicago-3d`, served from `main` → `/docs`.
+- `docs/` is generated, so never edit it by hand.
+- Commits use the `Srtjairo <Srtjairo@users.noreply.github.com>` identity, set in the local repo config. Git Credential Manager already holds the GitHub login, so `git push` works without prompts.
+- `gh` (GitHub CLI) is not installed. Repo settings such as Pages are changed through github.com in the browser.
 
-To update it, republish `index.html` with every `js/*.js` file mapped in `files` under the same relative path (`js/main.js`, etc.).
-
-Artifact constraints that shape the code:
-- Scripts may load only from allowlisted CDNs (jsDelivr is used).
-- No external images: all textures are generated on `<canvas>`.
-- `index.html` has no `<html>/<head>/<body>` wrapper because the publisher adds one. The local copy therefore runs in quirks mode, which is expected.
-
-It is also public on GitHub Pages at https://srtjairo.github.io/chicago-3d/ (repo `Srtjairo/chicago-3d`, served from `main` → `/docs`). `docs/` is generated, so never edit it by hand. After changing `index.html` or `js/`, rebuild it and push:
+After changing `index.html` or `js/`, rebuild, commit and push. Pages redeploys in about a minute and the URL never changes:
 
 ```bash
 node tools/build-site.mjs https://srtjairo.github.io/chicago-3d/
 ```
 
-The build wraps `index.html` in a full document (doctype, so the public copy runs in standards mode), adds Open Graph/Twitter link-preview tags and a favicon, and copies `js/` and `preview.png`. `preview.png` (1200×630) is the link-preview image, a dusk shot grabbed from the canvas.
+The build:
+- wraps `index.html` in a full document (doctype, so the public copy runs in standards mode)
+- adds Open Graph/Twitter link-preview tags and a favicon
+- copies `js/` and `preview.png`
+
+`preview.png` (1200×630) is the link-preview image: a dusk shot (`lighting.set(0.64)`, camera pulled in and lowered from the overview) grabbed from `renderer.domElement` inside a `requestAnimationFrame`, then downscaled on a 2D canvas.
+
+`share/` (untracked) holds the drafted email and text message used to share the link.
+
+**claude.ai Artifact (secondary).** A private copy lives at https://claude.ai/artifact/FqeJcQo5yP55qtSQfv59HU. It does not update when the site is pushed. To update it, republish `index.html` with every `js/*.js` file mapped in `files` under the same relative path (`js/main.js`, etc.).
+
+Constraints that shape the code (they come from the artifact and keep both copies working):
+- Scripts may load only from allowlisted CDNs (jsDelivr is used).
+- No external images: all textures are generated on `<canvas>`.
+- `index.html` has no `<html>/<head>/<body>` wrapper because the publisher adds one. The local copy therefore runs in quirks mode, which is expected; the build script adds the wrapper for Pages.
 
 ## Architecture
 
