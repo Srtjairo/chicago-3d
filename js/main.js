@@ -5,11 +5,15 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { LANDMARKS, toAddress } from './geo.js';
+import { LANDMARKS, toAddress, configureShore } from './geo.js';
+import { loadCityData } from './city-data.js';
+import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js';
+import { buildSignatureArchitecture } from './architecture.js';
+import { buildCityLife } from './city-life.js';
+import { setupExplorer } from './explorer.js';
 import { buildTerrain, SLAB_TOP } from './terrain.js';
 import { buildLandmarks } from './landmarks.js';
 import { buildCity } from './city.js';
-import { buildStreets } from './streets.js';
 import { buildParks } from './parks.js';
 import { buildNavyPier } from './navypier.js';
 import { Lighting, PRESETS } from './lighting.js';
@@ -27,6 +31,7 @@ const quality = mobile
 async function init() {
   const canvas = $('scene');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  renderer.info.autoReset = false;
   renderer.setPixelRatio(quality.pixelRatio);
   const size = () => [Math.max(1, canvas.clientWidth || innerWidth), Math.max(1, canvas.clientHeight || innerHeight)];
   renderer.setSize(...size(), false);
@@ -50,13 +55,20 @@ async function init() {
 
   const ctx = { quality, beacons: [], glows: [], updaters: [] };
 
+  status('Loading Chicago’s real building footprints');
+  ctx.data = await loadCityData();
+  configureShore(ctx.data);
+  prepareWorld(ctx);
+
   status('Laying out the street grid');
   await nextFrame();
   buildTerrain(scene, ctx);
+  buildWaterGeometry(scene, ctx);
 
   status('Raising the skyline');
   await nextFrame();
   buildLandmarks(scene, ctx);
+  buildSignatureArchitecture(scene, ctx);
   buildCity(scene, ctx);
   buildStreets(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
@@ -66,6 +78,7 @@ async function init() {
   await nextFrame();
   buildParks(scene, ctx);
   buildNavyPier(scene, ctx);
+  buildCityLife(scene, ctx, camera);
 
   // Keep antialiasing and color output; avoid the multi-pass bloom effect.
   const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: quality.samples });
@@ -82,7 +95,7 @@ async function init() {
   // Labels
   const labelRenderer = new CSS2DRenderer({ element: $('labels') });
   labelRenderer.setSize(innerWidth, innerHeight);
-  const flyer = new Flyer(camera, controls);
+  const flyer = new Flyer(camera, controls, ctx);
   const labelObjs = [];
   for (const L of LANDMARKS) {
     const el = document.createElement('button');
@@ -106,6 +119,7 @@ async function init() {
     ui.showInfo(L);
   }
   ui.select = select;
+  const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
 
   flyer.onCaption = (L) => (L ? ui.showInfo(L, true) : ui.hideInfo());
   flyer.onStop = () => { ui.setTouring(false); $('info-step').hidden = true; };
@@ -144,6 +158,7 @@ async function init() {
   let addrTimer = 0;
   const updateLabels = labelLayout(camera, labelObjs, ui);
   function frame() {
+    renderer.info.reset();
     const raw = clock.getDelta();
     debug?.begin();
     perf.tick(raw);
@@ -154,6 +169,9 @@ async function init() {
     // OrbitControls damps once per frame; rescale so the camera glides the same at any frame rate
     controls.dampingFactor = 1 - Math.pow(1 - 0.06, dt * 60);
     controls.update();
+    ctx.cityDetailUpdate?.(camera, perf.level);
+    ctx.life.update(dt);
+    explorer.update(dt);
     // keep the camera above the ground and the target inside the city
     if (camera.position.y < 12) camera.position.y = 12;
     controls.target.x = THREE.MathUtils.clamp(controls.target.x, -5000, 4500);
@@ -162,7 +180,7 @@ async function init() {
 
     lighting.update(dt, controls.target);
     const night = lighting.state.night;
-    for (const fn of ctx.updaters) fn(time, night);
+    for (const fn of ctx.updaters) fn(ctx.life.time, night);
     if (ctx.water) ctx.water.material.uniforms.time.value += dt * 0.35;
     if (ctx.riverNormals) ctx.riverNormals.offset.set(time * 0.004, time * 0.002);
     // beacons: dim and steady by day, slow red pulse at night
@@ -175,6 +193,7 @@ async function init() {
     }
 
     composer.render();
+    ctx.renderStats = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
     if (ui.labelsOn) { updateLabels(dt); labelRenderer.render(scene, camera); }
     debug?.end(raw);
     requestAnimationFrame(frame);
@@ -200,7 +219,7 @@ function labelLayout(camera, objects, ui) {
     if (timer > 0) return;
     timer = 0.1;
     const w = innerWidth, h = innerHeight;
-    const occupied = [...document.querySelectorAll('.brand, #panel, #info, .dock')]
+    const occupied = [...document.querySelectorAll('.brand, #panel, #info, .dock, .explore')]
       .filter((e) => !e.hidden && getComputedStyle(e).opacity !== '0')
       .map((e) => { const r = e.getBoundingClientRect(); return { x: r.x - 10, y: r.y - 10, w: r.width + 20, h: r.height + 20 }; });
     const sorted = [...objects].sort((a, b) =>
@@ -294,8 +313,8 @@ function adaptiveQuality({ renderer, composer, water, sun, onResize }) {
       const fps = count / sum;
       sum = count = 0;
       if (settle > 0) { settle--; return; } // skip the windows right after a change
-      slow = fps < 45 ? slow + 1 : 0;
-      fast = fps > 57 ? fast + 1 : 0;
+      slow = fps < (mobile ? 27 : 45) ? slow + 1 : 0;
+      fast = fps > (mobile ? 40 : 57) ? fast + 1 : 0;
       // far too slow: drop two tiers at once without waiting for a second window
       if (level < max && (fps < 25 || slow >= 2)) { level = Math.min(max, level + (fps < 25 ? 2 : 1)); slow = fast = 0; settle = 2; apply(); }
       else if (fast >= 8 && level > 0 && !software) { level--; fast = 0; settle = 4; apply(); }
@@ -473,6 +492,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
 
 init().catch((err) => {
   console.error(err);
-  status('Could not start 3D. This page needs WebGL 2 in a recent browser.');
+  status(err.code==='CITY_DATA'?err.message:'Could not start 3D. Try reloading in a recent browser with graphics acceleration enabled.');
   $('loader').classList.add('error');
+  const retry=document.createElement('button');retry.textContent='Reload Chicago';retry.onclick=()=>location.reload();$('loader').append(retry);
 });

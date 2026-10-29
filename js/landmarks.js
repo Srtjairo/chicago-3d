@@ -297,7 +297,7 @@ function marinaCity(ctx) {
     g.add(mesh(new THREE.CylinderGeometry(12.2, 12.2, (floors - 19) * fl, 48).translate(0, (floors - 19) * fl / 2, 0), core, ox, 19 * fl, 0));
     g.add(mesh(new THREE.CylinderGeometry(14, 14, 2.4, 48).translate(0, 1.2, 0), plateMat, ox, L.h, 0));
     for (let f = 1; f < floors; f++) {
-      m.makeRotationY(f < 19 ? f * 0.2 : 0);
+      m.makeRotationY(0);
       m.setPosition(ox, f * fl, 0);
       plates.setMatrixAt(k++, m);
     }

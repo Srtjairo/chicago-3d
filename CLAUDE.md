@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A browser-viewable 3D model of downtown Chicago built with plain Three.js r160. There is no package.json or linter: `index.html` plus ES modules in `js/`. `tools/build-site.mjs` makes the public copy; `node tools/check.mjs` checks river geometry, landmark views and deployed dependency versions. Three.js loads from jsDelivr through the import map (`three` and `three/addons/` pinned to `0.160.0`).
+A browser-viewable 3D model of downtown Chicago built with plain Three.js r160. There is no package.json or linter: `index.html` plus ES modules in `js/`, and bundled geographic data in `assets/`. `tools/build-site.mjs` makes the public copy; `node tools/check.mjs` checks river geometry, landmark views and deployed dependency versions. `node tools/check-city.mjs` validates the geographic data, movement math and signal clearance. Three.js loads from jsDelivr through the import map (`three` and `three/addons/` pinned to `0.160.0`). See `SOURCES.md` for data provenance and limitations.
 
 ## Running it
 
@@ -30,7 +30,8 @@ A hidden browser tab throttles `requestAnimationFrame`, so animations and enviro
 - Bloom and stars were removed. Fountain spray has 184 points, updated at most 30 times per second; street lights are sparse and confined to the central area. Prefer static instanced detail over additional effects.
 - `perf.gpu` holds the GPU string and `perf.level` the tier. Setting `perf.level` (0–4) pins that tier; `perf.auto = true` hands control back.
 - The frame step is capped at 0.1 s and OrbitControls damping is rescaled by `dt`, so motion stays real-time down to 10 fps. Below that cap, low fps shows as slow motion rather than choppiness.
-- On the user's RTX 4070 the site runs at 110–145 fps at full quality. If it lags in their own browser, check `perf.gpu`: Windows may be running the browser on integrated graphics.
+- Measure the current release in `/tools/review.html` with a foreground tab. Earlier performance measurements do not apply to the expanded city. MacBook and physical phone performance have not been measured. Mobile quality targets a stable 30 fps; desktop adapts below 45 fps.
+- Downtown footprints are merged by material and 600 m spatial cell. Far cells use box proxies; cornices and roof details are culled by distance. Vehicles and pedestrians use pooled instanced meshes, a 20 Hz simulation and interpolated presentation. City life adds no dynamic shadow casters.
 
 **`?debug` panel.** Adding `?debug` shows fps, frame time, JS time, tier, canvas size, draw calls, triangles and GPU. Switches isolate MSAA, shadows, lake reflection, UI blur, labels, filler city and window shading. Only compare performance with foreground tabs, matching views and quality tiers; cached reflection/shadow frames have different draw counts.
 
@@ -50,12 +51,12 @@ node tools/build-site.mjs https://srtjairo.github.io/chicago-3d/
 The build:
 - wraps `index.html` in a full document (doctype, so the public copy runs in standards mode)
 - adds Open Graph/Twitter link-preview tags and a favicon
-- copies `js/` and `preview.png`
+- copies `js/`, `assets/` and `preview.png`
 - versions the entry module, every relative module dependency and the preview URL with a source/content hash; `docs/revision.json` identifies the deployed release
 
-Run `node tools/check.mjs` after building. For visual QA, serve the repo and open `/tools/review.html`; it supports phone sizing, fixed camera/light presets, geometry checks and a local-only PNG capture endpoint for the link preview.
+Run `node tools/check.mjs` and `node tools/check-city.mjs` after building. For visual QA, serve the repo and open `/tools/review.html`; it supports phone sizing, every landmark/district view, geometry checks, a 90-second motion audit, an 8-second frame-time measurement and a local-only PNG capture endpoint for the link preview. Rebuild after saving the preview, since the image is included in the release hash.
 
-`preview.png` (1200×630) is the link-preview image: a dusk shot (`lighting.set(0.64)`, camera pulled in and lowered from the overview) grabbed from `renderer.domElement` inside a `requestAnimationFrame`, then downscaled on a 2D canvas.
+`preview.png` (1200×630) is the link-preview image: the overview at dusk (`lighting.set(0.6)`), rendered and captured using the review page.
 
 `share/` (untracked) holds the drafted email and text message used to share the link.
 
@@ -68,7 +69,7 @@ Constraints that shape the code (they come from the artifact and keep both copie
 
 ## Architecture
 
-**Coordinates (`js/geo.js`).** Everything is in meters. The origin is State & Madison (the zero point of Chicago's address grid). +X is east, +Z is south, +Y is up. `geo.js` is the single source of truth for real-world data:
+**Coordinates (`js/geo.js`).** Everything is in meters. The origin is State & Madison (the zero point of Chicago's address grid). +X is east, +Z is south, +Y is up. `geo.js` holds curated landmark data and the surrounding procedural city. `assets/downtown.json` holds measured downtown footprints, road centerlines and water polygons. At startup `configureShore()` derives the downtown lake edge from that data. `geo.js` also contains:
 - the shoreline polyline (`shoreX(z)`)
 - the river branches (`RIVER`, `distToRiver`)
 - Grant Park bounds and its plazas
@@ -79,17 +80,17 @@ Constraints that shape the code (they come from the artifact and keep both copie
 
 Change positions here, not in the builders.
 
-**Adding landmarks.** Use the `architect` subagent (`.claude/agents/architect.md`), which researches, models, registers and verifies a real building. A landmark needs exactly four edits:
+**Adding landmarks.** Research, model, register and visually verify the building. A landmark needs:
 1. an entry in `LANDMARKS` (`geo.js`)
-2. a builder function in `landmarks.js`
-3. a line in its `builders` map
+2. a builder in `landmarks.js` or `architecture.js`
+3. registration in that builder's map/list, and its corresponding source footprint ID in `REPLACED` (`city-data.js`) so the measured mass does not overlap it
 4. its id in `TOUR` (`tour.js`)
 
 The list, labels and info card are data-driven.
 
 **Build pipeline (`js/main.js`).** `init()` creates the renderer, camera and OrbitControls, then calls the builders in order:
 
-`buildTerrain → buildLandmarks → buildCity → buildStreets → (rebuildBeacons) → buildParks → buildNavyPier → Lighting`
+`loadCityData → configureShore → prepareWorld → buildTerrain → buildWaterGeometry → buildLandmarks → buildSignatureArchitecture → buildCity → buildStreets → rebuildBeacons → buildParks → buildNavyPier → buildCityLife → Lighting → setupExplorer`
 
 It sets up collision-avoiding CSS2D labels and the UI, and renders through `EffectComposer` (RenderPass → OutputPass). Builders share a `ctx` object:
 - `ctx.quality`: settings tuned per device
@@ -97,13 +98,17 @@ It sets up collision-avoiding CSS2D labels and the UI, and renders through `Effe
 - `ctx.glows`: `{ mat, day, night }` entries; `emissiveIntensity` is interpolated by time of day
 - `ctx.updaters`: per-frame callbacks `(time, night)` for the fountain spray and the Ferris wheel
 - `ctx.water`, `ctx.riverNormals`, `ctx.streetLights`, `ctx.parkRects`, `ctx.bridges`, `ctx.cityBoxes`
+- `ctx.data`, `ctx.roads`, `ctx.measuredBuildings`, `ctx.collisionBuildings`, `ctx.life`, `ctx.cityDetailUpdate`, `ctx.explorer`
 
 **Facade shader (`js/textures.js` → `facadeMaterial`).** Every building, landmarks and the instanced filler city alike, uses a `MeshStandardMaterial` patched with `onBeforeCompile`. It draws windows procedurally from world position and normal, so geometry needs no UVs.
 - Seeds are quantized before hashing to avoid interpolated-seed noise. Distant windows converge to their area average using `fwidth`; nearby night windows light in office groups.
 - The shared uniform `uNight` (0 = day, 1 = night) drives lit windows.
 - The instanced filler city uses `instanced: true`, which reads a per-instance `aStyle` attribute (0 masonry, 1 curtain wall) and `gl_InstanceID` as the seed. This needs WebGL2.
+- Merged measured buildings use `features: true` and per-vertex `aSeed` to keep lighting patterns distinct while sharing materials.
 
-**Filler city (`js/city.js`).** Walks the 125 m street grid (`BLOCK`, `STREET`). It skips cells in the lake, in Grant Park, on Navy Pier, or near the river, and trims blocks that touch the river. Each remaining cell gets a sidewalk slab; cells holding a landmark get only the slab. Filler buildings are emitted into one InstancedMesh (a single draw call). The street-light Points are built from the same blocks plus `ctx.parkRects`.
+**City (`js/city.js`, `js/city-data.js`).** Inside the downtown coverage, measured footprint extrusions replace the procedural grid, except for individually curated landmarks. Outside it, the simpler 125 m grid fills the distant skyline in one InstancedMesh. Do not put synthetic blocks back inside the measured coverage.
+
+**Street life (`js/city-world.js`, `js/city-life.js`, `js/movement.js`).** City centerlines supply road geometry, bridge ramps, directed traffic lanes and sidewalks. Riverwalk, park routes and the elevated Loop are authored approximations. There are 480 vehicles, 800 people, four six-car trains and eight boats. Signals use protected crossing intervals, vehicles keep gaps and trains dwell at stations. This is illustrative activity, not live transit or a calibrated traffic simulation. Pause city life also pauses the fountain and Ferris wheel; it leaves water shading active. Reduced-motion users start paused and skip camera flights.
 
 **Lighting (`js/lighting.js`).** Time of day is one scalar, `t ∈ [0,1]`, interpolating sun direction, light colors/intensities, exposure, fog, night, sky, water and environment strength. `PRESETS` maps the UI chips to `t` values.
 - The visible sky uses a lightweight gradient shader with a small analytic sun. Its horizon matches the fog color, avoiding a hard seam at the finite terrain edge.
@@ -115,7 +120,8 @@ It sets up collision-avoiding CSS2D labels and the UI, and renders through `Effe
 **Camera & tour (`js/tour.js`).**
 - `Flyer` handles fly-to animations and the guided tour (the `TOUR` id list).
 - `viewFor(L)` derives the camera position from a landmark's `view: { az, dist, el }`.
+- It evaluates alternate angles and elevations against surrounding building bounds, checking multiple points on the facade. Flights ascend above intervening buildings, cross, then descend.
 - `overviewPos(aspect)` pulls the camera back on portrait screens.
 - Any pointerdown on the canvas cancels a flight or tour.
 
-**UI.** All DOM is static in `index.html`; `setupUI()` in `main.js` wires it up. The page is single-theme dark: CSS tokens on `:root`, fonts Big Shoulders Display, Barlow and IBM Plex Mono. At widths of 720 px and below, the landmark panel becomes a toggled sheet.
+**UI.** The main DOM is in `index.html`; `setupUI()` in `main.js` wires it up. `explorer.js` adds district presets, pause, an orientation map and the source-credit dialog. The page is single-theme dark: CSS tokens on `:root`, fonts Big Shoulders Display, Barlow and IBM Plex Mono. At widths of 720 px and below, the landmark panel becomes a toggled sheet.

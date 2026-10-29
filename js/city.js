@@ -4,6 +4,7 @@ import {
 } from './geo.js';
 import { facadeMaterial, glowSprite } from './textures.js';
 import { SLAB_TOP, addTrees } from './terrain.js';
+import { inCoverage, buildMeasuredCity } from './city-data.js';
 
 // Building palettes: [color, glass, style]  style 0 = masonry, 1 = curtain wall
 const PALETTE = [
@@ -29,6 +30,7 @@ export function buildCity(scene, ctx) {
   for (let x = Math.floor(EXTENT.minX / BLOCK) * BLOCK; x < EXTENT.maxX; x += BLOCK) {
     for (let z = Math.floor(EXTENT.minZ / BLOCK) * BLOCK; z < EXTENT.maxZ; z += BLOCK) {
       const cx = x + BLOCK / 2, cz = z + BLOCK / 2;
+      if (ctx.data && inCoverage(cx, cz, 65)) continue;
       if (isLake(cx, cz, 70)) continue;
       if (inGrantPark(cx, cz)) continue;
       if (cx > NAVY_PIER.x0 - 80 && Math.abs(cz - NAVY_PIER.z) < 120) continue;
@@ -113,6 +115,7 @@ export function buildCity(scene, ctx) {
 
   addTrees(scene, trees, rand);
   buildStreetLights(scene, ctx, blocks);
+  if (ctx.data) buildMeasuredCity(scene, ctx);
 }
 
 function pick(rand, glassy) {

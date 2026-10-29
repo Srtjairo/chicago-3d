@@ -4,18 +4,20 @@
 <header><strong>Chicago visual checks</strong><button id="desktop">Desktop</button><button id="phone">Phone</button>
 <select id="place" aria-label="Camera view"><option value="overview">Skyline</option><option value="wrigley">Wrigley</option><option value="bean">Cloud Gate</option><option value="navypier">Navy Pier</option><option value="fountain">Fountain</option></select>
 <select id="time" aria-label="Lighting"><option value="0.42">Golden hour</option><option value="0">Midday</option><option value="0.7">Dusk</option><option value="1">Night</option></select>
-<button id="check">Check scene</button><button id="capture">Save link preview</button></header>
+<button id="check">Check scene</button><button id="motion">Audit motion</button><button id="benchmark">Measure 8 seconds</button><button id="capture">Save link preview</button></header>
 <iframe title="Chicago preview" src="/docs/" width="1200" height="740"></iframe><pre id="results">Waiting for scene…</pre>
 <script type="module">
 const frame = document.querySelector('iframe'), out = document.querySelector('#results');
 const app = () => frame.contentWindow.__chicago;
-const ready = setInterval(() => { if (app()) { clearInterval(ready); out.textContent = 'Ready'; } }, 200);
+const ready = setInterval(async () => { if (app()) { clearInterval(ready); out.textContent = 'Ready'; const geo=await import('/docs/js/geo.js');for(const L of geo.LANDMARKS)if(!document.querySelector(`#place option[value="${L.id}"]`)){const o=document.createElement('option');o.value=L.id;o.textContent=L.name;document.querySelector('#place').append(o);} const explorer=await import('/docs/js/explorer.js');for(const [key,d]of Object.entries(explorer.DISTRICTS)){const o=document.createElement('option');o.value='district:'+key;o.textContent=d.name;document.querySelector('#place').append(o);} } }, 200);
 document.querySelector('#desktop').onclick = () => { frame.width = 1200; frame.height = 740; };
 document.querySelector('#phone').onclick = () => { frame.width = 390; frame.height = 844; };
 document.querySelector('#place').onchange = async (e) => {
   const a = app(), geo = await import('/docs/js/geo.js'), tour = await import('/docs/js/tour.js');
   a.flyer.cancel();
-  const view = e.target.value === 'overview' ? { pos: tour.overviewPos(a.camera.aspect), target: tour.OVERVIEW.target }
+  let view;
+  if(e.target.value.startsWith('district:')) {const {DISTRICTS}=await import('/docs/js/explorer.js');const THREE=await import('three');const d=DISTRICTS[e.target.value.slice(9)];view={pos:new THREE.Vector3(...d.pos),target:new THREE.Vector3(...d.target)};}
+  else view = e.target.value === 'overview' ? { pos: tour.overviewPos(a.camera.aspect), target: tour.OVERVIEW.target }
     : a.flyer.viewFor(geo.LANDMARKS.find((l) => l.id === e.target.value));
   a.camera.position.copy(view.pos); a.controls.target.copy(view.target); a.controls.update();
 };
@@ -39,7 +41,25 @@ document.querySelector('#check').onclick = () => {
     cachedShadows:!a.renderer.shadowMap.autoUpdate,meshes:meshes.length,
     activeCasters:meshes.filter((m)=>m.castShadow).length,canvas:[a.renderer.domElement.width,a.renderer.domElement.height],
     horizontalOverflow:frame.contentDocument.documentElement.scrollWidth > Number(frame.width),
-    documentMode:frame.contentDocument.compatMode, tier:a.perf.level},null,2);
+    documentMode:frame.contentDocument.compatMode, tier:a.perf.level, render:a.ctx.renderStats,
+    measuredBuildings:a.ctx.measuredBuildings.length,roads:a.ctx.roads.length,life:a.ctx.life.stats,walkRoutes:a.ctx.life.walks.length,
+    camera:a.camera.position.toArray(),roadTraffic:a.ctx.life.cars.slice(0,5).map(c=>[c.edge.id,c.d]),
+    facadeMaterials:meshes.filter(m=>m.name.startsWith('footprints-')).slice(0,2).map(m=>({normal:[...m.geometry.attributes.normal.array.slice(0,12)],style:m.material.userData.facade.uStyle.value}))},null,2);
+};
+document.querySelector('#benchmark').onclick=()=>{
+  const a=app(),times=[],calls=[],start=performance.now();let last=start;const before=a.ctx.life.stats.steps;
+  out.textContent='Measuring 8 seconds; keep this tab in the foreground…';
+  const sample=now=>{times.push(now-last);last=now;calls.push(a.ctx.renderStats.calls);if(now-start<8000){requestAnimationFrame(sample);return;}
+    times.sort((x,y)=>x-y);out.textContent=JSON.stringify({frames:times.length,medianMs:times[Math.floor(times.length*.5)],p95Ms:times[Math.floor(times.length*.95)],maxCalls:Math.max(...calls),triangles:a.ctx.renderStats.triangles,geometries:a.renderer.info.memory.geometries,textures:a.renderer.info.memory.textures,lifeSteps:a.ctx.life.stats.steps-before,visible:!document.hidden,focused:document.hasFocus(),gpu:a.perf.gpu,tier:a.perf.level,life:a.ctx.life.stats},null,2);
+  };requestAnimationFrame(sample);
+};
+document.querySelector('#motion').onclick=async()=>{
+  const a=app(),{atDistance}=await import('/docs/js/movement.js');
+  const old=a.ctx.life.cars.map(c=>[c.edge.id,c.d]);a.ctx.life.audit(90);
+  let moved=0,invalid=0,boatLand=0;for(const [i,c]of a.ctx.life.cars.entries()){if(c.edge.id!==old[i][0]||Math.abs(c.d-old[i][1])>2)moved++;const p=atDistance(c.edge,c.d);if(![p.x,p.y,p.z,c.d].every(Number.isFinite)||c.d<0||c.d>c.edge.length+.1)invalid++;}
+  for(let d=0;d<a.ctx.life.boatRoute.length;d+=5){const p=atDistance(a.ctx.life.boatRoute,d);if(!a.ctx.isRiver(p.x,p.z))boatLand++;}
+  const paused=a.ctx.life.paused;a.ctx.life.paused=true;const t=a.ctx.life.time;a.ctx.life.update(.1);const pauseWorks=t===a.ctx.life.time;a.ctx.life.paused=paused;
+  out.textContent=JSON.stringify({movedAfter90Seconds:moved,totalCars:old.length,invalidRoutes:invalid,boatSamplesOnLand:boatLand,pauseWorks,life:a.ctx.life.stats},null,2);
 };
 document.querySelector('#capture').onclick = async () => {
   const a = app(); frame.width = 1200; frame.height = 630;

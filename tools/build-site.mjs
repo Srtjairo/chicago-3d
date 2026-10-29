@@ -18,12 +18,14 @@ if (!/^https:\/\//.test(siteUrl)) {
 }
 
 const TITLE = 'Downtown Chicago in 3D';
-const DESC = 'Fly around a 3D model of downtown Chicago: Willis Tower, the Hancock, Grant Park, the river and Navy Pier, from midday to night, with a guided tour.';
+const DESC = 'Explore a living 3D model of downtown Chicago, with real building footprints, signature architecture, riverboats, Loop trains and streets that come alive from midday to night.';
 
 const src = readFileSync(join(root, 'index.html'), 'utf8');
 const scripts = readdirSync(join(root, 'js')).filter((f) => f.endsWith('.js')).sort();
+const assets = readdirSync(join(root, 'assets')).filter(f=>!f.startsWith('.')).sort();
 const hash = createHash('sha256').update(src);
 for (const f of scripts) hash.update(f).update(readFileSync(join(root, 'js', f)));
+for (const f of assets) hash.update(f).update(readFileSync(join(root, 'assets', f)));
 if (existsSync(join(root, 'preview.png'))) hash.update(readFileSync(join(root, 'preview.png')));
 const revision = hash.digest('hex').slice(0, 16);
 // Everything up to the first <canvas> is head material (title, meta, fonts, style, importmap).
@@ -65,6 +67,8 @@ ${body}
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, 'js'), { recursive: true });
+mkdirSync(join(out, 'assets'), { recursive: true });
+for (const f of assets) copyFileSync(join(root,'assets',f),join(out,'assets',f));
 writeFileSync(join(out, 'index.html'), html);
 for (const f of scripts) {
   // A page reload gets one consistent release even when older modules are cached.

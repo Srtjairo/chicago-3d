@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PLAZAS, rng } from './geo.js?v=89cbf690b5719dd4';
-import { SLAB_TOP } from './terrain.js?v=89cbf690b5719dd4';
-import { glowSprite } from './textures.js?v=89cbf690b5719dd4';
+import { PLAZAS, rng } from './geo.js?v=24f1a2e542d1b3b4';
+import { SLAB_TOP } from './terrain.js?v=24f1a2e542d1b3b4';
+import { glowSprite } from './textures.js?v=24f1a2e542d1b3b4';
+import { boxBatch, segmentBox } from './city-data.js?v=24f1a2e542d1b3b4';
 
 const BASE = SLAB_TOP + 0.45;
 
@@ -10,6 +11,40 @@ export function buildParks(scene, ctx) {
   cloudGate(scene);
   pritzker(scene, ctx);
   buckingham(scene, ctx);
+  millenniumLandscape(scene, ctx);
+}
+
+function millenniumLandscape(scene, ctx) {
+  const paving=[],planting=[],hedges=[],seats=[],lights=[];
+  // Crown Fountain's reflecting plaza and paired glass towers.
+  paving.push([338,BASE,93,64,0.2,95]);
+  const pool=new THREE.Mesh(new THREE.BoxGeometry(38,.04,62),new THREE.MeshStandardMaterial({color:0x38444a,metalness:.4,roughness:.2}));pool.position.set(338,BASE+.13,93);scene.add(pool);
+  const glass=facadeMaterialForFountain();
+  const towers=boxBatch([[338,BASE+7.6,57,7,15.2,4],[338,BASE+7.6,129,7,15.2,4]],0,'crown-fountain',glass);scene.add(towers);ctx.glows.push({mat:glass,day:0.02,night:.2});
+  // Lurie Garden: low planted beds separated by a diagonal boardwalk and hedges.
+  for(let i=0;i<8;i++)for(let j=0;j<4;j++){
+    const x=452+i*16,z=57+j*14;
+    planting.push([x,BASE+.22,z,13,.3,11,0,[0x727d57,0x657d67,0x8c8773,0x808276][(i+j)%4]]);
+  }
+  segmentBox(paving,[425,43],[570,118],4,BASE+.12,.2);
+  for(const [a,b]of [[[425,35],[580,35]],[[580,35],[580,125]],[[425,125],[580,125]]])segmentBox(hedges,a,b,4,BASE+1.8,3.5);
+  for(const z of [-225,-10,135])for(let x=300;x<590;x+=34)seats.push([x,BASE+.5,z,3,.55,.7]);
+  for(const x of [305,422,588])for(let z=-210;z<140;z+=32)lights.push([x,BASE+2.5,z,.18,5,.18]);
+  // BP Bridge's winding pedestrian deck crosses Columbus, with a raised middle span.
+  const curve=new THREE.CatmullRomCurve3([[574,-55],[609,-32],[654,-62],[688,-21],[666,30],[626,43]].map(([x,z],i)=>new THREE.Vector3(x,BASE+(i===0||i===5?0:7),z)));
+  const deck=[],rails=[],points=curve.getPoints(90);
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz),y=(a.y+b.y)/2;
+    segmentBox(deck,[a.x,a.z],[b.x,b.z],5.4,y,.5);
+    for(const side of [-1,1])segmentBox(rails,[a.x-dz/len*2.7*side,a.z+dx/len*2.7*side],[b.x-dz/len*2.7*side,b.z+dx/len*2.7*side],.35,y+.8,1.2);
+  }
+  scene.add(boxBatch(paving,0xb6ae9e,'park-plazas'),boxBatch(planting,0xffffff,'lurie-plantings'),boxBatch(hedges,0x526044,'garden-hedges'),boxBatch(seats,0x9b8668,'park-benches'),boxBatch(lights,0x4d5654,'park-lamps'),boxBatch(deck,0xa89c85,'bp-bridge-deck'),boxBatch(rails,0xb0b6b5,'bp-bridge-ribbons'));
+  ctx.parkWalks=[[[300,BASE+.2,-215],[422,BASE+.2,-215],[422,BASE+.2,140],[300,BASE+.2,140],[300,BASE+.2,-215]],[[435,BASE+.2,35],[584,BASE+.2,35],[584,BASE+.2,130],[435,BASE+.2,130],[435,BASE+.2,35]],points.map(p=>[p.x,p.y+.3,p.z]),[[310,BASE+.2,600],[600,BASE+.2,600],[600,BASE+.2,790],[310,BASE+.2,790],[310,BASE+.2,600]]];
+}
+function facadeMaterialForFountain(){
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=128;const c=canvas.getContext('2d');c.fillStyle='#8ca8ae';c.fillRect(0,0,64,128);c.strokeStyle='#53686a';c.lineWidth=1;
+  for(let x=0;x<65;x+=8){c.beginPath();c.moveTo(x,0);c.lineTo(x,128);c.stroke();}for(let y=0;y<129;y+=8){c.beginPath();c.moveTo(0,y);c.lineTo(64,y);c.stroke();}
+  const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;return new THREE.MeshStandardMaterial({color:0xd2dedb,map,metalness:.2,roughness:.35,emissive:0x789a9c,emissiveMap:map,emissiveIntensity:0});
 }
 
 // Cloud Gate: a mirror-polished bean, 20 m long, with the arched "omphalos" underneath
@@ -40,7 +75,8 @@ function pritzker(scene, ctx) {
   const stageMat = new THREE.MeshStandardMaterial({ color: 0x5b4a3c, roughness: 0.8 });
 
   const stage = new THREE.Mesh(new THREE.BoxGeometry(30, 12, 34), stageMat);
-  stage.position.set(x - 10, BASE + 6, z);
+  stage.position.set(x, BASE + 6, z - 10);
+  stage.rotation.y = -Math.PI / 2;
   stage.castShadow = true;
   scene.add(stage);
 
@@ -75,7 +111,8 @@ function pritzker(scene, ctx) {
     ribbons.push(geo);
   }
   const crown = new THREE.Mesh(mergeGeometries(ribbons), steel);
-  crown.position.set(x - 8, BASE, z);
+  crown.position.set(x, BASE, z - 8);
+  crown.rotation.y = -Math.PI / 2;
   crown.castShadow = true;
   scene.add(crown);
 

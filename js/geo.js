@@ -96,8 +96,8 @@ export const PARK_CROSS_STREETS = [125, 375, 1000]; // Monroe, Jackson, Balbo (g
 
 export const PLAZAS = {
   bean: { x: 374, z: -78, r: 42 },
-  pritzker: { x: 480, z: -67 },
-  lawn: { minX: 500, maxX: 589, minZ: -135, maxZ: -5 },
+  pritzker: { x: 530, z: -165 },
+  lawn: { minX: 475, maxX: 590, minZ: -135, maxZ: 25 },
   fountain: { x: 739, z: 688, r: 95 },
 };
 
@@ -185,6 +185,33 @@ export const LANDMARKS = [
     view: { az: 2.6, dist: 900, el: 0.3 },
   },
 ];
+
+// Footprint-aligned positions; surveyed geometry remains separate from architectural heights.
+Object.assign(LANDMARKS.find(l=>l.id==='wrigley'), {x:255,z:-844,r:38});
+Object.assign(LANDMARKS.find(l=>l.id==='prudential'), {x:428,z:-375,r:27});
+Object.assign(LANDMARKS.find(l=>l.id==='marina'), {x:-77,z:-670,r:57});
+Object.assign(LANDMARKS.find(l=>l.id==='stregis'), {x:877,z:-567,r:58});
+Object.assign(LANDMARKS.find(l=>l.id==='pritzker'), {x:530,z:-165});
+LANDMARKS.push(
+  {id:'aqua',name:'Aqua Tower',aka:'Studio Gang',x:652,z:-466,r:55,h:261.8,roof:261.8,ft:859,year:2009,addr:'225 N Columbus Dr',desc:'Undulating concrete balconies turn a glass tower into a rippling vertical landscape. Each floor has its own balcony outline.',view:{az:1.5,dist:470,el:0.28}},
+  {id:'tribune',name:'Tribune Tower',aka:'Gothic Revival on Michigan Avenue',x:353,z:-943,r:49,h:141.7,roof:141.7,ft:465,year:1925,addr:'435 N Michigan Ave',desc:'Howells & Hood won an international design competition with a limestone tower crowned by Gothic buttresses and pinnacles.',view:{az:-1.2,dist:290,el:0.27}},
+  {id:'carbide',name:'Carbide & Carbon Building',aka:'Pendry Chicago',x:238,z:-499,r:25,h:153.3,roof:153.3,ft:503,year:1929,addr:'230 N Michigan Ave',desc:'Dark green terra cotta rises above a black granite base to a gold-leaf crown. Designed by the Burnham Brothers.',view:{az:1.3,dist:280,el:0.3}},
+  {id:'mart',name:'Merchandise Mart',aka:'THE MART',x:-631,z:-720,r:115,h:103.6,roof:103.6,ft:340,year:1930,addr:'222 W Merchandise Mart Plaza',desc:'A monumental Art Deco wholesale marketplace spanning two city blocks. Its long limestone facade and central tower anchor the north bank.',view:{az:1.1,dist:480,el:0.32}},
+  {id:'board',name:'Chicago Board of Trade',aka:'The head of LaSalle Street',x:-365,z:489,r:63,h:184.4,roof:175.2,ft:605,year:1930,addr:'141 W Jackson Blvd',desc:'Holabird & Root’s limestone setbacks terminate LaSalle Street. A pyramidal roof carries John Storrs’s aluminum statue of Ceres.',view:{az:3.14,dist:380,el:0.25}},
+  {id:'riverside',name:'150 North Riverside',aka:'A tower on a narrow base',x:-876,z:-361,r:44,h:220.7,roof:220.7,ft:724,year:2017,addr:'150 N Riverside Plaza',desc:'Goettsch Partners narrowed the tower at its base to fit between railway tracks and the river, opening much of the site as public landscape.',view:{az:1.4,dist:430,el:0.23}},
+);
+
+export function configureShore(data) {
+  const lake=data.water.filter(w=>w.name==='LAKE MICHIGAN').sort((a,b)=>b.rings[0].length-a.rings[0].length)[0];
+  if(!lake)return;
+  const ring=lake.rings[0],points=[];
+  for(let z=-7000;z<=7000;z+=25){
+    const xs=[];
+    for(let i=1;i<ring.length;i++){const a=ring[i-1],b=ring[i];if((a[1]>z)!==(b[1]>z))xs.push(a[0]+(b[0]-a[0])*(z-a[1])/(b[1]-a[1]));}
+    const x=Math.min(...xs.filter(x=>x>-4000));if(Number.isFinite(x))points.push([z,x]);
+  }
+  if(points.length>100)SHORE.splice(0,SHORE.length,...points);
+}
 
 export function toAddress(x, z) {
   const round = (v) => Math.round(Math.abs(v) / 50) * 50;

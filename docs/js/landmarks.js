@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js?v=89cbf690b5719dd4';
-import { facadeMaterial } from './textures.js?v=89cbf690b5719dd4';
-import { SLAB_TOP } from './terrain.js?v=89cbf690b5719dd4';
+import { LANDMARKS } from './geo.js?v=24f1a2e542d1b3b4';
+import { facadeMaterial } from './textures.js?v=24f1a2e542d1b3b4';
+import { SLAB_TOP } from './terrain.js?v=24f1a2e542d1b3b4';
 
 const byId = Object.fromEntries(LANDMARKS.map((l) => [l.id, l]));
 
@@ -297,7 +297,7 @@ function marinaCity(ctx) {
     g.add(mesh(new THREE.CylinderGeometry(12.2, 12.2, (floors - 19) * fl, 48).translate(0, (floors - 19) * fl / 2, 0), core, ox, 19 * fl, 0));
     g.add(mesh(new THREE.CylinderGeometry(14, 14, 2.4, 48).translate(0, 1.2, 0), plateMat, ox, L.h, 0));
     for (let f = 1; f < floors; f++) {
-      m.makeRotationY(f < 19 ? f * 0.2 : 0);
+      m.makeRotationY(0);
       m.setPosition(ox, f * fl, 0);
       plates.setMatrixAt(k++, m);
     }

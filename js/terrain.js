@@ -5,6 +5,7 @@ import {
   PLAZAS, polylineAt, rng, inGrantPark, RIVER_PATHS,
 } from './geo.js';
 import { waterNormals, grassTexture } from './textures.js';
+import { inCoverage } from './city-data.js';
 
 const SLAB_TOP = 0.6;
 
@@ -15,7 +16,7 @@ export function buildTerrain(scene, ctx) {
   const land = new THREE.Shape([new THREE.Vector2(-12000, 9000), ...pts, new THREE.Vector2(-12000, -9000)]);
   const ground = new THREE.Mesh(
     new THREE.ShapeGeometry(land),
-    new THREE.MeshStandardMaterial({ color: 0x45494b, roughness: 0.95 }),
+    new THREE.MeshStandardMaterial({ color: 0x8c8e87, roughness: 0.95 }),
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -40,7 +41,7 @@ export function buildTerrain(scene, ctx) {
   buildParks(scene, ctx);
 }
 
-function strip(points, width, y) {
+function strip(points, width, y, clipCore = false) {
   const pos = [];
   const idx = [];
   for (let i = 0; i < points.length; i++) {
@@ -51,7 +52,7 @@ function strip(points, width, y) {
     dx /= len; dz /= len;
     const nx = -dz * width / 2, nz = dx * width / 2;
     pos.push(p[0] + nx, y, p[1] + nz, p[0] - nx, y, p[1] - nz);
-    if (i > 0) {
+    if (i > 0 && !(clipCore && inCoverage((points[i-1][0]+p[0])/2, (points[i-1][1]+p[1])/2, 30))) {
       const k = i * 2;
       idx.push(k - 2, k - 1, k, k - 1, k + 1, k);
     }
@@ -78,10 +79,10 @@ function buildRiver(scene, ctx) {
   const group = new THREE.Group();
   const bankMat = new THREE.MeshStandardMaterial({ color: 0xa69f90, roughness: 0.9, side: THREE.DoubleSide });
   for (const key of ['main', 'north', 'south']) {
-    const bank = new THREE.Mesh(strip(RIVER_PATHS[key], RIVER.width[key] + 14, 0.12), bankMat);
+    const bank = new THREE.Mesh(strip(RIVER_PATHS[key], RIVER.width[key] + 14, 0.12, Boolean(ctx.data)), bankMat);
     bank.receiveShadow = true;
     group.add(bank);
-    const g = strip(RIVER_PATHS[key], RIVER.width[key], 0.18);
+    const g = strip(RIVER_PATHS[key], RIVER.width[key], 0.18, Boolean(ctx.data));
     // planar UVs so the normal map tiles in world space
     const p = g.attributes.position;
     const uv = [];
@@ -100,17 +101,17 @@ function buildRiver(scene, ctx) {
   const main = RIVER_PATHS.main;
   for (let x = -625; x <= 1000; x += BLOCK) {
     const z = polylineAt(main, 0, x);
-    if (z !== null) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(STREET + 2, 1.6, RIVER.width.main + 30)));
+    if (z !== null && !inCoverage(x,z,30)) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(STREET + 2, 1.6, RIVER.width.main + 30)));
   }
   const south = RIVER_PATHS.south;
   for (let z = -375; z <= 2250; z += BLOCK) {
     const x = polylineAt(south, 1, z);
-    if (x !== null) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(RIVER.width.south + 30, 1.6, STREET + 2)));
+    if (x !== null && !inCoverage(x,z,30)) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(RIVER.width.south + 30, 1.6, STREET + 2)));
   }
   const north = RIVER_PATHS.north;
   for (let z = -4500; z <= -750; z += BLOCK * 2) {
     const x = polylineAt(north, 1, z);
-    if (x !== null) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(RIVER.width.north + 30, 1.6, STREET + 2)));
+    if (x !== null && !inCoverage(x,z,30)) mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 1.4, z), new THREE.Quaternion(), new THREE.Vector3(RIVER.width.north + 30, 1.6, STREET + 2)));
   }
   const bridges = new THREE.InstancedMesh(bridgeGeo, bridgeMat, mats.length);
   mats.forEach((m, i) => bridges.setMatrixAt(i, m));
@@ -163,19 +164,14 @@ function buildParks(scene, ctx) {
   addPlaza(new THREE.BoxGeometry(40, 0.2, 260), PLAZAS.fountain.x - 120, PLAZAS.fountain.z);     // Congress Plaza walk
   addPlaza(new THREE.BoxGeometry(250, 0.2, 18), PLAZAS.fountain.x + 0, PLAZAS.fountain.z);       // east-west axis
 
-  // Diagonal and edge paths through the lawns
+  // Formal perimeter walks and axes, with open fields between them.
   const pathMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c0, roughness: 0.9 });
   for (const [x0, z0, x1, z1] of rects) {
     if (z0 < 120) continue; // Millennium Park has its own layout
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
     const w = x1 - x0 - 14, d = z1 - z0 - 14;
-    const len = Math.hypot(w, d);
-    for (const s of [1, -1]) {
-      const p = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, len), pathMat);
-      p.position.set(cx, SLAB_TOP + 0.33, cz);
-      p.rotation.y = s * Math.atan2(w, d);
-      p.receiveShadow = true;
-      scene.add(p);
+    for (const [px,pz,pw,pd] of [[cx,z0+12,w,4],[cx,z1-12,w,4],[x0+12,cz,4,d],[x1-12,cz,4,d],...(z0<1050?[[cx,cz,w,5]]:[])]) {
+      const p = new THREE.Mesh(new THREE.BoxGeometry(pw,0.2,pd),pathMat);p.position.set(px,SLAB_TOP+0.33,pz);p.receiveShadow=true;scene.add(p);
     }
   }
 
@@ -199,9 +195,9 @@ function buildParks(scene, ctx) {
       const x = x0 + 8 + rand() * (x1 - x0 - 16);
       const z = z0 + 8 + rand() * (z1 - z0 - 16);
       if (blocked(x, z)) continue;
-      // Leave the diagonal walks clear and gather trees around lawn edges.
+      // Leave the formal walks clear and gather trees around lawn edges.
       const u = (x - x0) / (x1 - x0), v = (z - z0) / (z1 - z0);
-      if (z0 >= 120 && (Math.abs(u - v) < 0.035 || Math.abs(u + v - 1) < 0.035)) continue;
+      if (z0 >= 120 && (Math.abs(x-x0-12)<5||Math.abs(x-x1+12)<5||Math.abs(z-z0-12)<5||Math.abs(z-z1+12)<5||Math.abs(z-(z0+z1)/2)<5)) continue;
       if (u > 0.2 && u < 0.8 && v > 0.18 && v < 0.82 && rand() < 0.72) continue;
       trees.push([x, z, 0.75 + rand() * 0.6]);
     }

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import {
   BLOCK, STREET, EXTENT, distToRiver, heightAt, isLake, inGrantPark, landmarkInRect, rng, NAVY_PIER,
-} from './geo.js?v=89cbf690b5719dd4';
-import { facadeMaterial, glowSprite } from './textures.js?v=89cbf690b5719dd4';
-import { SLAB_TOP, addTrees } from './terrain.js?v=89cbf690b5719dd4';
+} from './geo.js?v=24f1a2e542d1b3b4';
+import { facadeMaterial, glowSprite } from './textures.js?v=24f1a2e542d1b3b4';
+import { SLAB_TOP, addTrees } from './terrain.js?v=24f1a2e542d1b3b4';
+import { inCoverage, buildMeasuredCity } from './city-data.js?v=24f1a2e542d1b3b4';
 
 // Building palettes: [color, glass, style]  style 0 = masonry, 1 = curtain wall
 const PALETTE = [
@@ -29,6 +30,7 @@ export function buildCity(scene, ctx) {
   for (let x = Math.floor(EXTENT.minX / BLOCK) * BLOCK; x < EXTENT.maxX; x += BLOCK) {
     for (let z = Math.floor(EXTENT.minZ / BLOCK) * BLOCK; z < EXTENT.maxZ; z += BLOCK) {
       const cx = x + BLOCK / 2, cz = z + BLOCK / 2;
+      if (ctx.data && inCoverage(cx, cz, 65)) continue;
       if (isLake(cx, cz, 70)) continue;
       if (inGrantPark(cx, cz)) continue;
       if (cx > NAVY_PIER.x0 - 80 && Math.abs(cz - NAVY_PIER.z) < 120) continue;
@@ -113,6 +115,7 @@ export function buildCity(scene, ctx) {
 
   addTrees(scene, trees, rand);
   buildStreetLights(scene, ctx, blocks);
+  if (ctx.data) buildMeasuredCity(scene, ctx);
 }
 
 function pick(rand, glassy) {

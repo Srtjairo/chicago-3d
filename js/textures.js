@@ -19,6 +19,7 @@ export function facadeMaterial(opts = {}) {
   };
   const mat = new THREE.MeshStandardMaterial({ color: o.color, roughness: o.roughness, metalness: o.metalness });
   if (o.instanced) mat.defines = { FACADE_ATTR: '' };
+  if (o.features) mat.defines = { FEATURE_ATTR: '' };
   const uniforms = {
     uNight,
     uGlass: { value: new THREE.Color(o.glass) },
@@ -40,6 +41,9 @@ export function facadeMaterial(opts = {}) {
         uniform float uStyle; uniform float uSeed;
         #ifdef FACADE_ATTR
           attribute float aStyle;
+        #endif
+        #ifdef FEATURE_ATTR
+          attribute float aSeed;
         #endif`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         vec4 fW = vec4(transformed, 1.0);
@@ -55,6 +59,9 @@ export function facadeMaterial(opts = {}) {
           vFStyle = aStyle; vFSeed = float(gl_InstanceID) + 1.0;
         #else
           vFStyle = uStyle; vFSeed = uSeed;
+        #endif
+        #ifdef FEATURE_ATTR
+          vFSeed = aSeed;
         #endif`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
@@ -80,12 +87,12 @@ export function facadeMaterial(opts = {}) {
         vec2 fWin = mix(uWinA, uWinB, vFStyle);
         float fAA = max(fW2.x, fW2.y);
         float fMask = fBand(fF.x, fWin.x, fW2.x) * fBand(fF.y, fWin.y, fW2.y);
-        float fFar = smoothstep(0.07, 0.32, fAA);
+        float fFar = smoothstep(0.55, 1.3, fAA);
         float fAvg = fWin.x * fWin.y;
         fMask = mix(fMask, fAvg, fFar);
         fMask *= fWall * step(1.0, fId.y);
         // lights cluster by floor and office bay, with some single windows
-        float fR = fHash(vec2(floor(fId.x / 3.0), fId.y) + vec2(fSeed * 3.3 + fSide, 1.7));
+        float fR = fHash(vec2(floor(fId.x / 2.0), fId.y) + vec2(fSeed * 3.3 + fSide, 1.7));
         vec3 fGlass = mix(uGlass, diffuseColor.rgb * 0.48, vFStyle * 0.32);
         fGlass *= mix(0.94 + 0.12 * fHash(fId.yx + fSeed), 1.0, fFar);
         // A little contact shading grounds the city without thousands of shadow casters.
@@ -103,7 +110,7 @@ export function facadeMaterial(opts = {}) {
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
         metalnessFactor = mix(metalnessFactor, 0.32, fMask);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-        totalEmissiveRadiance += fLitCol * uNight * 1.25;`);
+        totalEmissiveRadiance += fLitCol * uNight * 0.65;`);
   };
   return mat;
 }

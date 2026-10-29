@@ -1,0 +1,32 @@
+import * as THREE from 'three';
+import { LANDMARKS } from './geo.js';
+export const DISTRICTS={
+  river:{name:'River & bridges',pos:[420,245,-420],target:[-100,65,-640]},
+  loop:{name:'The Loop',pos:[-1000,420,1050],target:[-230,65,170]},
+  avenue:{name:'Michigan Avenue',pos:[580,210,-560],target:[285,75,-1180]},
+  park:{name:'Millennium Park',pos:[850,230,340],target:[430,20,-70]},
+  lake:{name:'Lakefront skyline',pos:[2400,520,1300],target:[150,140,-450]},
+};
+export function setupExplorer({ctx,camera,controls,flyer,ui}){
+  const host=document.createElement('section');host.className='explore glass';host.setAttribute('aria-label','Explore Chicago');
+  host.innerHTML='<label for="district">Explore a district</label><select id="district"><option value="">Choose a view</option>'+Object.entries(DISTRICTS).map(([id,d])=>`<option value="${id}">${d.name}</option>`).join('')+'</select><div class="explore-actions"><button id="life-toggle" type="button" aria-pressed="false">Pause city life</button><button id="map-toggle" type="button" aria-expanded="false" aria-controls="orientation">Map</button></div><div id="orientation" hidden><canvas id="mini-map" width="320" height="220" aria-label="Downtown map with camera position and north at the top"></canvas><p>North ↑ · River blue · View red</p></div><button id="sources-open" type="button">About this model</button>';
+  document.body.append(host);
+  const district=host.querySelector('#district'),life=host.querySelector('#life-toggle');
+  district.onchange=()=>{const d=DISTRICTS[district.value];if(!d)return;flyer.cancel();ui.setTouring(false);ui.hideInfo();flyer.flyTo(new THREE.Vector3(...d.pos),new THREE.Vector3(...d.target),3);};
+  const syncLife=()=>{life.setAttribute('aria-pressed',String(ctx.life.paused));life.textContent=ctx.life.paused?'Resume city life':'Pause city life';};
+  syncLife();life.onclick=()=>{ctx.life.paused=!ctx.life.paused;syncLife();};
+  const orientation=host.querySelector('#orientation');host.querySelector('#map-toggle').onclick=(e)=>{orientation.hidden=!orientation.hidden;e.currentTarget.setAttribute('aria-expanded',String(!orientation.hidden));};
+  const canvas=host.querySelector('canvas'),draw=canvas.getContext('2d');
+  const px=x=>(x+1850)/4400*320,pz=z=>(z+2350)/4200*220;
+  const base=document.createElement('canvas');base.width=320;base.height=220;const b=base.getContext('2d');
+  b.fillStyle='#1e2a31';b.fillRect(0,0,320,220);
+  b.strokeStyle='#53616a';b.lineWidth=.65;
+  for(const r of ctx.roads){b.beginPath();r.path.forEach((p,i)=>i?b.lineTo(px(p[0]),pz(p[2])):b.moveTo(px(p[0]),pz(p[2])));b.stroke();}
+  b.fillStyle='#416d7c';
+  for(const water of ctx.data.water){b.beginPath();for(const ring of water.rings){ring.forEach(([x,z],i)=>i?b.lineTo(px(x),pz(z)):b.moveTo(px(x),pz(z)));b.closePath();}b.fill('evenodd');}
+  b.fillStyle='#e3d2ac';for(const l of LANDMARKS){b.beginPath();b.arc(px(l.x),pz(l.z),1.6,0,Math.PI*2);b.fill();}
+  const dialog=document.createElement('dialog');dialog.id='model-about';dialog.innerHTML='<form method="dialog"><button class="about-close" aria-label="Close about this model">×</button></form><h2>A living model of Chicago</h2><p>Explore downtown architecture from the river to the lake. Traffic, pedestrians, boats, and trains are illustrative animations.</p><p>Building footprints and measured heights: <a href="https://gis.cookcountyil.gov/traditional/rest/services/buildingFootprint_2022/MapServer/0" target="_blank" rel="noopener">Cook County GIS, 2022 lidar and imagery</a>. Streets and water: <a href="https://data.cityofchicago.org/d/pr57-gg9e" target="_blank" rel="noopener">City of Chicago</a>. Geographic data is simplified; measured heights may include rooftop equipment. Landmark forms and heights are curated separately.</p><p>This site provides applications using data that has been modified for use from its original source, www.cityofchicago.org, the official website of the City of Chicago.</p><p>Architectural references: <a href="https://www.architecture.org/online-resources/buildings-of-chicago" target="_blank" rel="noopener">Chicago Architecture Center</a>, <a href="https://www.skyscrapercenter.com" target="_blank" rel="noopener">The Skyscraper Center</a>, and <a href="https://www.themart.com/about/" target="_blank" rel="noopener">THE MART</a>.</p><p>City data is packaged with this site. No live location or transit tracking.</p>';
+  document.body.append(dialog);host.querySelector('#sources-open').onclick=()=>dialog.showModal();
+  let timer=0;
+  return {update(dt){timer-=dt;if(timer>0||orientation.hidden)return;timer=.1;draw.drawImage(base,0,0);draw.strokeStyle='#ef6658';draw.lineWidth=1.5;draw.beginPath();draw.moveTo(px(camera.position.x),pz(camera.position.z));draw.lineTo(px(controls.target.x),pz(controls.target.z));draw.stroke();draw.fillStyle='#ff796a';draw.beginPath();draw.arc(px(camera.position.x),pz(camera.position.z),3.2,0,Math.PI*2);draw.fill();}};
+}
