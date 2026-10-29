@@ -1,14 +1,16 @@
+import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js?v=0cd67ffee42a15b0';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=35b31ee84a7f8c36';
-import { addTrees } from './terrain.js?v=35b31ee84a7f8c36';
-import { rng } from './geo.js?v=35b31ee84a7f8c36';
+import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=0cd67ffee42a15b0';
+import { addTrees } from './terrain.js?v=0cd67ffee42a15b0';
+import { rng } from './geo.js?v=0cd67ffee42a15b0';
 
 export function prepareWorld(ctx) {
   const water = ctx.data.water.filter((w) => !w.name.includes('LAKE')).map((w) => ({ ...w, bounds: boundsOf(w.rings[0]) }));
+  ctx.waterLevel=(x,z)=>ctx.waterfront.riverSurfaces.some(rings=>inPolygon(x,z,rings))?.2:-.6;
   ctx.isRiver = (x, z) => water.some((w) => x >= w.bounds.x0 && x <= w.bounds.x1 && z >= w.bounds.z0 && z <= w.bounds.z1 && inPolygon(x,z,w.rings));
   ctx.roads = ctx.data.streets.filter((s) => s.class >= 1 && s.class <= 4 && !/LOWER|RAMP|EXPY/.test(s.road) && s.level.every((h) => h >= 0))
-    .filter((s) => s.points.every(([x,z]) => inCoverage(x,z,80)))
+    .filter((s) => s.points.every(([x,z]) => inCoverage(x,z,80)) || /LAKE SHORE/.test(s.road)&&s.points.every(([x,z])=>waterfrontAt(x,z)))
     .map((s) => {
       const width = /MICHIGAN|COLUMBUS|ROOSEVELT|LAKE SHORE/.test(s.road) ? 20 : s.class <= 3 ? 16 : 12;
       const points = [];
@@ -28,8 +30,8 @@ export function prepareWorld(ctx) {
 export function buildWaterGeometry(scene, ctx) {
   const mat = new THREE.MeshStandardMaterial({ color:0x285957,roughness:0.3,metalness:0.18,normalMap:ctx.riverNormals,normalScale:new THREE.Vector2(0.12,0.12),side:THREE.DoubleSide });
   const parts=[];
-  for(const w of ctx.data.water.filter(w=>!w.name.includes('LAKE'))) {
-    const g=polygonGeometry(w.rings,0,0.2);
+  for(const rings of ctx.waterfront.riverSurfaces) {
+    const g=polygonGeometry(rings,0,0.2);
     const p=g.attributes.position, uv=[];
     for(let i=0;i<p.count;i++) uv.push(p.getX(i),p.getZ(i));
     g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
@@ -69,7 +71,7 @@ export function buildStreets(scene,ctx) {
       const a=path[i-1],p=path[i],dx=p[0]-a[0],dz=p[2]-a[2],len=Math.hypot(dx,dz);if(len<1)continue;
       const side=i%2===0?1:-1,off=side*(width/2+2);
       const x=p[0]-dz/len*off,z=p[2]+dx/len*off;
-      if(ctx.isRiver(x,z))continue;
+      if(ctx.isRiver(x,z)||landscapeAt(x,z)||waterfrontAt(x,z)&&!waterfrontLand(x,z))continue;
       // Reject positions inside the measured footprints, including overhanging podiums.
       if(ctx.measuredBuildings.some(b=>x>b.x0-1&&x<b.x1+1&&z>b.z0-1&&z<b.z1+1&&inPolygon(x,z,b.rings)))continue;
       posts.push([x,3.6,z,0.16,7,0.16]);lamps.push([x,7.2,z,1.3,0.18,0.7]);

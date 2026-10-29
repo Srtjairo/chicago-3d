@@ -6,6 +6,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 import { LANDMARKS, toAddress, configureShore } from './geo.js';
+import {loadWaterfront} from './waterfront-data.js';
+import {buildWaterfront} from './waterfront.js';
 import { loadCityData } from './city-data.js';
 import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js';
 import { buildSignatureArchitecture } from './architecture.js';
@@ -58,6 +60,7 @@ async function init() {
 
   status('Loading Chicago’s real building footprints');
   ctx.data = await loadCityData();
+  ctx.waterfront=await loadWaterfront();
   configureShore(ctx.data);
   prepareWorld(ctx);
 
@@ -79,6 +82,7 @@ async function init() {
   status('Planting Grant Park');
   await nextFrame();
   buildParks(scene, ctx);
+  buildWaterfront(scene, ctx);
   buildNavyPier(scene, ctx);
   buildCityLife(scene, ctx, camera);
 
@@ -173,6 +177,7 @@ async function init() {
     controls.update();
     ctx.cityDetailUpdate?.(camera, perf.level);
     ctx.officeDetailUpdate?.(camera);
+    ctx.waterfrontDetailUpdate?.(camera);
     ctx.life.update(dt);
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city

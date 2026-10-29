@@ -1,3 +1,4 @@
+import {waterfrontAt,waterfrontLand} from './waterfront-data.js?v=0cd67ffee42a15b0';
 // World layout for downtown Chicago.
 // Units are meters. The origin is State & Madison, the zero point of Chicago's address grid.
 // +X runs east (toward the lake), +Z runs south, +Y is up.
@@ -170,7 +171,7 @@ export const LANDMARKS = [
     id: 'grantpark', name: 'Grant Park', aka: 'Chicago’s front yard', x: 560, z: 650, r: 0, h: 60, roof: 60,
     ft: 0, year: 1844, addr: 'Michigan Ave to Lake Shore Dr', acres: 319,
     desc: '319 acres of lawns and gardens between the Loop and Lake Michigan, protected by law from development since 1836.',
-    view: { az: 1.95, dist: 1700, el: 0.42 },
+    view: { az: 1.35, dist: 1350, el: 0.68 },
   },
   {
     id: 'fountain', name: 'Buckingham Fountain', aka: '', x: 739, z: 688, r: 45, h: 46, roof: 10,
@@ -182,7 +183,7 @@ export const LANDMARKS = [
     id: 'navypier', name: 'Navy Pier', aka: '', x: 1900, z: -1077, r: 0, h: 60, roof: 60,
     ft: 3300, year: 1916, addr: '600 E Grand Ave',
     desc: 'A 3,300-foot pier into Lake Michigan with the 196-foot Centennial Wheel near its base.',
-    view: { az: 2.6, dist: 900, el: 0.3 },
+    view: { az: 1.0, dist: 1100, el: 0.55 },
   },
 ];
 
@@ -257,6 +258,7 @@ export function heightAt(x, z) {
 }
 
 export function isLake(x, z, margin = 0) {
+  if(waterfrontAt(x,z))return !waterfrontLand(x,z)||margin>0&&(!waterfrontLand(x+margin,z)||!waterfrontLand(x-margin,z)||!waterfrontLand(x,z+margin)||!waterfrontLand(x,z-margin));
   return x > shoreX(z) - margin;
 }
 

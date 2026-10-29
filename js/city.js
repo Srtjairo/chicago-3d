@@ -1,3 +1,4 @@
+import {landscapeAt} from './waterfront-data.js';
 import * as THREE from 'three';
 import {
   BLOCK, STREET, EXTENT, distToRiver, heightAt, isLake, inGrantPark, landmarkInRect, rng, NAVY_PIER,
@@ -31,7 +32,7 @@ export function buildCity(scene, ctx) {
     for (let z = Math.floor(EXTENT.minZ / BLOCK) * BLOCK; z < EXTENT.maxZ; z += BLOCK) {
       const cx = x + BLOCK / 2, cz = z + BLOCK / 2;
       if (ctx.data && inCoverage(cx, cz, 65)) continue;
-      if (isLake(cx, cz, 70)) continue;
+      if (isLake(cx, cz, 70) || landscapeAt(cx,cz)) continue;
       if (inGrantPark(cx, cz)) continue;
       if (cx > NAVY_PIER.x0 - 80 && Math.abs(cz - NAVY_PIER.z) < 120) continue;
       const rd = distToRiver(cx, cz);

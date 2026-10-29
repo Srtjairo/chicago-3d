@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { uNight } from './textures.js?v=35b31ee84a7f8c36';
-import { LANDMARKS, PLAZAS } from './geo.js?v=35b31ee84a7f8c36';
+import { uNight } from './textures.js?v=0cd67ffee42a15b0';
+import { LANDMARKS, PLAZAS } from './geo.js?v=0cd67ffee42a15b0';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Time of day runs from 0 (midday) to 1 (night). Values between keyframes are interpolated.
 const KEYS = [
-  { t: 0.00, env: 0.85, el: 48, az: 20, sun: 2.4, sunC: '#fff1dc', hemi: 1.4, sky: '#bfd5e8', gnd: '#8a8072', exp: 0.95, fog: '#b7cad7', fogD: 0.00011, night: 0, turb: 2.5, ray: 1.0, gain: 0.48, water: '#24586b' },
-  { t: 0.42, env: 0.65, el: 12, az: -58, sun: 2.25, sunC: '#ffd2a0', hemi: 1.1, sky: '#b8c5db', gnd: '#82736a', exp: 0.98, fog: '#c5b6a9', fogD: 0.000115, night: 0.01, turb: 3.2, ray: 1.8, gain: 0.48, water: '#254d60' },
-  { t: 0.60, env: 0.4, el: 1.2, az: -68, sun: 1.4, sunC: '#ffb37d', hemi: 0.85, sky: '#9aa7c6', gnd: '#625966', exp: 1.0, fog: '#b5a0ab', fogD: 0.00013, night: 0.28, turb: 5, ray: 2.5, gain: 0.48, water: '#294858' },
+  { t: 0.00, env: 0.85, el: 48, az: 20, sun: 2.4, sunC: '#fff1dc', hemi: 1.4, sky: '#bfd5e8', gnd: '#8a8072', exp: 0.95, fog: '#b7cad7', fogD: 0.00011, night: 0, turb: 2.5, ray: 1.0, gain: 0.48, water: '#147a85' },
+  { t: 0.42, env: 0.65, el: 12, az: -58, sun: 2.25, sunC: '#ffd2a0', hemi: 1.1, sky: '#b8c5db', gnd: '#82736a', exp: 0.98, fog: '#c5b6a9', fogD: 0.000115, night: 0.01, turb: 3.2, ray: 1.8, gain: 0.48, water: '#226c78' },
+  { t: 0.60, env: 0.4, el: 1.2, az: -68, sun: 1.4, sunC: '#ffb37d', hemi: 0.85, sky: '#9aa7c6', gnd: '#625966', exp: 1.0, fog: '#b5a0ab', fogD: 0.00013, night: 0.28, turb: 5, ray: 2.5, gain: 0.48, water: '#285563' },
   { t: 0.76, env: 0.25, el: -5, az: -76, sun: 0, sunC: '#ff986a', hemi: 0.7, sky: '#899cbb', gnd: '#424350', exp: 1.05, fog: '#414f6a', fogD: 0.00014, night: 0.8, turb: 3, ray: 1.4, gain: 0.45, water: '#1b3446' },
   { t: 1.00, env: 0.16, el: -22, az: -88, sun: 0, sunC: '#ff986a', hemi: 0.55, sky: '#7389ab', gnd: '#343943', exp: 1.08, fog: '#182538', fogD: 0.00016, night: 1, turb: 2, ray: 0.5, gain: 0.3, water: '#12293b' },
 ];

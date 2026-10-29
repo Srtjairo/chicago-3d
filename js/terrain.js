@@ -1,26 +1,19 @@
 import * as THREE from 'three';
 import { Water } from 'three/addons/objects/Water.js';
 import {
-  BLOCK, STREET, EXTENT, SHORE_POINTS, RIVER, GRANT_PARK, COLUMBUS_X, PARK_CROSS_STREETS,
-  PLAZAS, polylineAt, rng, inGrantPark, RIVER_PATHS,
+  BLOCK, STREET, EXTENT, RIVER,
+  polylineAt, inGrantPark, RIVER_PATHS,
 } from './geo.js';
 import { waterNormals, grassTexture } from './textures.js';
-import { inCoverage } from './city-data.js';
+import { inCoverage, polygonGeometry } from './city-data.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const SLAB_TOP = 0.6;
 
 export function buildTerrain(scene, ctx) {
-  // Land: one big polygon bounded on the east by the shoreline
-  // ShapeGeometry lives in the XY plane; rotated flat, shape +Y becomes world -Z
-  const pts = SHORE_POINTS.map(([z, x]) => new THREE.Vector2(x, -z));
-  const land = new THREE.Shape([new THREE.Vector2(-12000, 9000), ...pts, new THREE.Vector2(-12000, -9000)]);
-  const ground = new THREE.Mesh(
-    new THREE.ShapeGeometry(land),
-    new THREE.MeshStandardMaterial({ color: 0x8c8e87, roughness: 0.95 }),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.receiveShadow = true;
-  scene.add(ground);
+  const parts=ctx.waterfront.terrain.map(rings=>polygonGeometry(rings).toNonIndexed());
+  const ground=new THREE.Mesh(mergeGeometries(parts),new THREE.MeshStandardMaterial({color:0x8c8e87,roughness:.95}));
+  parts.forEach(g=>g.dispose());ground.name='geographic-land';ground.receiveShadow=true;scene.add(ground);
 
   // Lake Michigan with real reflections
   const water = new Water(new THREE.PlaneGeometry(40000, 40000), {
@@ -32,13 +25,14 @@ export function buildTerrain(scene, ctx) {
   water.material.uniforms.size.value = 2.2;
   // the stock shader adds a flat grey to reflections, which reads as fog on the lake at night
   water.material.fragmentShader = water.material.fragmentShader.replace('( vec3( 0.1 ) + reflectionSample', '( waterColor * 0.6 + reflectionSample');
+  water.material.fragmentShader=water.material.fragmentShader.replace('vec3 outgoingLight = albedo;', 'vec3 outgoingLight = mix(albedo, waterColor * (0.65 + diffuseLight * 0.25), 0.26);');
   water.rotation.x = -Math.PI / 2;
   water.position.y = -0.6;
   scene.add(water);
   ctx.water = water;
 
   buildRiver(scene, ctx);
-  buildParks(scene, ctx);
+
 }
 
 function strip(points, width, y, clipCore = false) {
@@ -120,95 +114,6 @@ function buildRiver(scene, ctx) {
   ctx.bridges = mats;
 }
 
-function buildParks(scene, ctx) {
-  const grass = grassTexture();
-  grass.repeat.set(1, 1);
-  const lawnMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: grass, roughness: 0.95 });
-  const pavingMat = new THREE.MeshStandardMaterial({ color: 0xb3ada2, roughness: 0.9 });
-
-  const xs = [[GRANT_PARK.minX + STREET / 2, COLUMBUS_X - STREET / 2], [COLUMBUS_X + STREET / 2, GRANT_PARK.maxX - 5]];
-  const zEdges = [GRANT_PARK.minZ, ...PARK_CROSS_STREETS, GRANT_PARK.maxZ];
-  const rects = [];
-  for (const [x0, x1] of xs) {
-    for (let i = 0; i < zEdges.length - 1; i++) {
-      rects.push([x0, zEdges[i] + STREET / 2, x1, zEdges[i + 1] - STREET / 2]);
-    }
-  }
-  ctx.parkRects = rects;
-  for (const [x0, z0, x1, z1] of rects) {
-    const w = x1 - x0, d = z1 - z0;
-    const paving = new THREE.Mesh(new THREE.BoxGeometry(w, SLAB_TOP + 1, d), pavingMat);
-    paving.position.set((x0 + x1) / 2, (SLAB_TOP - 1) / 2, (z0 + z1) / 2);
-    paving.receiveShadow = true;
-    scene.add(paving);
-    const lawnGeo = new THREE.BoxGeometry(w - 10, 0.3, d - 10);
-    // world-scale UVs on the top face
-    const uv = lawnGeo.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (w - 10) / 60, uv.getY(i) * (d - 10) / 60);
-    const lawn = new THREE.Mesh(lawnGeo, lawnMat);
-    lawn.position.set((x0 + x1) / 2, SLAB_TOP + 0.15, (z0 + z1) / 2);
-    lawn.receiveShadow = true;
-    scene.add(lawn);
-  }
-
-  // Plazas sit just above the lawn
-  const plazaMat = new THREE.MeshStandardMaterial({ color: 0xcfc8bc, roughness: 0.85 });
-  const addPlaza = (geo, x, z) => {
-    const m = new THREE.Mesh(geo, plazaMat);
-    m.position.set(x, SLAB_TOP + 0.35, z);
-    m.receiveShadow = true;
-    scene.add(m);
-  };
-  addPlaza(new THREE.CylinderGeometry(PLAZAS.bean.r, PLAZAS.bean.r, 0.2, 48), PLAZAS.bean.x, PLAZAS.bean.z);
-  addPlaza(new THREE.CylinderGeometry(PLAZAS.fountain.r, PLAZAS.fountain.r, 0.2, 64), PLAZAS.fountain.x, PLAZAS.fountain.z);
-  addPlaza(new THREE.BoxGeometry(40, 0.2, 260), PLAZAS.fountain.x - 120, PLAZAS.fountain.z);     // Congress Plaza walk
-  addPlaza(new THREE.BoxGeometry(250, 0.2, 18), PLAZAS.fountain.x + 0, PLAZAS.fountain.z);       // east-west axis
-
-  // Formal perimeter walks and axes, with open fields between them.
-  const pathMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c0, roughness: 0.9 });
-  for (const [x0, z0, x1, z1] of rects) {
-    if (z0 < 120) continue; // Millennium Park has its own layout
-    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
-    const w = x1 - x0 - 14, d = z1 - z0 - 14;
-    for (const [px,pz,pw,pd] of [[cx,z0+12,w,4],[cx,z1-12,w,4],[x0+12,cz,4,d],[x1-12,cz,4,d],...(z0<1050?[[cx,cz,w,5]]:[])]) {
-      const p = new THREE.Mesh(new THREE.BoxGeometry(pw,0.2,pd),pathMat);p.position.set(px,SLAB_TOP+0.33,pz);p.receiveShadow=true;scene.add(p);
-    }
-  }
-
-  // Trees: Grant Park plus a lakefront line
-  const rand = rng(42);
-  const trees = [];
-  const blocked = (x, z) => {
-    const b = PLAZAS.bean, f = PLAZAS.fountain, l = PLAZAS.lawn;
-    if (Math.hypot(x - b.x, z - b.z) < b.r + 4) return true;
-    if (Math.hypot(x - f.x, z - f.z) < f.r + 6) return true;
-    if (Math.abs(z - f.z) < 14) return true;
-    if (x > l.minX - 30 && x < l.maxX + 5 && z > l.minZ - 5 && z < l.maxZ + 5) return true;
-    if (z > 1050 && x > 630 && x < 840 && z < 1560) return rand() > 0.12; // Hutchinson Field: mostly open lawn
-    if (z > 400 && z < 960 && x < 560 && x > 300) return rand() > 0.35;    // Butler Field
-    return false;
-  };
-  for (const [x0, z0, x1, z1] of rects) {
-    const area = (x1 - x0) * (z1 - z0);
-    const n = Math.floor(area / 850);
-    for (let i = 0; i < n; i++) {
-      const x = x0 + 8 + rand() * (x1 - x0 - 16);
-      const z = z0 + 8 + rand() * (z1 - z0 - 16);
-      if (blocked(x, z)) continue;
-      // Leave the formal walks clear and gather trees around lawn edges.
-      const u = (x - x0) / (x1 - x0), v = (z - z0) / (z1 - z0);
-      if (z0 >= 120 && (Math.abs(x-x0-12)<5||Math.abs(x-x1+12)<5||Math.abs(z-z0-12)<5||Math.abs(z-z1+12)<5||Math.abs(z-(z0+z1)/2)<5)) continue;
-      if (u > 0.2 && u < 0.8 && v > 0.18 && v < 0.82 && rand() < 0.72) continue;
-      trees.push([x, z, 0.75 + rand() * 0.6]);
-    }
-    // street trees around each park block
-    for (let x = x0 + 8; x < x1 - 8; x += 24) { trees.push([x, z0 + 6, 0.85]); trees.push([x, z1 - 6, 0.9]); }
-    for (let z = z0 + 8; z < z1 - 8; z += 24) { trees.push([x0 + 6, z, 0.9]); trees.push([x1 - 6, z, 0.85]); }
-  }
-  addTrees(scene, trees, rand);
-  ctx.treeCount = trees.length;
-}
-
 export function addTrees(scene, trees, rand) {
   const canopyGeo = new THREE.SphereGeometry(1, 10, 7);
   const cp = canopyGeo.attributes.position;
@@ -220,17 +125,17 @@ export function addTrees(scene, trees, rand) {
   canopyGeo.computeVertexNormals();
   const trunkGeo = new THREE.CylinderGeometry(0.25, 0.35, 1, 5);
   trunkGeo.translate(0, 0.5, 0);
-  const canopy = new THREE.InstancedMesh(canopyGeo, new THREE.MeshStandardMaterial({ roughness: 1 }), trees.length);
+  const canopy = new THREE.InstancedMesh(canopyGeo, new THREE.MeshStandardMaterial({ color:0xa4c784, roughness: 1 }), trees.length);
   const trunk = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 }), trees.length);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const c = new THREE.Color();
-  trees.forEach(([x, z, s], i) => {
+  trees.forEach(([x, z, s, groundY = SLAB_TOP], i) => {
     const r = 4.2 * s;
     q.setFromEuler(new THREE.Euler(0, rand() * 6.28, 0));
-    m.compose(new THREE.Vector3(x, SLAB_TOP + 3.2 * s + r * 0.75, z), q, new THREE.Vector3(r * (0.85 + rand() * 0.3), r * (0.85 + rand() * 0.4), r));
+    m.compose(new THREE.Vector3(x, groundY + 3.2 * s + r * 0.75, z), q, new THREE.Vector3(r * (0.85 + rand() * 0.3), r * (0.85 + rand() * 0.4), r));
     canopy.setMatrixAt(i, m);
-    m.compose(new THREE.Vector3(x, SLAB_TOP, z), q, new THREE.Vector3(1, 3.6 * s, 1));
+    m.compose(new THREE.Vector3(x, groundY, z), q, new THREE.Vector3(1, 3.6 * s, 1));
     trunk.setMatrixAt(i, m);
     c.setHSL(0.22 + rand() * 0.08, 0.25 + rand() * 0.15, 0.17 + rand() * 0.08);
     canopy.setColorAt(i, c);
@@ -238,6 +143,7 @@ export function addTrees(scene, trees, rand) {
   canopy.castShadow = false;
   canopy.receiveShadow = false;
   scene.add(canopy, trunk);
+  return [canopy,trunk];
 }
 
 export { SLAB_TOP, inGrantPark, EXTENT };

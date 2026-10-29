@@ -129,3 +129,14 @@ It sets up collision-avoiding CSS2D labels and the UI, and renders through `Effe
 - Any pointerdown on the canvas cancels a flight or tour.
 
 **UI.** The main DOM is in `index.html`; `setupUI()` in `main.js` wires it up. `explorer.js` adds district presets, pause, an orientation map and the source-credit dialog. The page is single-theme dark: CSS tokens on `:root`, fonts Big Shoulders Display, Barlow and IBM Plex Mono. At widths of 720 px and below, the landmark panel becomes a toggled sheet.
+
+
+## Waterfront maintenance
+
+`tools/build-waterfront.mjs` builds `assets/waterfront.json` offline. Its local metre coordinates use the same origin as `coverage.js`. The City water polygons supply the land foundation; landscape outlines and architectural subdivisions are documented visual estimates. Regenerate this asset after editing the generator, then rebuild the site.
+
+The active additions are `waterfront-data.js` (pure predicates, loader, append-only route registry), `waterfront.js` (batched landscape/harbor geometry), and `navypier.js` (replacement architecture). `terrain.js` consumes the generated land polygons. Do not restore the old rectangle park builder or modify the unused `streets.js` expecting a waterfront change. Keep `city-world.js` as the active street builder.
+
+All new routes use `registerRoute(ctx,id,points,mode)`, where mode is walk, cycle or shared. Never assign an entire park route array from an individual builder. The city population is 720 walkers plus 80 cyclists; vehicles/trains/moving boats keep their earlier budgets. `ctx.waterLevel()` supplies the actual rendered surface height for moored boats/docks; the harbor uses the reflective lake, while the green river material ends at its mouth. New landscape and pier meshes do not cast shadows.
+
+Run `node tools/check-waterfront.mjs` in addition to the existing two checks. The review page includes close/overhead views and fixed comparison cameras. Archive the current docs before changes under `.cache/waterfront-baseline/docs/`; compare both builds at 1200 by 740, golden hour and tier 0, with a foreground tab and warmed shaders. Recheck both offices and the unchanged tour when touching geographic masks or camera bounds.

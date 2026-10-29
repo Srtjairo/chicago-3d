@@ -1,43 +1,49 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { NAVY_PIER, WHEEL } from './geo.js?v=35b31ee84a7f8c36';
-import { facadeMaterial } from './textures.js?v=35b31ee84a7f8c36';
+import { facadeMaterial } from './textures.js?v=0cd67ffee42a15b0';
+import {boxBatch} from './city-data.js?v=0cd67ffee42a15b0';
 
 const DECK = 3;
 
 export function buildNavyPier(scene, ctx) {
-  const { x0, x1, z, w } = NAVY_PIER;
-  const concrete = new THREE.MeshStandardMaterial({ color: 0xa9a49a, roughness: 0.9 });
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, DECK + 3, w), concrete);
-  deck.position.set((x0 + x1) / 2, DECK / 2 - 1.5, z);
-  deck.receiveShadow = true;
-  scene.add(deck);
-
-  // Long exhibition sheds, Festival Hall, and the domed Grand Ballroom at the end
-  const shed = facadeMaterial({ color: 0xc9b9a0, glass: 0x2b3640, cell: [4, 4.5], winA: [0.6, 0.5], lit: 0.55, seed: 91 });
-  const roof = new THREE.MeshStandardMaterial({ color: 0x5c6b5e, roughness: 0.7 });
-  const add = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = m.receiveShadow = true; scene.add(m); return m; };
-  const sheds = [
-    [1470, 1610, -30, 14, 30], [1700, 1990, 26, 12, 30], [1700, 1990, -26, 12, 30],
-    [2010, 2260, 0, 22, 80], [1440, 1520, 28, 16, 30],
-  ];
-  for (const [a, b, oz, h, d] of sheds) {
-    const geo = new THREE.BoxGeometry(b - a, h, d).translate(0, h / 2, 0);
-    add(geo, shed, (a + b) / 2, DECK, z + oz);
-    const r = new THREE.CylinderGeometry(d / 2, d / 2, b - a, 16, 1, false, 0, Math.PI);
-    r.rotateZ(Math.PI / 2);
-    r.scale(1, 0.3, 1);
-    add(r, roof, (a + b) / 2, DECK + h, z + oz);
+  const materials={
+    pavilion:facadeMaterial({color:0xc1b19a,glass:0x50757d,cell:[6,5],winA:[.68,.7],lit:.2,seed:89}),
+    glass:facadeMaterial({color:0xc2c9be,glass:0x54838b,style:1,cell:[4,4],lit:.2,seed:90}),
+    dark:facadeMaterial({color:0x515652,glass:0x354b50,cell:[4,4],lit:.2,seed:91}),
+    brick:facadeMaterial({color:0x9b7061,glass:0x31474c,cell:[3,4],lit:.25,seed:92}),
+    hall:facadeMaterial({color:0xd4c8b1,glass:0x43616b,cell:[9,12],winA:[.64,.7],lit:.25,seed:93}),
+    hotel:facadeMaterial({color:0xd5cebd,glass:0x415d65,cell:[3.5,5.2],winA:[.78,.7],lit:.35,seed:94}),
+    ballroom:facadeMaterial({color:0xc7b79c,glass:0x385963,cell:[4.5,5],winA:[.6,.7],lit:.25,seed:95})
+  };
+  const roof=new THREE.MeshStandardMaterial({color:0x768786,roughness:.78});
+  const cream=new THREE.MeshStandardMaterial({color:0xe0d6c3,roughness:.8});
+  const group=new THREE.Group();group.name='navy-pier-architecture';scene.add(group);
+  const add=(geo,mat,x,y,z)=>{const mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);mesh.receiveShadow=true;group.add(mesh);return mesh;};
+  const cornices=[],frames=[];
+  for(const a of ctx.waterfront.anchors.filter(a=>materials[a.kind])){
+    const body=add(new THREE.BoxGeometry(a.w,a.h,a.d),a.kind==='glass'?materials.pavilion:materials[a.kind],a.x,DECK+a.h/2,a.z);body.rotation.y=a.angle;body.name=a.id;
+    ctx.collisionBuildings.push({id:a.id,x0:a.x-a.w/2,x1:a.x+a.w/2,z0:a.z-a.d/2,z1:a.z+a.d/2,h:DECK+a.h+4});
+    for(const y of [DECK+.4,DECK+a.h])cornices.push([a.x,y,a.z,a.w+1.2,.65,a.d+1.2,a.angle]);
+    if(a.kind==='hall'||a.kind==='glass'){
+      const r=new THREE.CylinderGeometry(a.d/2,a.d/2,a.w,24,1,false,0,Math.PI);r.rotateZ(Math.PI/2);r.scale(1,a.kind==='glass'?.32:.22,1);
+      const m=add(r,a.kind==='glass'?new THREE.MeshStandardMaterial({color:0x78999f,metalness:.35,roughness:.3}):roof,a.x,DECK+a.h,a.z);m.rotation.y=a.angle;
+      if(a.kind==='glass'){
+        const ribs=[];for(let x=a.x-a.w/2;x<=a.x+a.w/2;x+=10){const curve=new THREE.CatmullRomCurve3(Array.from({length:17},(_,i)=>{const t=i/16*Math.PI;return new THREE.Vector3(x,DECK+a.h+Math.sin(t)*a.d*.16,a.z+Math.cos(t)*a.d/2);}));ribs.push(new THREE.TubeGeometry(curve,16,.22,4,false));}const g=mergeGeometries(ribs);ribs.forEach(r=>r.dispose());add(g,cream,0,0,0);
+      }
+      for(let x=a.x-a.w/2+6;x<a.x+a.w/2;x+=17)frames.push([x,DECK+a.h*.5,a.z+a.d/2-(x-a.x)*.018,.5,a.h,.7]);
+    }
+    if(a.kind==='hotel')for(let y=DECK+4;y<DECK+a.h;y+=3.4)cornices.push([a.x,y,a.z+a.d/2+.25,a.w,.18,.6,a.angle]);
+    if(a.kind==='ballroom'){
+      const end=add(new THREE.CylinderGeometry(a.d/2,a.d/2,a.h,32),materials.ballroom,a.x+a.w/2-8,DECK+a.h/2,a.z);end.scale.x=.72;
+      add(new THREE.SphereGeometry(a.d/2,32,12,0,Math.PI*2,0,Math.PI/2).scale(1.5,.48,1),roof,a.x+9,DECK+a.h,a.z);
+      for(const dz of [-29,29]){add(new THREE.BoxGeometry(10,32,10),cream,a.x-a.w/2,DECK+16,a.z+dz);add(new THREE.ConeGeometry(8,8,4),roof,a.x-a.w/2,DECK+36,a.z+dz);}
+    }
   }
-  // Headhouse towers and ballroom dome
-  add(new THREE.BoxGeometry(14, 30, 14).translate(0, 15, 0), shed, 2290, DECK, z - 30);
-  add(new THREE.BoxGeometry(14, 30, 14).translate(0, 15, 0), shed, 2290, DECK, z + 30);
-  add(new THREE.CylinderGeometry(42, 42, 14, 48).translate(0, 7, 0), shed, 2360, DECK, z);
-  add(new THREE.SphereGeometry(42, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.45, 1), roof, 2360, DECK + 14, z);
-
+  group.add(boxBatch(cornices,0xdcd3be,'pier-cornices'),boxBatch(frames,0xbacac6,'pier-frames'));
   // Centennial Wheel: 196 ft tall, 42 gondolas
   const R = 29;
-  const hub = new THREE.Vector3(WHEEL.x, DECK + 33, WHEEL.z + 18);
+  const anchor=ctx.waterfront.anchors.find(a=>a.kind==='wheel');
+  const hub = new THREE.Vector3(anchor.x, DECK + 33, anchor.z);
   const white = new THREE.MeshStandardMaterial({ color: 0xeef0f2, metalness: 0.6, roughness: 0.35 });
   const rimMat = new THREE.MeshStandardMaterial({ color: 0xe8ecef, metalness: 0.5, roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0 });
   const wheel = new THREE.Group();
@@ -56,7 +62,7 @@ export function buildNavyPier(scene, ctx) {
     }
   }
   const rim = new THREE.Mesh(mergeGeometries(parts), rimMat);
-  rim.castShadow = true;
+  rim.castShadow = false;
   wheel.add(rim);
   wheel.add(new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 6, 16).rotateX(Math.PI / 2), white));
   scene.add(wheel);
@@ -80,7 +86,7 @@ export function buildNavyPier(scene, ctx) {
   const gondolas = new THREE.InstancedMesh(new THREE.BoxGeometry(2.4, 2.7, 2.4), gondolaMat, 42);
   const gc = new THREE.Color();
   for (let i = 0; i < 42; i++) gondolas.setColorAt(i, gc.setHSL(0.55 + (i % 3) * 0.02, 0.15, 0.85));
-  gondolas.castShadow = true;
+  gondolas.castShadow = false;
   scene.add(gondolas);
 
   ctx.glows.push({ mat: rimMat, day: 0, night: 1.4 });

@@ -5,20 +5,22 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { LANDMARKS, toAddress, configureShore } from './geo.js?v=35b31ee84a7f8c36';
-import { loadCityData } from './city-data.js?v=35b31ee84a7f8c36';
-import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=35b31ee84a7f8c36';
-import { buildSignatureArchitecture } from './architecture.js?v=35b31ee84a7f8c36';
-import { buildOfficeArchitecture } from './offices.js?v=35b31ee84a7f8c36';
-import { buildCityLife } from './city-life.js?v=35b31ee84a7f8c36';
-import { setupExplorer } from './explorer.js?v=35b31ee84a7f8c36';
-import { buildTerrain, SLAB_TOP } from './terrain.js?v=35b31ee84a7f8c36';
-import { buildLandmarks } from './landmarks.js?v=35b31ee84a7f8c36';
-import { buildCity } from './city.js?v=35b31ee84a7f8c36';
-import { buildParks } from './parks.js?v=35b31ee84a7f8c36';
-import { buildNavyPier } from './navypier.js?v=35b31ee84a7f8c36';
-import { Lighting, PRESETS } from './lighting.js?v=35b31ee84a7f8c36';
-import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=35b31ee84a7f8c36';
+import { LANDMARKS, toAddress, configureShore } from './geo.js?v=0cd67ffee42a15b0';
+import {loadWaterfront} from './waterfront-data.js?v=0cd67ffee42a15b0';
+import {buildWaterfront} from './waterfront.js?v=0cd67ffee42a15b0';
+import { loadCityData } from './city-data.js?v=0cd67ffee42a15b0';
+import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=0cd67ffee42a15b0';
+import { buildSignatureArchitecture } from './architecture.js?v=0cd67ffee42a15b0';
+import { buildOfficeArchitecture } from './offices.js?v=0cd67ffee42a15b0';
+import { buildCityLife } from './city-life.js?v=0cd67ffee42a15b0';
+import { setupExplorer } from './explorer.js?v=0cd67ffee42a15b0';
+import { buildTerrain, SLAB_TOP } from './terrain.js?v=0cd67ffee42a15b0';
+import { buildLandmarks } from './landmarks.js?v=0cd67ffee42a15b0';
+import { buildCity } from './city.js?v=0cd67ffee42a15b0';
+import { buildParks } from './parks.js?v=0cd67ffee42a15b0';
+import { buildNavyPier } from './navypier.js?v=0cd67ffee42a15b0';
+import { Lighting, PRESETS } from './lighting.js?v=0cd67ffee42a15b0';
+import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=0cd67ffee42a15b0';
 
 const $ = (id) => document.getElementById(id);
 const status = (msg) => { $('load-msg').textContent = msg; };
@@ -58,6 +60,7 @@ async function init() {
 
   status('Loading Chicago’s real building footprints');
   ctx.data = await loadCityData();
+  ctx.waterfront=await loadWaterfront();
   configureShore(ctx.data);
   prepareWorld(ctx);
 
@@ -79,6 +82,7 @@ async function init() {
   status('Planting Grant Park');
   await nextFrame();
   buildParks(scene, ctx);
+  buildWaterfront(scene, ctx);
   buildNavyPier(scene, ctx);
   buildCityLife(scene, ctx, camera);
 
@@ -173,6 +177,7 @@ async function init() {
     controls.update();
     ctx.cityDetailUpdate?.(camera, perf.level);
     ctx.officeDetailUpdate?.(camera);
+    ctx.waterfrontDetailUpdate?.(camera);
     ctx.life.update(dt);
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city

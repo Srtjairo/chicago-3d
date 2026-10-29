@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { facadeMaterial } from './textures.js?v=35b31ee84a7f8c36';
-import { LANDMARKS, rng } from './geo.js?v=35b31ee84a7f8c36';
-import { inCoverage } from './coverage.js?v=35b31ee84a7f8c36';
-export { COVERAGE, inCoverage } from './coverage.js?v=35b31ee84a7f8c36';
+import { facadeMaterial } from './textures.js?v=0cd67ffee42a15b0';
+import { LANDMARKS, rng } from './geo.js?v=0cd67ffee42a15b0';
+import { inCoverage } from './coverage.js?v=0cd67ffee42a15b0';
+export { COVERAGE, inCoverage } from './coverage.js?v=0cd67ffee42a15b0';
 
 export async function loadCityData() {
   const url = new URL('../assets/downtown.json', import.meta.url);
@@ -80,9 +80,9 @@ export function buildMeasuredCity(scene, ctx) {
   const buildings = [];
   for (const b of ctx.data.buildings) {
     const v = boundsOf(b.rings[0]);
-    if (!inCoverage(v.x, v.z) || REPLACED.has(b.id)) continue;
+    if (!inCoverage(v.x, v.z) || REPLACED.has(b.id) || ctx.waterfront.replacementIds.includes(b.id)) continue;
     // Navy Pier and Millennium Park already have hand-built structures.
-    if ((v.x > 1380 && v.z < -990 && v.z > -1160) || (v.x > 280 && v.x < 610 && v.z > -220 && v.z < 60)) continue;
+    if ((v.x > 280 && v.x < 610 && v.z > -220 && v.z < 60)) continue;
     // One Prudential's antenna belongs above its roof, not across its whole footprint.
     const h = b.id==='870263-0' ? 183.2 : b.h; if (v.w < 2 || v.d < 2) continue;
     const family = h > 130 ? (Number(b.id.split('-')[0]) % 3 === 0 ? 4 : 3)

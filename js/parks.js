@@ -1,3 +1,4 @@
+import {registerRoute} from './waterfront-data.js';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { PLAZAS, rng } from './geo.js';
@@ -39,7 +40,9 @@ function millenniumLandscape(scene, ctx) {
     for(const side of [-1,1])segmentBox(rails,[a.x-dz/len*2.7*side,a.z+dx/len*2.7*side],[b.x-dz/len*2.7*side,b.z+dx/len*2.7*side],.35,y+.8,1.2);
   }
   scene.add(boxBatch(paving,0xb6ae9e,'park-plazas'),boxBatch(planting,0xffffff,'lurie-plantings'),boxBatch(hedges,0x526044,'garden-hedges'),boxBatch(seats,0x9b8668,'park-benches'),boxBatch(lights,0x4d5654,'park-lamps'),boxBatch(deck,0xa89c85,'bp-bridge-deck'),boxBatch(rails,0xb0b6b5,'bp-bridge-ribbons'));
-  ctx.parkWalks=[[[300,BASE+.2,-215],[422,BASE+.2,-215],[422,BASE+.2,140],[300,BASE+.2,140],[300,BASE+.2,-215]],[[435,BASE+.2,35],[584,BASE+.2,35],[584,BASE+.2,130],[435,BASE+.2,130],[435,BASE+.2,35]],points.map(p=>[p.x,p.y+.3,p.z]),[[310,BASE+.2,600],[600,BASE+.2,600],[600,BASE+.2,790],[310,BASE+.2,790],[310,BASE+.2,600]]];
+  registerRoute(ctx,'millennium-west',[[300,BASE+.2,-215],[422,BASE+.2,-215],[422,BASE+.2,140],[300,BASE+.2,140],[300,BASE+.2,-215]]);
+  registerRoute(ctx,'lurie-walk',[[435,BASE+.2,35],[584,BASE+.2,35],[584,BASE+.2,130],[435,BASE+.2,130],[435,BASE+.2,35]]);
+  registerRoute(ctx,'bp-bridge',points.map(p=>[p.x,p.y+.3,p.z]));
 }
 function facadeMaterialForFountain(){
   const canvas=document.createElement('canvas');canvas.width=64;canvas.height=128;const c=canvas.getContext('2d');c.fillStyle='#8ca8ae';c.fillRect(0,0,64,128);c.strokeStyle='#53686a';c.lineWidth=1;
