@@ -3,9 +3,9 @@ import { Water } from 'three/addons/objects/Water.js';
 import {
   BLOCK, STREET, EXTENT, RIVER,
   polylineAt, inGrantPark, RIVER_PATHS,
-} from './geo.js?v=bc893891e5c0c0d3';
-import { waterNormals, grassTexture } from './textures.js?v=bc893891e5c0c0d3';
-import { inCoverage, polygonGeometry } from './city-data.js?v=bc893891e5c0c0d3';
+} from './geo.js?v=ffca706352a4902e';
+import { waterNormals, grassTexture } from './textures.js?v=ffca706352a4902e';
+import { inCoverage, polygonGeometry } from './city-data.js?v=ffca706352a4902e';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const SLAB_TOP = 0.6;

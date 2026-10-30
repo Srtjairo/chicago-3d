@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import {boxBatch} from './city-data.js?v=bc893891e5c0c0d3';
-import {inCoverage} from './coverage.js?v=bc893891e5c0c0d3';
-import {makeRoute,atDistance} from './movement.js?v=bc893891e5c0c0d3';
-import {railHeight,distance,trackOffset,nearest,simplifyRail} from './transit-math.js?v=bc893891e5c0c0d3';
-import {createTransitSimulation,CAR_LENGTH,CAR_SPACING} from './transit-simulation.js?v=bc893891e5c0c0d3';
+import {boxBatch} from './city-data.js?v=ffca706352a4902e';
+import {inCoverage} from './coverage.js?v=ffca706352a4902e';
+import {makeRoute,atDistance} from './movement.js?v=ffca706352a4902e';
+import {railHeight,distance,trackOffset,nearest,simplifyRail} from './transit-math.js?v=ffca706352a4902e';
+import {createTransitSimulation,CAR_LENGTH,CAR_SPACING} from './transit-simulation.js?v=ffca706352a4902e';
 
 export function buildTransit(scene,ctx,camera){
   const data=ctx.transitData,root=new THREE.Group();root.name='cta-transit';scene.add(root);

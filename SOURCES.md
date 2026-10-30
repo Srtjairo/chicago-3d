@@ -58,6 +58,8 @@ These display-limited desktop samples meet the ≤10% median/p95 regression thre
 
 ## CTA rail — October 29, 2026 snapshot
 
+The main **See CTA in the city** button flies directly to Morgan’s elevated platforms. The compact city card selects any modeled station, and map actions appear above the regional map. `#cta` opens Morgan directly; `#cta/<stationId>` opens a modeled station using its stable CTA ID. These navigation controls retain the original rail geometry, simulation and 18-stop architectural tour.
+
 The CTA addition imports all eight lines, 23 active geographic service patterns, 144 station complexes including closed State/Lake, and 25 complexes within the existing downtown/Fulton Market coverage. CTA's public station totals can count the elevated and subway facilities at Clark/Lake and Roosevelt separately. Our IDs group those shared complexes but keep their platform IDs and elevations distinct.
 
 `node tools/import-transit.mjs` generates `assets/transit.json` (about 0.81 MB). The approximately 69 MB raw GTFS ZIP stays offline in `.cache/transit/2026-10-29/`. `tools/transit-sources.lock.json` pins all five source SHA-256 hashes. Cached files are verified; a newer download with different bytes is rejected. Preserve the dated cache when moving this project: public servers do not promise indefinite access to historical feed versions.

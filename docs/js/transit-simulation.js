@@ -1,4 +1,4 @@
-import {makeRoute,atDistance} from './movement.js?v=bc893891e5c0c0d3';
+import {makeRoute,atDistance} from './movement.js?v=ffca706352a4902e';
 export const CAR_SPACING=14.9,CAR_LENGTH=14.6;
 function aheadOnRoute(r,p,start){
   // Only search the forward braking horizon, never the returning leg of a Loop.
