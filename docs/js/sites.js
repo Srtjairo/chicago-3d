@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {boxBatch,polygonGeometry,segmentBox} from './city-data.js?v=a77776db88b80bf5';
-import {facadeMaterial} from './textures.js?v=a77776db88b80bf5';
-import {siteVolumes} from './site-data.js?v=a77776db88b80bf5';
-import {addTrees} from './terrain.js?v=a77776db88b80bf5';
-import {rng} from './geo.js?v=a77776db88b80bf5';
-import {registerRoute} from './waterfront-data.js?v=a77776db88b80bf5';
+import {boxBatch,polygonGeometry,segmentBox} from './city-data.js?v=4065cefedcbb3b84';
+import {facadeMaterial} from './textures.js?v=4065cefedcbb3b84';
+import {siteVolumes} from './site-data.js?v=4065cefedcbb3b84';
+import {addTrees} from './terrain.js?v=4065cefedcbb3b84';
+import {rng} from './geo.js?v=4065cefedcbb3b84';
+import {registerRoute} from './waterfront-data.js?v=4065cefedcbb3b84';
 
 const styles={rookery:[0x915f4d,0x273e48,0],federal:[0xcac4b1,0x34434a,0],limestone:[0xc6bead,0x33434b,0],warehouse:[0x9a6750,0x2b414a,0],concrete:[0xc3c0ae,0x496775,0],glass:[0x93adb8,0x3c647b,1],arches:[0x797c76,0x42637a,0],labs:[0xc7c9c2,0x426e83,1],'brick-glass':[0x98715e,0x42637a,0],'charcoal-brick':[0x665e51,0x334d5b,0],'dark-glass':[0x555b5a,0x38556b,1],screen:[0xb9c3c2,0x404c51,0],dark:[0x353b3d,0x233540,0],catalog:[0x7d6b59,0x334d58,1]};
 const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.76,...extra});

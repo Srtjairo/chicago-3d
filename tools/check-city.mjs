@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute} from '../js/movement.js';
 import {LANDMARKS} from '../js/geo.js';
+import {FEATURED_IDS,FEATURED_LANDMARKS} from '../js/featured.js';
 import {COVERAGE_RECTS,COVERAGE,inCoverage,project,unproject} from '../js/coverage.js';
 const data=JSON.parse(readFileSync(new URL('../assets/downtown.json',import.meta.url),'utf8'));
 assert.equal(data.version,1);assert(data.buildings.length>2500);assert(data.streets.length>1500);
@@ -22,8 +23,9 @@ for(const id of ['relativity','ondean']){
 assert(LANDMARKS.find(l=>l.id==='relativity').facts.some(([k,v])=>k==='Office'&&v==='20th floor'));
 assert.equal(LANDMARKS.find(l=>l.id==='ondean').year,undefined,'do not invent an opening date');
 const tourSource=readFileSync(new URL('../js/tour.js',import.meta.url),'utf8');
-const tourIds=[...tourSource.match(/const TOUR = \[([^\]]+)\]/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
-assert.deepEqual(tourIds,['grantpark','fountain','board','willis','riverside','mart','marina','trump','wrigley','tribune','hancock','navypier','stregis','aqua','aon','carbide','pritzker','bean'],'the guided tour must stay unchanged');
+assert.match(tourSource,/const TOUR = FEATURED_IDS;/,'the tour must use the featured destinations');
+assert.deepEqual(FEATURED_IDS,['grantpark','willis','hancock','marina','relativity','ondean','navypier']);
+assert(FEATURED_LANDMARKS.every(l=>l?.view),'every featured destination needs a camera view');
 for(const b of data.buildings){
   assert(b.h>=2&&b.h<600,`invalid height ${b.id}`);
   for(const ring of b.rings){assert(ring.length>=4,b.id);assert(ring.flat().every(Number.isFinite),b.id);assert.deepEqual(ring[0],ring.at(-1),`unclosed footprint ${b.id}`);}
@@ -56,4 +58,4 @@ for(let id=0;id<8;id++)for(let t=0;t<100;t+=.125)assert(!(signalGreen(t,0,id)&&s
 for(let t=0;t<40;t+=.25)for(const axis of [0,1])if(canCross(t,axis,0,14))for(let dt=0;dt<14;dt+=.5)assert(!signalGreen(t+dt,axis,0),'pedestrian clearance overlaps traffic green');
 const published=readFileSync(new URL('../docs/assets/downtown.json',import.meta.url),'utf8');
 assert.equal(published,readFileSync(new URL('../assets/downtown.json',import.meta.url),'utf8'),'published city data is stale');
-console.log(`PASS: ${data.buildings.length} footprints, ${data.streets.length} streets, office parcels/cards, connected coverage, unchanged tour, route interpolation, bridge heights, right-hand lanes, signal conflicts, published data`);
+console.log(`PASS: ${data.buildings.length} footprints, ${data.streets.length} streets, office parcels/cards, connected coverage, seven featured tour stops, route interpolation, bridge heights, right-hand lanes, signal conflicts, published data`);

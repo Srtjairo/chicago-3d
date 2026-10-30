@@ -5,7 +5,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { LANDMARKS, toAddress, configureShore } from './geo.js';
+import { toAddress, configureShore } from './geo.js';
+import { FEATURED_LANDMARKS, featuredName } from './featured.js';
 import {loadSites} from './site-data.js';
 import {buildSites} from './sites.js';
 import {loadWaterfront} from './waterfront-data.js';
@@ -18,7 +19,6 @@ import { buildCityLife } from './city-life.js';
 import { setupExplorer } from './explorer.js';
 import { loadTransit } from './transit-data.js';
 import { buildTransit } from './transit.js';
-import { setupTransitExplorer } from './transit-ui.js';
 import { setupMiniFellow } from './mini-fellow.js';
 import { buildTerrain, SLAB_TOP } from './terrain.js';
 import { buildLandmarks } from './landmarks.js';
@@ -113,11 +113,11 @@ async function init() {
   labelRenderer.setSize(innerWidth, innerHeight);
   const flyer = new Flyer(camera, controls, ctx);
   const labelObjs = [];
-  for (const L of LANDMARKS) {
+  for (const L of FEATURED_LANDMARKS) {
     const el = document.createElement('button');
     el.className = 'tag';
     el.type = 'button';
-    el.innerHTML = `<span class="tag-dot"></span><span class="tag-name">${L.aka && L.id === 'hancock' ? 'Hancock Center' : L.name}${L.labelSubtitle?`<small>${L.labelSubtitle}</small>`:''}</span>`;
+    el.innerHTML = `<span class="tag-dot"></span><span class="tag-name">${featuredName(L)}${L.labelSubtitle?`<small>${L.labelSubtitle}</small>`:''}</span>`;
     el.addEventListener('click', () => select(L.id));
     const obj = new CSS2DObject(el);
     const top = L.id === 'grantpark' || L.id === 'navypier' ? 30 : L.h + (L.labelOffset??18);
@@ -136,7 +136,6 @@ async function init() {
   }
   ui.select = select;
   const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
-  const transitExplorer = setupTransitExplorer({ ctx, camera, controls, flyer, ui, canvas });
   const miniFellow = setupMiniFellow({ scene, ctx, camera, controls, flyer, ui, canvas });
 
   flyer.onCaption = (L) => (L ? ui.showInfo(L, true) : ui.hideInfo());
@@ -193,7 +192,6 @@ async function init() {
     ctx.waterfrontDetailUpdate?.(camera);
     ctx.life.update(dt);
     ctx.transit.update(dt);
-    if(!miniFellow.busy)transitExplorer.update(dt);
     miniFellow.update(dt);
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city
@@ -449,10 +447,10 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
 
   // Landmark list
   const list = $('landmark-list');
-  for (const L of LANDMARKS) {
+  for (const L of FEATURED_LANDMARKS) {
     const li = document.createElement('li');
     const metric = L.listMeta ?? (L.id === 'grantpark' ? `${L.acres} acres` : L.id === 'navypier' ? `${L.ft.toLocaleString()} ft long` : `${L.ft.toLocaleString()} ft`);
-    li.innerHTML = `<button type="button" data-id="${L.id}"><span class="lm-name">${L.name}</span><span class="lm-meta">${metric}</span></button>`;
+    li.innerHTML = `<button type="button" data-id="${L.id}"><span class="lm-name">${featuredName(L)}</span><span class="lm-meta">${metric}</span></button>`;
     li.querySelector('button').addEventListener('click', () => { ui.select(L.id); if (innerWidth <= 720) $('panel').classList.remove('open'); });
     list.appendChild(li);
   }
@@ -462,7 +460,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
   const card = $('info');
   ui.showInfo = (L, touring = false) => {
     ui.selectedId = L.id;
-    $('info-name').textContent = L.name;
+    $('info-name').textContent = featuredName(L);
     $('info-aka').textContent = L.aka || '';
     $('info-aka').hidden = !L.aka;
     const facts = L.facts ? [...L.facts] : [];
@@ -477,6 +475,7 @@ function setupUI({ flyer, lighting, controls, labelObjs }) {
     $('info-facts').innerHTML = facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
     $('info-desc').textContent = L.desc;
     $('info-step').hidden = !touring;
+    if (touring) $('info-step').textContent = `Guided tour · ${flyer.tour.i + 1} of ${FEATURED_LANDMARKS.length}`;
     card.hidden = false;
     document.querySelectorAll('#landmark-list button').forEach((b) => b.classList.toggle('active', b.dataset.id === L.id));
   };

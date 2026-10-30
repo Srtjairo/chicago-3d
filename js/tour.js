@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { LANDMARKS } from './geo.js';
+import { FEATURED_IDS } from './featured.js';
 import { SLAB_TOP } from './terrain.js';
 
 const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
@@ -14,8 +15,8 @@ export function overviewPos(aspect) {
   return OVERVIEW.target.clone().lerp(OVERVIEW.pos, aspect < 1 ? 1.55 : 1);
 }
 
-// Stops on the guided tour, in geographic order: lakefront, Loop, river, Mag Mile, pier, park
-const TOUR = ['grantpark', 'fountain', 'board', 'willis', 'riverside', 'mart', 'marina', 'trump', 'wrigley', 'tribune', 'hancock', 'navypier', 'stregis', 'aqua', 'aon', 'carbide', 'pritzker', 'bean'];
+// Match the seven featured destinations and their menu order.
+const TOUR = FEATURED_IDS;
 
 export class Flyer {
   constructor(camera, controls, ctx = {}) {

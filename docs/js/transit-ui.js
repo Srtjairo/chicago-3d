@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import {atDistance} from './movement.js?v=a77776db88b80bf5';
-import {inCoverage} from './coverage.js?v=a77776db88b80bf5';
-import {stationView} from './transit-camera.js?v=a77776db88b80bf5';
+import {atDistance} from './movement.js?v=4065cefedcbb3b84';
+import {inCoverage} from './coverage.js?v=4065cefedcbb3b84';
+import {stationView} from './transit-camera.js?v=4065cefedcbb3b84';
 
 // Geographic canvas and keyboard list share station IDs, including repeated names.
 export function setupTransitExplorer({ctx,camera,controls,flyer,ui,canvas:sceneCanvas}){

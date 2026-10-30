@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { facadeMaterial } from './textures.js?v=a77776db88b80bf5';
-import { LANDMARKS, rng } from './geo.js?v=a77776db88b80bf5';
-import { inCoverage } from './coverage.js?v=a77776db88b80bf5';
-export { COVERAGE, inCoverage } from './coverage.js?v=a77776db88b80bf5';
+import { facadeMaterial } from './textures.js?v=4065cefedcbb3b84';
+import { LANDMARKS, rng } from './geo.js?v=4065cefedcbb3b84';
+import { inCoverage } from './coverage.js?v=4065cefedcbb3b84';
+export { COVERAGE, inCoverage } from './coverage.js?v=4065cefedcbb3b84';
 
 export async function loadCityData() {
   const url = new URL('../assets/downtown.json', import.meta.url);

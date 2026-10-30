@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js?v=a77776db88b80bf5';
-import { facadeMaterial } from './textures.js?v=a77776db88b80bf5';
-import { SLAB_TOP } from './terrain.js?v=a77776db88b80bf5';
+import { LANDMARKS } from './geo.js?v=4065cefedcbb3b84';
+import { facadeMaterial } from './textures.js?v=4065cefedcbb3b84';
+import { SLAB_TOP } from './terrain.js?v=4065cefedcbb3b84';
 
 const byId = Object.fromEntries(LANDMARKS.map((l) => [l.id, l]));
 

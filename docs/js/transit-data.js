@@ -1,4 +1,4 @@
-import {nearest,distance} from './transit-math.js?v=a77776db88b80bf5';
+import {nearest,distance} from './transit-math.js?v=4065cefedcbb3b84';
 export async function loadTransit(){
   const url=new URL('../assets/transit.json',import.meta.url);url.search=new URL(import.meta.url).search;
   const r=await fetch(url);if(!r.ok)throw Error('CTA map data could not load. Please reload.');const data=await r.json();

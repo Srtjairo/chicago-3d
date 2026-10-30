@@ -2,6 +2,10 @@
 
 The detailed downtown core uses public geographic data. The outer skyline, materials, street furniture and animated activity are illustrative. This is an architectural visualization, not a survey or live transit map.
 
+## Public showcase — October 30, 2026
+
+The menu, clickable landmark labels, orientation-map markers and guided tour feature exactly seven places, in order: Grant Park, Willis Tower, Hancock Tower, Marina City, Relativity, OnDean and Navy Pier. Other architecture and CTA trains remain part of the scenery. Station visiting, train following, the CTA map and public district shortcuts are disabled. Existing `#cta` links open the skyline overview. The historical implementation notes below describe the original feature rollouts; this showcase supersedes their navigation and tour choices.
+
 ## Geographic sources
 
 - **Cook County GIS, 2022 building footprints and heights:** [feature layer](https://gis.cookcountyil.gov/traditional/rest/services/buildingFootprint_2022/MapServer/0), [metadata](https://www.arcgis.com/sharing/rest/content/items/7c4f47a3b32944e58c5f18652880fc05/info/metadata/metadata.xml?format=default&output=html). Based on 2022 lidar and imagery. The `Height` field is the highest building point above ground in feet; it can include antennas and equipment. The importer converts feet to metres. Named landmark models use curated architectural heights instead.
