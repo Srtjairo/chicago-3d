@@ -134,6 +134,12 @@ Detail-release performance acceptance, 2026-10-29: archived revision `0cd67ffee4
 
 The largest p95 increase is approximately 1.4%, below the 10% threshold. These samples are display-rate limited; the increased geometry/draw calls may cost more on weaker hardware, and no MacBook performance claim is made. Distant measured buildings retain one instanced draw per cell, with per-instance facade profiles. No additional shadow casters or dynamic lights were introduced.
 
+## Mini Fellow exploration
+
+Mini Fellow adds a selectable drop point and first-person exterior exploration. Walk uses a 1.7 m eye height, 0.45 m body clearance, 2.8 m/s movement and a 6 m/s faster option. Free flight uses 14 m/s or 42 m/s. These are interaction choices, not measured pedestrian behavior. WASD moves, drag or arrow keys look, Shift increases speed, and E/Q change flight height. Touch direction buttons, Rise/Lower, a speed toggle and Exit provide alternatives. Escape restores the aerial view. Optional pointer lock falls back to drag-look if unavailable.
+
+Walking boundaries reuse measured building polygons, curated building bounds, waterfront land and road/bridge ramps. The Lake Street roadway closure remains blocked. Placement searches nearby clear ground when a chosen point overlaps a building. Bounds and surface heights remain approximations: interiors, stairs, boarding trains, collisions with moving vehicles or small street furniture, and third-person body animation are not simulated. No new geographic claims or live data are introduced. The placement marker adds five unlit meshes only while choosing a spot; navigation uses spatial indexes and adds no lights or shadow casters. Existing reduced-motion and paused city-life settings are preserved.
+
 ## Validate and publish
 
 ```sh
@@ -143,6 +149,7 @@ node tools/check-city.mjs
 node tools/check-waterfront.mjs
 node tools/check-sites.mjs
 node tools/check-transit.mjs
+node tools/check-mini-fellow.mjs
 node tools/serve.mjs 8080
 ```
 

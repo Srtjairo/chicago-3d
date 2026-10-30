@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { LANDMARKS } from './geo.js?v=ffca706352a4902e';
-import { facadeMaterial } from './textures.js?v=ffca706352a4902e';
-import { boxBatch } from './city-data.js?v=ffca706352a4902e';
+import { LANDMARKS } from './geo.js?v=a77776db88b80bf5';
+import { facadeMaterial } from './textures.js?v=a77776db88b80bf5';
+import { boxBatch } from './city-data.js?v=a77776db88b80bf5';
 
 const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:0.7,...extra});
 const box=(w,h,d,x=0,y=0,z=0)=>new THREE.BoxGeometry(w,h,d).translate(x,y+h/2,z);

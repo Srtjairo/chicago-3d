@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js?v=ffca706352a4902e';
-import { SLAB_TOP } from './terrain.js?v=ffca706352a4902e';
+import { LANDMARKS } from './geo.js?v=a77776db88b80bf5';
+import { SLAB_TOP } from './terrain.js?v=a77776db88b80bf5';
 
 const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 

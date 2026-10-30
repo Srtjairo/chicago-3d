@@ -19,6 +19,7 @@ import { setupExplorer } from './explorer.js';
 import { loadTransit } from './transit-data.js';
 import { buildTransit } from './transit.js';
 import { setupTransitExplorer } from './transit-ui.js';
+import { setupMiniFellow } from './mini-fellow.js';
 import { buildTerrain, SLAB_TOP } from './terrain.js';
 import { buildLandmarks } from './landmarks.js';
 import { buildCity } from './city.js';
@@ -136,6 +137,7 @@ async function init() {
   ui.select = select;
   const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
   const transitExplorer = setupTransitExplorer({ ctx, camera, controls, flyer, ui, canvas });
+  const miniFellow = setupMiniFellow({ scene, ctx, camera, controls, flyer, ui, canvas });
 
   flyer.onCaption = (L) => (L ? ui.showInfo(L, true) : ui.hideInfo());
   flyer.onStop = () => { ui.setTouring(false); $('info-step').hidden = true; };
@@ -152,7 +154,7 @@ async function init() {
     if (key === lastSize) return;
     lastSize = key;
     camera.aspect = w / h;
-    camera.fov = w < h ? 62 : 45; // portrait screens need a wider view to fit the skyline
+    camera.fov = miniFellow.active ? 72 : w < h ? 62 : 45; // keep a natural view while roaming
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
     composer.setSize(w, h);
@@ -181,20 +183,21 @@ async function init() {
     // cap a single long hitch, but keep motion real-time down to 10 fps instead of slowing to a crawl
     const dt = Math.min(raw, 0.1);
     time += dt;
-    flyer.update(dt);
+    if(!miniFellow.busy)flyer.update(dt);
     // OrbitControls damps once per frame; rescale so the camera glides the same at any frame rate
     controls.dampingFactor = 1 - Math.pow(1 - 0.06, dt * 60);
-    controls.update();
+    if(!miniFellow.busy)controls.update();
     ctx.cityDetailUpdate?.(camera, perf.level);
     ctx.officeDetailUpdate?.(camera);
     ctx.siteDetailUpdate?.(camera);
     ctx.waterfrontDetailUpdate?.(camera);
     ctx.life.update(dt);
     ctx.transit.update(dt);
-    transitExplorer.update(dt);
+    if(!miniFellow.busy)transitExplorer.update(dt);
+    miniFellow.update(dt);
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city
-    if (camera.position.y < 12) camera.position.y = 12;
+    if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
     controls.target.x = THREE.MathUtils.clamp(controls.target.x, -5000, 4500);
     controls.target.z = THREE.MathUtils.clamp(controls.target.z, -5000, 5000);
     controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 600);
@@ -215,7 +218,7 @@ async function init() {
 
     composer.render();
     ctx.renderStats = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
-    if (ui.labelsOn) { updateLabels(dt); labelRenderer.render(scene, camera); }
+    if (ui.labelsOn && !miniFellow.busy) { updateLabels(dt); labelRenderer.render(scene, camera); }
     debug?.end(raw);
     requestAnimationFrame(frame);
   }

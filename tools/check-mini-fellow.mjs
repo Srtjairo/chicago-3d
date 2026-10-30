@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createMiniWorld,EYE_HEIGHT} from '../js/mini-fellow-world.js';
+
+const ring=(x0,z0,x1,z1)=>[[x0,z0],[x1,z0],[x1,z1],[x0,z1],[x0,z0]];
+const terrain=[[ring(-100,-100,100,100),ring(20,-100,30,100)]];
+const bounds=[{minX:-100,maxX:100,minZ:-100,maxZ:100}];
+const wall={id:'thin-wall',rings:[ring(4,-12,4.1,12)],h:8};
+const world=createMiniWorld({terrain,bounds,buildings:[wall]});
+const start={x:0,y:.6+EYE_HEIGHT,z:0};
+assert(world.valid(start));assert.equal(world.surface(25,40),null,'water cannot become ground');
+const through=world.move(start,{x:50,y:0,z:0});assert(through.blocked&&through.x<4,'a long frame must not tunnel through a thin building');
+assert(world.valid(through));
+const sliding=world.move({x:3.4,y:start.y,z:0},{x:3,z:8});assert(sliding.z>7&&sliding.x<4,'movement should slide along a wall');
+const high=world.move({x:0,y:20,z:0},{x:12,y:0,z:0},'fly');assert(Math.abs(high.x-12)<.01,'free flight can clear a roof');
+const low=world.move(start,{x:10,y:0,z:0},'fly');assert(low.blocked&&low.x<4,'free flight must also respect buildings');
+const shore=world.move({x:15,y:start.y,z:40},{x:20,z:0});assert(shore.blocked&&shore.x<20,'walkers cannot cross water');
+const airborne=world.move({x:15,y:20,z:40},{x:20,z:0},'fly');assert(airborne.x>34,'free flight can cross water');
+const bridge={road:'TEST',bridge:true,width:8,path:[[8,.26,0],[20,4.26,0],[30,4.26,0],[42,.26,0]]};
+const bridgeWorld=createMiniWorld({terrain,bounds,roads:[bridge]});
+assert.equal(bridgeWorld.surface(25,0),4.41);
+const crossing=bridgeWorld.move({x:0,y:start.y,z:0},{x:48,z:0});assert(crossing.x>47&&!crossing.blocked,'walking must follow the bridge ramp over water');
+const closed=createMiniWorld({terrain,bounds,roads:[{...bridge,closed:true}]});assert.equal(closed.surface(25,0),null,'closed bridge cannot be crossed');
+const spawn=world.findSpawn({x:4.05,z:0});assert(spawn&&world.valid(spawn),'drop points must move clear of a building');
+assert.equal(world.findSpawn({x:600,z:600},20),null,'no fabricated ground outside the scene');
+const edge=world.move({x:-98,y:start.y,z:0},{x:-20,z:0});assert(edge.blocked&&edge.x>-100);
+const canopy=createMiniWorld({terrain,bounds,buildings:[{x0:-2,x1:2,z0:-2,z1:2,y0:7,h:9}]});assert(canopy.valid(start),'a walker can pass below an elevated structure');assert(!canopy.valid({x:0,y:8,z:0},'fly'));
+const root=new URL('../',import.meta.url),revision=JSON.parse(readFileSync(new URL('docs/revision.json',root))).revision;
+for(const name of ['mini-fellow.js','mini-fellow-world.js']){const source=readFileSync(new URL('js/'+name,root),'utf8').replace(/from (['"])(\.\/[^'"]+\.js)\1/g,(_,q,p)=>`from ${q}${p}?v=${revision}${q}`);assert.equal(readFileSync(new URL('docs/js/'+name,root),'utf8'),source);}
+assert.equal(readFileSync(new URL('assets/mini-fellow.css',root),'utf8'),readFileSync(new URL('docs/assets/mini-fellow.css',root),'utf8'));
+assert(readFileSync(new URL('docs/index.html',root),'utf8').includes(`assets/mini-fellow.css?v=${revision}`));
+console.log('PASS: Mini Fellow drop placement, thin-wall collision, wall sliding, bridge ramps/closure, shoreline, free-flight clearance, scene boundary, and published assets');

@@ -31,7 +31,7 @@ const revision = hash.digest('hex').slice(0, 16);
 // Everything up to the first <canvas> is head material (title, meta, fonts, style, importmap).
 const split = src.indexOf('<canvas');
 if (split < 0) throw new Error('index.html: no <canvas> found to split head from body');
-const head = src.slice(0, split).trimEnd().replace('href="assets/transit.css"', `href="assets/transit.css?v=${revision}"`);
+const head = src.slice(0, split).trimEnd().replace(/href="(assets\/[^"?]+\.css)"/g,(_,path)=>`href="${path}?v=${revision}"`);
 const body = src.slice(split).trim().replace('src="js/main.js"', `src="js/main.js?v=${revision}"`);
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');

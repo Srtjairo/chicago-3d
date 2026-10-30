@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BLOCK, STREET, SHORE_POINTS, isLake, inGrantPark, distToRiver } from './geo.js?v=ffca706352a4902e';
+import { BLOCK, STREET, SHORE_POINTS, isLake, inGrantPark, distToRiver } from './geo.js?v=a77776db88b80bf5';
 
 // Small, static batches: street markings and waterfront structure, no simulation.
 export function buildStreets(scene, ctx) {

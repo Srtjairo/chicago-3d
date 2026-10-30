@@ -1,4 +1,4 @@
-import {Flyer} from './tour.js?v=ffca706352a4902e';
+import {Flyer} from './tour.js?v=a77776db88b80bf5';
 export function stationView(station,camera,controls,ctx){
   const p=station.platforms.find(p=>p.kind==='elevated'),point=p?.center||p?.trackPosition||station.position,[x,z]=point;
   // Station views are at street height, so low neighboring buildings matter too.

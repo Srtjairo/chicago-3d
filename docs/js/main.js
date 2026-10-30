@@ -5,27 +5,28 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { LANDMARKS, toAddress, configureShore } from './geo.js?v=ffca706352a4902e';
-import {loadSites} from './site-data.js?v=ffca706352a4902e';
-import {buildSites} from './sites.js?v=ffca706352a4902e';
-import {loadWaterfront} from './waterfront-data.js?v=ffca706352a4902e';
-import {buildWaterfront} from './waterfront.js?v=ffca706352a4902e';
-import { loadCityData } from './city-data.js?v=ffca706352a4902e';
-import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=ffca706352a4902e';
-import { buildSignatureArchitecture } from './architecture.js?v=ffca706352a4902e';
-import { buildOfficeArchitecture } from './offices.js?v=ffca706352a4902e';
-import { buildCityLife } from './city-life.js?v=ffca706352a4902e';
-import { setupExplorer } from './explorer.js?v=ffca706352a4902e';
-import { loadTransit } from './transit-data.js?v=ffca706352a4902e';
-import { buildTransit } from './transit.js?v=ffca706352a4902e';
-import { setupTransitExplorer } from './transit-ui.js?v=ffca706352a4902e';
-import { buildTerrain, SLAB_TOP } from './terrain.js?v=ffca706352a4902e';
-import { buildLandmarks } from './landmarks.js?v=ffca706352a4902e';
-import { buildCity } from './city.js?v=ffca706352a4902e';
-import { buildParks } from './parks.js?v=ffca706352a4902e';
-import { buildNavyPier } from './navypier.js?v=ffca706352a4902e';
-import { Lighting, PRESETS } from './lighting.js?v=ffca706352a4902e';
-import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=ffca706352a4902e';
+import { LANDMARKS, toAddress, configureShore } from './geo.js?v=a77776db88b80bf5';
+import {loadSites} from './site-data.js?v=a77776db88b80bf5';
+import {buildSites} from './sites.js?v=a77776db88b80bf5';
+import {loadWaterfront} from './waterfront-data.js?v=a77776db88b80bf5';
+import {buildWaterfront} from './waterfront.js?v=a77776db88b80bf5';
+import { loadCityData } from './city-data.js?v=a77776db88b80bf5';
+import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=a77776db88b80bf5';
+import { buildSignatureArchitecture } from './architecture.js?v=a77776db88b80bf5';
+import { buildOfficeArchitecture } from './offices.js?v=a77776db88b80bf5';
+import { buildCityLife } from './city-life.js?v=a77776db88b80bf5';
+import { setupExplorer } from './explorer.js?v=a77776db88b80bf5';
+import { loadTransit } from './transit-data.js?v=a77776db88b80bf5';
+import { buildTransit } from './transit.js?v=a77776db88b80bf5';
+import { setupTransitExplorer } from './transit-ui.js?v=a77776db88b80bf5';
+import { setupMiniFellow } from './mini-fellow.js?v=a77776db88b80bf5';
+import { buildTerrain, SLAB_TOP } from './terrain.js?v=a77776db88b80bf5';
+import { buildLandmarks } from './landmarks.js?v=a77776db88b80bf5';
+import { buildCity } from './city.js?v=a77776db88b80bf5';
+import { buildParks } from './parks.js?v=a77776db88b80bf5';
+import { buildNavyPier } from './navypier.js?v=a77776db88b80bf5';
+import { Lighting, PRESETS } from './lighting.js?v=a77776db88b80bf5';
+import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=a77776db88b80bf5';
 
 const $ = (id) => document.getElementById(id);
 const status = (msg) => { $('load-msg').textContent = msg; };
@@ -136,6 +137,7 @@ async function init() {
   ui.select = select;
   const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
   const transitExplorer = setupTransitExplorer({ ctx, camera, controls, flyer, ui, canvas });
+  const miniFellow = setupMiniFellow({ scene, ctx, camera, controls, flyer, ui, canvas });
 
   flyer.onCaption = (L) => (L ? ui.showInfo(L, true) : ui.hideInfo());
   flyer.onStop = () => { ui.setTouring(false); $('info-step').hidden = true; };
@@ -152,7 +154,7 @@ async function init() {
     if (key === lastSize) return;
     lastSize = key;
     camera.aspect = w / h;
-    camera.fov = w < h ? 62 : 45; // portrait screens need a wider view to fit the skyline
+    camera.fov = miniFellow.active ? 72 : w < h ? 62 : 45; // keep a natural view while roaming
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
     composer.setSize(w, h);
@@ -181,20 +183,21 @@ async function init() {
     // cap a single long hitch, but keep motion real-time down to 10 fps instead of slowing to a crawl
     const dt = Math.min(raw, 0.1);
     time += dt;
-    flyer.update(dt);
+    if(!miniFellow.busy)flyer.update(dt);
     // OrbitControls damps once per frame; rescale so the camera glides the same at any frame rate
     controls.dampingFactor = 1 - Math.pow(1 - 0.06, dt * 60);
-    controls.update();
+    if(!miniFellow.busy)controls.update();
     ctx.cityDetailUpdate?.(camera, perf.level);
     ctx.officeDetailUpdate?.(camera);
     ctx.siteDetailUpdate?.(camera);
     ctx.waterfrontDetailUpdate?.(camera);
     ctx.life.update(dt);
     ctx.transit.update(dt);
-    transitExplorer.update(dt);
+    if(!miniFellow.busy)transitExplorer.update(dt);
+    miniFellow.update(dt);
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city
-    if (camera.position.y < 12) camera.position.y = 12;
+    if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
     controls.target.x = THREE.MathUtils.clamp(controls.target.x, -5000, 4500);
     controls.target.z = THREE.MathUtils.clamp(controls.target.z, -5000, 5000);
     controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 600);
@@ -215,7 +218,7 @@ async function init() {
 
     composer.render();
     ctx.renderStats = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
-    if (ui.labelsOn) { updateLabels(dt); labelRenderer.render(scene, camera); }
+    if (ui.labelsOn && !miniFellow.busy) { updateLabels(dt); labelRenderer.render(scene, camera); }
     debug?.end(raw);
     requestAnimationFrame(frame);
   }
