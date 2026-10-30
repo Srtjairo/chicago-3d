@@ -1,6 +1,7 @@
+import {closedTransitRoad} from './transit-data.js?v=bc893891e5c0c0d3';
 import * as THREE from 'three';
-import { rng } from './geo.js?v=196332b19f6f2af2';
-import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=196332b19f6f2af2';
+import { rng } from './geo.js?v=bc893891e5c0c0d3';
+import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=bc893891e5c0c0d3';
 
 const palette=[0xe8e4da,0x364655,0x8b3f36,0x293138,0xafa997,0xd5ad44,0x587475,0x6e7384];
 function pool(scene,name,geometry,material,count){const m=new THREE.InstancedMesh(geometry,material,count);m.name=name;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;scene.add(m);return m;}
@@ -9,7 +10,7 @@ const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:0.65
 export function buildCityLife(scene,ctx,camera) {
   const rand=rng(1837),group=new THREE.Group();group.name='city-life';scene.add(group);
   const edges=[],byNode=new Map();
-  for(const road of ctx.roads) {
+  for(const road of ctx.roads.filter(r=>!closedTransitRoad(r))) {
     for(const reverse of (road.dir==='B'?[false,true]:[road.dir==='T'])) {
       const raw=reverse?[...road.path].reverse():road.path;
       const path=offsetPath(raw,road.width/4),route=makeRoute(path);
@@ -34,7 +35,7 @@ export function buildCityLife(scene,ctx,camera) {
   ctx.glows.push({mat:carLights.material,day:0.1,night:1.2},{mat:tailLights.material,day:0.15,night:0.8});
 
   const walks=[];
-  for(const road of ctx.roads.filter(r=>!r.bridge&&r.class>1&&r.class<5&&!/LAKE SHORE/.test(r.road))) {
+  for(const road of ctx.roads.filter(r=>!closedTransitRoad(r)&&!r.bridge&&r.class>1&&r.class<5&&!/LAKE SHORE/.test(r.road))) {
     const middle=trimRoute(road.path,15,15);if(!middle)continue;
     const left=offsetPath(middle,road.width/2+1.8),right=offsetPath([...middle].reverse(),road.width/2+1.8);
     const r=makeRoute([...left,...right,left[0]]);
@@ -62,16 +63,6 @@ export function buildCityLife(scene,ctx,camera) {
   const bikeFrames=pool(group,'bicycle-frames',new THREE.BoxGeometry(.12,.12,1.1),mat(0x86aaa9),cyclistCount);
   const bikeBars=pool(group,'bicycle-bars',new THREE.BoxGeometry(.52,.08,.08),mat(0x536664),cyclistCount);
   const contact=pool(group,'contact-shading',new THREE.CircleGeometry(1,12),new THREE.MeshBasicMaterial({color:0x17201f,transparent:true,opacity:0.18,depthWrite:false}),carCount+pedCount);
-  const trainRoute=makeRoute(ctx.railPath),trains=[];
-  const trainBody=pool(group,'trains',new THREE.BoxGeometry(2.7,2.8,13.5),mat(0xc3c9c5,{metalness:0.35}),24);
-  const trainGlass=pool(group,'train-windows',new THREE.BoxGeometry(2.74,0.85,12),mat(0x324b54,{emissive:0x557783,emissiveIntensity:0}),24);
-  ctx.glows.push({mat:trainGlass.material,day:0,night:0.35});
-  for(let i=0;i<4;i++){
-    const route=makeRoute(offsetPath(i%2?[...ctx.railPath].reverse():ctx.railPath,1.5));
-    const stops=ctx.railStations.map(([x,z])=>{let best=Infinity,at=0;route.points.forEach((p,k)=>{const d=Math.hypot(p[0]-x,p[2]-z);if(d<best){best=d;at=k;}});return (route.lengths[at]+36)%route.length;}).sort((a,b)=>a-b);
-    const d=route.length*Math.floor(i/2)/2;let stop=stops.findIndex(s=>s>d);if(stop<0)stop=0;
-    trains.push({route,stops,stop,d,hold:0,nextStop:stops[stop]>d?stops[stop]:stops[stop]+route.length});
-  }
   // Low riverboats clear the fixed bridges. No wake particles or dynamic shadows.
   const boatRoute=makeRoute([[1080,0.24,-710],[650,0.24,-727],[310,0.24,-756],[175,0.24,-748],[92,0.24,-656],[0,0.24,-604],[-280,0.24,-601],[-550,0.24,-603],[-670,0.24,-591],[-773,0.24,-512]]);
   const boatHull=pool(group,'riverboats',new THREE.BoxGeometry(5.8,0.9,20),mat(0xe2ddd0),8);
@@ -81,7 +72,7 @@ export function buildCityLife(scene,ctx,camera) {
   const place=(mesh,index,x,y,z,angle=0,sx=1,sy=1,sz=1)=>{m.compose(p.set(x,y,z),q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,angle),s.set(sx,sy,sz));mesh.setMatrixAt(index,m);};
   const color=new THREE.Color(),up=new THREE.Vector3(1,0,0);
   let time=0,accumulator=0,lastSignal=-1,paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const stats={vehicles:0,pedestrians:0,cyclists:0,walkerBudget:walkerCount,cyclistBudget:cyclistCount,trains:4,boats:8,steps:0};
+  const stats={vehicles:0,pedestrians:0,cyclists:0,walkerBudget:walkerCount,cyclistBudget:cyclistCount,trains:ctx.transitData.routes.length,boats:8,steps:0};
   function step(dt){
     time+=dt;stats.steps++;
     const occupancy=new Map();for(const c of cars){if(!occupancy.has(c.edge.id))occupancy.set(c.edge.id,[]);occupancy.get(c.edge.id).push(c);}
@@ -115,8 +106,6 @@ export function buildCityLife(scene,ctx,camera) {
       person.d=(person.d+move)%person.route.length;
       if(person.d<person.previous)person.previous=person.d;
     }
-    for(const train of trains){if(train.hold>0){train.hold-=dt;continue;}const gap=train.nextStop-train.d;train.d+=Math.min(gap,Math.max(1.5,Math.min(10,gap*.3))*dt);
-      if(train.d>=train.nextStop-.05){train.d=train.nextStop;train.hold=6;train.stop=(train.stop+1)%train.stops.length;const base=Math.floor(train.d/train.route.length)*train.route.length;train.nextStop=base+train.stops[train.stop];if(train.nextStop<=train.d)train.nextStop+=train.route.length;}}
   }
   function update(dt){
     if(!paused){accumulator+=Math.min(dt,0.1);while(accumulator>=0.05){step(0.05);accumulator-=0.05;}}
@@ -145,10 +134,6 @@ export function buildCityLife(scene,ctx,camera) {
       m.compose(p.set(x,y+0.15,z),q.setFromAxisAngle(up,-Math.PI/2),s.set(0.42,0.42,1));contact.setMatrixAt(sh++,m);pn++;
     }
     stats.pedestrians=pn-bn;stats.cyclists=bn;bikeWheels.count=bn*2;bikeFrames.count=bikeBars.count=bn;torsos.count=heads.count=pn;legs.count=pn*2;contact.count=sh;
-    for(let i=0;i<trains.length;i++)for(let j=0;j<6;j++){
-      const r=trains[i].route;atDistance(r,((trains[i].d-j*15)%r.length+r.length)%r.length,sample);
-      place(trainBody,i*6+j,sample.x,10.65,sample.z,sample.angle);place(trainGlass,i*6+j,sample.x,11.2,sample.z,sample.angle);
-    }
     for(let i=0;i<8;i++){
       const cycle=(time*3+i*boatRoute.length/4)%(boatRoute.length*2),reverse=cycle>boatRoute.length;
       atDistance(boatRoute,reverse?boatRoute.length*2-cycle:cycle,sample);
@@ -158,6 +143,6 @@ export function buildCityLife(scene,ctx,camera) {
     if(Math.floor(time*2)!==lastSignal){lastSignal=Math.floor(time*2);ctx.signals.forEach((v,i)=>{place(signalMesh,i,v.x,4.8,v.z);signalMesh.setColorAt(i,color.setHex(signalGreen(time,v.axis,v.id)?0x76c798:0xc95141));});signalMesh.instanceColor.needsUpdate=true;}
     group.traverse(o=>{if(o.instanceMatrix)o.instanceMatrix.needsUpdate=true;if(o.instanceColor)o.instanceColor.needsUpdate=true;});
   }
-  ctx.life={update,stats,cars,people,edges,walks,boatRoute,trainRoute,audit(seconds=60){for(let i=0;i<seconds*20;i++)step(.05);update(0);},get paused(){return paused;},set paused(v){paused=Boolean(v);accumulator=0;},get time(){return time;}};
+  ctx.life={update,stats,cars,people,edges,walks,boatRoute,audit(seconds=60){for(let i=0;i<seconds*20;i++)step(.05);update(0);},get paused(){return paused;},set paused(v){paused=Boolean(v);accumulator=0;},get time(){return time;}};
   update(0);
 }

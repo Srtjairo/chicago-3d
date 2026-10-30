@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { facadeMaterial } from './textures.js?v=196332b19f6f2af2';
-import {boxBatch} from './city-data.js?v=196332b19f6f2af2';
+import { facadeMaterial } from './textures.js?v=bc893891e5c0c0d3';
+import {boxBatch} from './city-data.js?v=bc893891e5c0c0d3';
 
 const DECK = 3;
 

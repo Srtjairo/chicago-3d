@@ -16,6 +16,9 @@ import { buildSignatureArchitecture } from './architecture.js';
 import { buildOfficeArchitecture } from './offices.js';
 import { buildCityLife } from './city-life.js';
 import { setupExplorer } from './explorer.js';
+import { loadTransit } from './transit-data.js';
+import { buildTransit } from './transit.js';
+import { setupTransitExplorer } from './transit-ui.js';
 import { buildTerrain, SLAB_TOP } from './terrain.js';
 import { buildLandmarks } from './landmarks.js';
 import { buildCity } from './city.js';
@@ -64,6 +67,7 @@ async function init() {
   ctx.data = await loadCityData();
   ctx.waterfront=await loadWaterfront();
   ctx.sites=await loadSites();
+  ctx.transitData=await loadTransit();
   configureShore(ctx.data);
   prepareWorld(ctx);
 
@@ -89,6 +93,7 @@ async function init() {
   buildWaterfront(scene, ctx);
   buildNavyPier(scene, ctx);
   buildCityLife(scene, ctx, camera);
+  buildTransit(scene, ctx, camera);
 
   // Keep antialiasing and color output; avoid the multi-pass bloom effect.
   const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: quality.samples });
@@ -130,6 +135,7 @@ async function init() {
   }
   ui.select = select;
   const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
+  const transitExplorer = setupTransitExplorer({ ctx, camera, controls, flyer, ui, canvas });
 
   flyer.onCaption = (L) => (L ? ui.showInfo(L, true) : ui.hideInfo());
   flyer.onStop = () => { ui.setTouring(false); $('info-step').hidden = true; };
@@ -184,6 +190,8 @@ async function init() {
     ctx.siteDetailUpdate?.(camera);
     ctx.waterfrontDetailUpdate?.(camera);
     ctx.life.update(dt);
+    ctx.transit.update(dt);
+    transitExplorer.update(dt);
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city
     if (camera.position.y < 12) camera.position.y = 12;
@@ -232,7 +240,7 @@ function labelLayout(camera, objects, ui) {
     if (timer > 0) return;
     timer = 0.1;
     const w = innerWidth, h = innerHeight;
-    const occupied = [...document.querySelectorAll('.brand, #panel, #info, .dock, .explore')]
+    const occupied = [...document.querySelectorAll('.brand, #panel, #info, .dock, .explore, .transit-selection')]
       .filter((e) => !e.hidden && getComputedStyle(e).opacity !== '0')
       .map((e) => { const r = e.getBoundingClientRect(); return { x: r.x - 10, y: r.y - 10, w: r.width + 20, h: r.height + 20 }; });
     const sorted = [...objects].sort((a, b) =>

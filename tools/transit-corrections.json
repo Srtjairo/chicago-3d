@@ -1,0 +1,195 @@
+{
+  "snapshot": "2026-10-29",
+  "notes": "Reviewed source-ID replacements and explicit estimates; never remove buildings by corridor proximity.",
+  "replacements": [
+    {
+      "id": "859574-0",
+      "stationId": "40460",
+      "reason": "Merchandise Mart station envelope crosses the rail centerline; replace solid ground extrusion with elevated platforms."
+    },
+    {
+      "id": "868574-0",
+      "stationId": "40380",
+      "reason": "Clark/Lake station envelope."
+    },
+    {
+      "id": "877633-0",
+      "stationId": "41700",
+      "reason": "Former Madison/Wabash envelope in older footprint survey; replaced by Washington/Wabash."
+    },
+    {
+      "id": "878230-0",
+      "stationId": "40730",
+      "reason": "Washington/Wells station envelope."
+    },
+    {
+      "id": "887029-0",
+      "stationId": "40680",
+      "reason": "Adams/Wabash station envelope."
+    },
+    {
+      "id": "897359-0",
+      "stationId": "40850",
+      "reason": "Library station envelope including over-track concourse."
+    },
+    {
+      "id": "897516-0",
+      "stationId": "40160",
+      "reason": "Narrow over-track station connector is represented as an elevated walkway, not a solid 23.6 m ground extrusion."
+    },
+    {
+      "id": "925224-0",
+      "stationId": "41400",
+      "reason": "Roosevelt elevated platform envelope."
+    },
+    {
+      "id": "869341-0",
+      "stationId": "41510",
+      "reason": "Morgan platform and crossover envelope."
+    },
+    {
+      "id": "868500-0",
+      "stationId": "40260",
+      "reason": "State/Lake north platform envelope; closed reconstruction site."
+    },
+    {
+      "id": "868789-0",
+      "stationId": "40260",
+      "reason": "State/Lake south platform envelope; closed reconstruction site."
+    },
+    {
+      "id": "869120-0",
+      "stationId": "41160",
+      "reason": "Clinton elevated platform and canopy envelope."
+    },
+    {
+      "id": "897584-0",
+      "stationId": "40160",
+      "reason": "LaSalle/Van Buren platform envelope."
+    },
+    {
+      "id": "897981-0",
+      "stationId": "40160",
+      "reason": "LaSalle/Van Buren opposite platform envelope."
+    },
+    {
+      "id": "925612-0",
+      "stationId": "41400",
+      "reason": "Roosevelt station access structure."
+    },
+    {
+      "id": "836354-0",
+      "stationId": "40710",
+      "reason": "Chicago elevated east platform canopy: 146 m long narrow roof envelope alongside the tracks."
+    },
+    {
+      "id": "869840-0",
+      "stationId": "40260",
+      "reason": "Narrow rail-side roof/catwalk envelope south of Tower 18, represented at deck level instead of a solid ground extrusion."
+    }
+  ],
+  "alignmentCorrections": [
+    {
+      "id": "south-side-alley",
+      "bounds": [
+        55,
+        165,
+        930,
+        1800
+      ],
+      "profile": [
+        [
+          930,
+          88.5
+        ],
+        [
+          948,
+          87.4
+        ],
+        [
+          980,
+          87.4
+        ],
+        [
+          1000,
+          87.8
+        ],
+        [
+          1135,
+          89.2
+        ],
+        [
+          1230,
+          90.8
+        ],
+        [
+          1332,
+          92.5
+        ],
+        [
+          1400,
+          94
+        ],
+        [
+          1420,
+          94.2
+        ],
+        [
+          1457,
+          95.6
+        ],
+        [
+          1500,
+          96.3
+        ],
+        [
+          1545,
+          98
+        ],
+        [
+          1580,
+          100
+        ],
+        [
+          1642,
+          101.4
+        ],
+        [
+          1694,
+          101.5
+        ],
+        [
+          1740,
+          103
+        ],
+        [
+          1800,
+          106
+        ]
+      ],
+      "confidence": "estimated corridor-fit correction; not surveyed",
+      "reason": "The generalized GIS/GTFS centerline grazes measured roof footprints along the alley. This explicit lateral profile holds both tracks inside the available right-of-way. Center deviation is approximately 6 m at its maximum; this is a documented manual review exception; original geographic shapes remain unchanged. Roosevelt platform is centered south of the station reference point to accommodate its island and eight-car consists.",
+      "source": "https://occprodstoragev1.blob.core.usgovcloudapi.net/lsmatterattachmentspublic/071d2ecf-1327-4fa5-89cc-620a9d394df9.pdf"
+    }
+  ],
+  "transfers": [
+    {
+      "a": "40070",
+      "b": "40560",
+      "kind": "pedestrian subway connection",
+      "source": "https://www.transitchicago.com/station/jblu/"
+    },
+    {
+      "a": "40370",
+      "b": "41660",
+      "kind": "walk through Block 37 / Pedway; fare rules apply",
+      "source": "https://www.transitchicago.com/station/wash/"
+    },
+    {
+      "a": "41660",
+      "b": "40260",
+      "kind": "street connection; State/Lake elevated CLOSED",
+      "source": "https://www.transitchicago.com/station/lake/"
+    }
+  ]
+}

@@ -1,10 +1,10 @@
-import {registerRoute} from './waterfront-data.js?v=196332b19f6f2af2';
+import {registerRoute} from './waterfront-data.js?v=bc893891e5c0c0d3';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PLAZAS, rng } from './geo.js?v=196332b19f6f2af2';
-import { SLAB_TOP } from './terrain.js?v=196332b19f6f2af2';
-import { glowSprite } from './textures.js?v=196332b19f6f2af2';
-import { boxBatch, segmentBox } from './city-data.js?v=196332b19f6f2af2';
+import { PLAZAS, rng } from './geo.js?v=bc893891e5c0c0d3';
+import { SLAB_TOP } from './terrain.js?v=bc893891e5c0c0d3';
+import { glowSprite } from './textures.js?v=bc893891e5c0c0d3';
+import { boxBatch, segmentBox } from './city-data.js?v=bc893891e5c0c0d3';
 
 const BASE = SLAB_TOP + 0.45;
 

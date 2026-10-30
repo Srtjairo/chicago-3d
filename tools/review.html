@@ -2,15 +2,26 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>body{margin:0;background:#101722;color:#edf3f6;font:14px system-ui}header{display:flex;gap:12px;align-items:center;padding:12px;flex-wrap:wrap}button,select{padding:8px;background:#243448;color:inherit;border:1px solid #546477;border-radius:5px}iframe{display:block;border:0;margin:0 auto}pre{white-space:pre-wrap;margin:12px;color:#bcd6c5}</style>
 <header><strong>Chicago visual checks</strong><button id="desktop">Desktop</button><button id="phone">Phone</button>
-<select id="build" aria-label="Build"><option value="/docs/">Working build</option><option value="/.cache/detail-baseline/docs/">Previous release (local archive)</option></select>
+<select id="build" aria-label="Build"><option value="/docs/">Working build</option><option value="/.cache/transit-baseline/docs/">Before CTA (local archive)</option><option value="/.cache/detail-baseline/docs/">Previous release (local archive)</option></select>
 <select id="place" aria-label="Camera view"><option value="overview">Skyline</option><option value="wrigley">Wrigley</option><option value="bean">Cloud Gate</option><option value="navypier">Navy Pier</option><option value="fountain">Fountain</option></select>
 <select id="time" aria-label="Lighting"><option value="0.42">Golden hour</option><option value="0">Midday</option><option value="0.7">Dusk</option><option value="1">Night</option></select>
 <button id="check">Check scene</button><button id="offices">Check offices</button><button id="waterfront">Check waterfront</button><button id="motion">Audit motion</button><button id="benchmark">Measure 8 seconds</button><button id="sites">Check site details</button><button id="triple">Measure three samples</button><button id="suite">Measure this build (7 views)</button><button id="capture">Save link preview</button></header>
 <iframe title="Chicago preview" src="/docs/" width="1200" height="740"></iframe><pre id="results">Waiting for scene…</pre>
 <script type="module">
+import './transit-review.js';
 const frame = document.querySelector('iframe'), out = document.querySelector('#results');
 const app = () => frame.contentWindow.__chicago;
 const fixedViews={
+ 'CTA Morgan':[[-2030,120,-235],[-1960,10,-397]],
+ 'CTA Lake bridge':[[-800,75,-520],[-810,10,-409]],
+ 'CTA Wells bridge':[[-650,145,-510],[-505,10,-601]],
+ 'CTA Merchandise Mart':[[-505,55,-625],[-510,12,-759]],
+ 'CTA Clark Lake':[[-90,65,-411],[-280,10,-411]],
+ 'CTA Washington Wabash':[[140,70,45],[140,12,-133]],
+ 'CTA Quincy':[[-490,60,520],[-491,10,368]],
+ 'CTA Roosevelt':[[103,70,1775],[101,12,1628]],
+ 'CTA subway entrance':[[8,32,280],[8,1,195]],
+ 'CTA Loop overhead':[[-180,1800,100],[-180,0,90]],
  'South Grant overhead':[[590,1100,1310],[590,0,1300]],
  'Agora & skate':[[685,190,1580],[399,2,1490]],
  'South Grant bench':[[1050,660,1850],[595,5,1305]],
@@ -41,6 +52,7 @@ document.querySelector('#place').onchange = async (e) => {
   else view = e.target.value === 'overview' ? { pos: tour.overviewPos(a.camera.aspect), target: tour.OVERVIEW.target }
     : a.flyer.viewFor(geo.LANDMARKS.find((l) => l.id === e.target.value));
   a.camera.position.copy(view.pos); a.controls.target.copy(view.target); a.controls.update();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{out.textContent='View ready: '+e.target.value;}));
 };
 document.querySelector('#time').onchange = (e) => {
   const slider = frame.contentDocument.querySelector('#time'); slider.value = Number(e.target.value) * 1000;

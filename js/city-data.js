@@ -80,7 +80,7 @@ export function buildMeasuredCity(scene, ctx) {
   const buildings = [];
   for (const b of ctx.data.buildings) {
     const v = boundsOf(b.rings[0]);
-    if (!inCoverage(v.x, v.z) || REPLACED.has(b.id) || ctx.waterfront.replacementIds.includes(b.id) || ctx.sites.replacementIds.includes(b.id)) continue;
+    if (!inCoverage(v.x, v.z) || REPLACED.has(b.id) || ctx.waterfront.replacementIds.includes(b.id) || ctx.sites.replacementIds.includes(b.id) || ctx.transitData?.replacementIds.includes(b.id)) continue;
     // Navy Pier and Millennium Park already have hand-built structures.
     if ((v.x > 280 && v.x < 610 && v.z > -220 && v.z < 60)) continue;
     // One Prudential's antenna belongs above its roof, not across its whole footprint.

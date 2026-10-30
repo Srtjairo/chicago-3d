@@ -1,0 +1,37 @@
+[
+  {
+    "name": "gtfs.zip",
+    "url": "https://www.transitchicago.com/downloads/sch_data/google_transit.zip",
+    "sha256": "a9372be5b70fcee4ed98c9476433f86065637a9a500b8af6afbb84d000ef2746",
+    "lastModified": "Mon, 14 Sep 2026 21:50:47 GMT",
+    "retrievedAt": "2026-10-30T00:04:08.764Z"
+  },
+  {
+    "name": "lines.json",
+    "url": "https://data.cityofchicago.org/resource/xbyr-jnvx.json?$limit=5000",
+    "sha256": "c1502a651f916f4382a162c18f46c89644a919157c151c45ea49939470d87b89",
+    "lastModified": "Tue, 23 Jul 2024 22:39:01 GMT",
+    "retrievedAt": "2026-10-30T00:04:08.595Z"
+  },
+  {
+    "name": "stations.json",
+    "url": "https://data.cityofchicago.org/resource/3tzw-cg4m.json?$limit=5000",
+    "sha256": "cdbeb7438ca85f30301923e61e27bcbc338394e651189c753c5f6c1d9b8fc8e7",
+    "lastModified": "Fri, 16 Aug 2024 21:02:58 GMT",
+    "retrievedAt": "2026-10-30T00:04:08.440Z"
+  },
+  {
+    "name": "stops.json",
+    "url": "https://data.cityofchicago.org/resource/8pix-ypme.json?$limit=5000",
+    "sha256": "312b9020eaa601c14dec362c3acb8bb7ddcf30d0d4ea3af9d45cbad3e22130da",
+    "lastModified": "Wed, 19 Nov 2025 18:15:03 GMT",
+    "retrievedAt": "2026-10-30T00:04:07.796Z"
+  },
+  {
+    "name": "entrances.geojson",
+    "url": "https://raw.githubusercontent.com/ChicagoCityscape/gis-data/master/stations_cta/cta_entrances.geojson",
+    "sha256": "7e195cabd3a771d31168c337804d84d1e8f8e7c35b52d538c824b9513823e71b",
+    "lastModified": null,
+    "retrievedAt": "2026-10-30T00:07:39.290Z"
+  }
+]

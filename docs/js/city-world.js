@@ -1,10 +1,11 @@
-import {siteAt} from './site-data.js?v=196332b19f6f2af2';
-import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js?v=196332b19f6f2af2';
+import {siteAt} from './site-data.js?v=bc893891e5c0c0d3';
+import {transitAt} from './transit-data.js?v=bc893891e5c0c0d3';
+import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js?v=bc893891e5c0c0d3';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=196332b19f6f2af2';
-import { addTrees } from './terrain.js?v=196332b19f6f2af2';
-import { rng } from './geo.js?v=196332b19f6f2af2';
+import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=bc893891e5c0c0d3';
+import { addTrees } from './terrain.js?v=bc893891e5c0c0d3';
+import { rng } from './geo.js?v=bc893891e5c0c0d3';
 
 export function prepareWorld(ctx) {
   const water = ctx.data.water.filter((w) => !w.name.includes('LAKE')).map((w) => ({ ...w, bounds: boundsOf(w.rings[0]) }));
@@ -72,14 +73,14 @@ export function buildStreets(scene,ctx) {
       const a=path[i-1],p=path[i],dx=p[0]-a[0],dz=p[2]-a[2],len=Math.hypot(dx,dz);if(len<1)continue;
       const side=i%2===0?1:-1,off=side*(width/2+2);
       const x=p[0]-dz/len*off,z=p[2]+dx/len*off;
-      if(siteAt(ctx,x,z)||ctx.isRiver(x,z)||landscapeAt(x,z)||waterfrontAt(x,z)&&!waterfrontLand(x,z))continue;
+      if(siteAt(ctx,x,z)||transitAt(ctx,x,z)||ctx.isRiver(x,z)||landscapeAt(x,z)||waterfrontAt(x,z)&&!waterfrontLand(x,z))continue;
       // Reject positions inside the measured footprints, including overhanging podiums.
       if(ctx.measuredBuildings.some(b=>x>b.x0-1&&x<b.x1+1&&z>b.z0-1&&z<b.z1+1&&inPolygon(x,z,b.rings)))continue;
       posts.push([x,3.6,z,0.16,7,0.16]);lamps.push([x,7.2,z,1.3,0.18,0.7]);
       if(rand()<0.65){
         // Move along the sidewalk, never five metres inward into the traffic lane.
         const tx=x+dx/len*5,tz=z+dz/len*5;
-        if(!siteAt(ctx,tx,tz)&&!ctx.measuredBuildings.some(b=>tx>b.x0-1&&tx<b.x1+1&&tz>b.z0-1&&tz<b.z1+1&&inPolygon(tx,tz,b.rings)))trees.push([tx,tz,0.6+rand()*0.16]);
+        if(!siteAt(ctx,tx,tz)&&!transitAt(ctx,tx,tz)&&!ctx.measuredBuildings.some(b=>tx>b.x0-1&&tx<b.x1+1&&tz>b.z0-1&&tz<b.z1+1&&inPolygon(tx,tz,b.rings)))trees.push([tx,tz,0.6+rand()*0.16]);
       }
       if(rand()<0.2) furniture.push([x,0.9,z,1.6,0.45,0.55,Math.atan2(dx,dz)]);
     }
@@ -103,7 +104,7 @@ export function buildStreets(scene,ctx) {
     const mesh=boxBatch(items,color,name,mat);mesh.receiveShadow=items===roads||items===walks;group.add(mesh);
   }
   scene.add(group);addTrees(scene,trees,rand);ctx.signals=signals;ctx.junctions=junctions;
-  buildRiverwalk(scene,ctx);buildLoop(scene,ctx);
+  buildRiverwalk(scene,ctx);
 }
 
 function buildRiverwalk(scene,ctx) {
@@ -119,32 +120,4 @@ function buildRiverwalk(scene,ctx) {
   for(const x of [-500,-260,-10,285,610]) for(let k=0;k<5;k++) steps.push([x,0.45+k*0.18,x<0?-549+k*1.2:-681+k*1.2,8,0.2,1.3]);
   scene.add(boxBatch(walks,0xbfb5a0,'riverwalk'),boxBatch(rails,0x4b5a5a,'riverwalk-railing'),boxBatch(seats,0x8d7254,'riverwalk-seats'),boxBatch(steps,0xb6ad9b,'riverwalk-steps'));
   ctx.riverwalkPath=path.map(([x,z])=>[x,0.7,z]);
-}
-
-function buildLoop(scene,ctx) {
-  // Wells → Lake → Wabash → Van Buren. Rounded corners avoid train snapping.
-  const corners=[[-493,560],[-509,-387],[123,-400],[142,548],[-493,560]];
-  const curve=new THREE.CatmullRomCurve3(corners.slice(0,-1).map(([x,z])=>new THREE.Vector3(x,9,z)),true,'catmullrom',0.04);
-  const path=curve.getPoints(360).map(p=>[p.x,p.y,p.z]);ctx.railPath=path;
-  const deck=[],track=[],columns=[],cross=[],stations=[];
-  for(let i=1;i<path.length;i++) {
-    const a=path[i-1],b=path[i],dx=b[0]-a[0],dz=b[2]-a[2],len=Math.hypot(dx,dz),nx=-dz/len,nz=dx/len;
-    segmentBox(deck,[a[0],a[2]],[b[0],b[2]],7,8.35,0.6);
-    for(const side of [-2.2,-0.8,0.8,2.2]) segmentBox(track,[a[0]+nx*side,a[2]+nz*side],[b[0]+nx*side,b[2]+nz*side],0.15,8.85,0.18);
-    if(i%4===0){
-      for(const side of [-1,1]) columns.push([a[0]+nx*4.5,4.3,a[2]+nz*4.5,0.65,8.4,0.65]);
-      cross.push([a[0],7.8,a[2],10,0.65,0.65,Math.atan2(dx,dz)]);
-    }
-  }
-  // Stations sit on the straight sections, with modest platform canopies.
-  ctx.railStations=[[-500,-145,0],[-490,280,0],[-320,557,Math.PI/2],[-15,552,Math.PI/2],[137,277,0],[129,-160,0],[0,-398,Math.PI/2],[-257,-391,Math.PI/2]];
-  for(const [x,z,angle] of ctx.railStations) {
-    for(const side of [-1,1]) {
-      const nx=Math.cos(angle)*side*5.7,nz=-Math.sin(angle)*side*5.7;
-      stations.push([x+nx,8.7,z+nz,3,0.55,120,angle]);
-      stations.push([x+nx,12.1,z+nz,3.5,0.35,90,angle]);
-      for(const t of [-36,-18,0,18,36]) columns.push([x+nx+Math.sin(angle)*t,10.2,z+nz+Math.cos(angle)*t,0.2,3,0.2]);
-    }
-  }
-  scene.add(boxBatch(deck,0x595a52,'loop-structure'),boxBatch(track,0x8e9694,'loop-rails'),boxBatch(columns,0x667163,'loop-columns'),boxBatch(cross,0x606b5d,'loop-beams'),boxBatch(stations,0x9b9c8e,'loop-stations'));
 }
