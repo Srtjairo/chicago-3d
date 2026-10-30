@@ -1,17 +1,21 @@
-import {siteAt} from './site-data.js?v=4065cefedcbb3b84';
-import {transitAt} from './transit-data.js?v=4065cefedcbb3b84';
-import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js?v=4065cefedcbb3b84';
+import {siteAt} from './site-data.js?v=636eff9cbfa6f76b';
+import {transitAt} from './transit-data.js?v=636eff9cbfa6f76b';
+import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js?v=636eff9cbfa6f76b';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=4065cefedcbb3b84';
-import { addTrees } from './terrain.js?v=4065cefedcbb3b84';
-import { rng } from './geo.js?v=4065cefedcbb3b84';
+import { boundsOf, inCoverage, inPolygon, polygonGeometry, boxBatch, segmentBox } from './city-data.js?v=636eff9cbfa6f76b';
+import { addTrees } from './terrain.js?v=636eff9cbfa6f76b';
+import { rng } from './geo.js?v=636eff9cbfa6f76b';
+import {prepareLakeShore} from './lake-shore-data.js?v=636eff9cbfa6f76b';
+import {buildLakeShore} from './lake-shore.js?v=636eff9cbfa6f76b';
 
 export function prepareWorld(ctx) {
   const water = ctx.data.water.filter((w) => !w.name.includes('LAKE')).map((w) => ({ ...w, bounds: boundsOf(w.rings[0]) }));
   ctx.waterLevel=(x,z)=>ctx.waterfront.riverSurfaces.some(rings=>inPolygon(x,z,rings))?.2:-.6;
   ctx.isRiver = (x, z) => water.some((w) => x >= w.bounds.x0 && x <= w.bounds.x1 && z >= w.bounds.z0 && z <= w.bounds.z1 && inPolygon(x,z,w.rings));
+  ctx.lakeShore=prepareLakeShore(ctx.lakeShoreData,ctx.isRiver);
   ctx.roads = ctx.data.streets.filter((s) => s.class >= 1 && s.class <= 4 && !/LOWER|RAMP|EXPY/.test(s.road) && s.level.every((h) => h >= 0))
+    .filter(s=>!ctx.lakeShore.sourceIds.has(s.id))
     .filter((s) => s.points.every(([x,z]) => inCoverage(x,z,80)) || /LAKE SHORE/.test(s.road)&&s.points.every(([x,z])=>waterfrontAt(x,z)))
     .map((s) => {
       const width = /MICHIGAN|COLUMBUS|ROOSEVELT|LAKE SHORE/.test(s.road) ? 20 : s.class <= 3 ? 16 : 12;
@@ -26,7 +30,7 @@ export function prepareWorld(ctx) {
       // Road and moving agents share this gently ramped bridge surface.
       const path=points.map(([x,z],i)=>[x,bridge ? 0.26+4*Math.max(...wet.map((v,j)=>v ? Math.max(0,1-Math.abs(i-j)/4):0)) : 0.26,z]);
       return {...s,width,bridge,path};
-    });
+    }).concat(ctx.lakeShore.roads);
 }
 
 export function buildWaterGeometry(scene, ctx) {
@@ -48,6 +52,7 @@ export function buildStreets(scene,ctx) {
   const rand=rng(1661);
   const junctions=new Map();
   for(const road of ctx.roads) {
+    if(road.highway)continue;
     const {path,width}=road;
     for(let i=1;i<path.length;i++) {
       const a=path[i-1],b=path[i],aa=[a[0],a[2]],bb=[b[0],b[2]], y=(a[1]+b[1])/2;
@@ -104,6 +109,7 @@ export function buildStreets(scene,ctx) {
     const mesh=boxBatch(items,color,name,mat);mesh.receiveShadow=items===roads||items===walks;group.add(mesh);
   }
   scene.add(group);addTrees(scene,trees,rand);ctx.signals=signals;ctx.junctions=junctions;
+  buildLakeShore(scene,ctx);
   buildRiverwalk(scene,ctx);
 }
 

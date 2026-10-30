@@ -1,5 +1,5 @@
-import { FEATURED_LANDMARKS } from './featured.js?v=4065cefedcbb3b84';
-import { COVERAGE } from './coverage.js?v=4065cefedcbb3b84';
+import { FEATURED_LANDMARKS } from './featured.js?v=636eff9cbfa6f76b';
+import { COVERAGE } from './coverage.js?v=636eff9cbfa6f76b';
 export const DISTRICTS={
   southpark:{name:'South Grant Park',pos:[1050,660,1850],target:[595,5,1305]},
   fulton:{name:'Fulton Market',pos:[-2450,290,-390],target:[-2040,28,-670]},

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { LANDMARKS } from './geo.js?v=4065cefedcbb3b84';
-import { facadeMaterial } from './textures.js?v=4065cefedcbb3b84';
+import { LANDMARKS } from './geo.js?v=636eff9cbfa6f76b';
+import { facadeMaterial } from './textures.js?v=636eff9cbfa6f76b';
 
 const box=(w,h,d,x=0,y=0,z=0)=>new THREE.BoxGeometry(w,h,d).translate(x,y+h/2,z);
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.75,...extra});

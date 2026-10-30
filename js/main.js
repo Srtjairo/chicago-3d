@@ -12,6 +12,7 @@ import {buildSites} from './sites.js';
 import {loadWaterfront} from './waterfront-data.js';
 import {buildWaterfront} from './waterfront.js';
 import { loadCityData } from './city-data.js';
+import {loadLakeShore} from './lake-shore-data.js';
 import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js';
 import { buildSignatureArchitecture } from './architecture.js';
 import { buildOfficeArchitecture } from './offices.js';
@@ -66,6 +67,7 @@ async function init() {
 
   status('Loading Chicago’s real building footprints');
   ctx.data = await loadCityData();
+  ctx.lakeShoreData=await loadLakeShore();
   ctx.waterfront=await loadWaterfront();
   ctx.sites=await loadSites();
   ctx.transitData=await loadTransit();

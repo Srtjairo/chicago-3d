@@ -2,7 +2,7 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>body{margin:0;background:#101722;color:#edf3f6;font:14px system-ui}header{display:flex;gap:12px;align-items:center;padding:12px;flex-wrap:wrap}button,select{padding:8px;background:#243448;color:inherit;border:1px solid #546477;border-radius:5px}iframe{display:block;border:0;margin:0 auto}pre{white-space:pre-wrap;margin:12px;color:#bcd6c5}</style>
 <header><strong>Chicago visual checks</strong><button id="desktop">Desktop</button><button id="phone">Phone</button>
-<select id="build" aria-label="Build"><option value="/docs/">Working build</option><option value="/.cache/transit-baseline/docs/">Before CTA (local archive)</option><option value="/.cache/detail-baseline/docs/">Previous release (local archive)</option></select>
+<select id="build" aria-label="Build"><option value="/docs/">Working build</option><option value="/.cache/lake-shore-baseline/docs/">Before Lake Shore Drive (local archive)</option><option value="/.cache/transit-baseline/docs/">Before CTA (local archive)</option><option value="/.cache/detail-baseline/docs/">Previous release (local archive)</option></select>
 <select id="place" aria-label="Camera view"><option value="overview">Skyline</option><option value="wrigley">Wrigley</option><option value="bean">Cloud Gate</option><option value="navypier">Navy Pier</option><option value="fountain">Fountain</option></select>
 <select id="time" aria-label="Lighting"><option value="0.42">Golden hour</option><option value="0">Midday</option><option value="0.7">Dusk</option><option value="1">Night</option></select>
 <button id="check">Check scene</button><button id="offices">Check offices</button><button id="waterfront">Check waterfront</button><button id="motion">Audit motion</button><button id="benchmark">Measure 8 seconds</button><button id="sites">Check site details</button><button id="triple">Measure three samples</button><button id="suite">Measure this build (7 views)</button><button id="capture">Save link preview</button></header>
@@ -13,6 +13,13 @@ import './mini-fellow-review.js';
 const frame = document.querySelector('iframe'), out = document.querySelector('#results');
 const app = () => frame.contentWindow.__chicago;
 const fixedViews={
+ 'Lake Shore north':[[850,520,-2140],[280,0,-2420]],
+ 'Lake Shore south':[[1290,460,2120],[730,0,1750]],
+ 'Lake Shore north overhead':[[300,1100,-2700],[300,0,-2701]],
+ 'Lake Shore south overhead':[[720,1100,2100],[720,0,2099]],
+ 'Lake Shore river bridge':[[1430,150,-480],[1160,5,-720]],
+ 'Lake Shore north boundary':[[700,1500,-4400],[-100,0,-4900]],
+ 'Lake Shore south boundary':[[1900,1500,4400],[1000,0,4900]],
  'CTA Morgan':[[-2030,120,-235],[-1960,10,-397]],
  'CTA Lake bridge':[[-800,75,-520],[-810,10,-409]],
  'CTA Wells bridge':[[-650,145,-510],[-505,10,-601]],

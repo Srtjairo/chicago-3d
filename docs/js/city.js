@@ -1,11 +1,12 @@
-import {landscapeAt} from './waterfront-data.js?v=4065cefedcbb3b84';
+import {landscapeAt} from './waterfront-data.js?v=636eff9cbfa6f76b';
 import * as THREE from 'three';
 import {
   BLOCK, STREET, EXTENT, distToRiver, heightAt, isLake, inGrantPark, landmarkInRect, rng, NAVY_PIER,
-} from './geo.js?v=4065cefedcbb3b84';
-import { facadeMaterial, glowSprite } from './textures.js?v=4065cefedcbb3b84';
-import { SLAB_TOP, addTrees } from './terrain.js?v=4065cefedcbb3b84';
-import { inCoverage, buildMeasuredCity } from './city-data.js?v=4065cefedcbb3b84';
+} from './geo.js?v=636eff9cbfa6f76b';
+import { facadeMaterial, glowSprite } from './textures.js?v=636eff9cbfa6f76b';
+import { SLAB_TOP, addTrees } from './terrain.js?v=636eff9cbfa6f76b';
+import { inCoverage, buildMeasuredCity } from './city-data.js?v=636eff9cbfa6f76b';
+import {lakeShoreIntersects} from './lake-shore-data.js?v=636eff9cbfa6f76b';
 
 // Building palettes: [color, glass, style]  style 0 = masonry, 1 = curtain wall
 const PALETTE = [
@@ -48,9 +49,13 @@ export function buildCity(scene, ctx) {
       }
       const shoreEdge = isLake(x1, cz, 60) || isLake(x1, z0, 60) || isLake(x1, z1, 60);
       if (shoreEdge) continue;
+      const reserveRoad=lakeShoreIntersects(ctx.lakeShore,x0,z0,x1,z1),counts=[blocks.length,boxes.length,roofs.length,trees.length];
+      // Consume the usual seeded choices even on reserved parcels, preserving
+      // every unrelated block in the procedural skyline.
+      const reserve=()=>{if(reserveRoad)[blocks,boxes,roofs,trees].forEach((items,i)=>items.length=counts[i]);};
 
       blocks.push([(x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0]);
-      if (landmarkInRect(x0, z0, x1, z1)) continue;
+      if (landmarkInRect(x0, z0, x1, z1)) {reserve();continue;}
 
       const dist = Math.hypot(cx + 100, cz + 300);
       const hMax = heightAt(cx, cz) * (0.85 + rand() * 0.3);
@@ -58,6 +63,7 @@ export function buildCity(scene, ctx) {
       // Occasional pocket park
       if (rand() < (far ? 0.03 : 0.045)) {
         for (let i = 0; i < 10; i++) trees.push([x0 + 8 + rand() * (x1 - x0 - 16), z0 + 8 + rand() * (z1 - z0 - 16), 0.7 + rand() * 0.4]);
+        reserve();
         continue;
       }
       fillBlock(boxes, roofs, rand, x0 + 3, z0 + 3, x1 - 3, z1 - 3, hMax, far);
@@ -65,6 +71,7 @@ export function buildCity(scene, ctx) {
       if (far && rand() < 0.3) {
         for (let tx = x0 + 8; tx < x1 - 8; tx += 32) trees.push([tx, z0 + 4, 0.7]);
       }
+      reserve();
     }
   }
 
