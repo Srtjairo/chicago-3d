@@ -24,6 +24,7 @@ import { setupMiniFellow } from './mini-fellow.js';
 import { buildTerrain, SLAB_TOP } from './terrain.js';
 import { buildLandmarks } from './landmarks.js';
 import { buildCity } from './city.js';
+import { loadTileIndex, TileManager } from './tile-manager.js';
 import { buildParks } from './parks.js';
 import { buildNavyPier } from './navypier.js';
 import { Lighting, PRESETS } from './lighting.js';
@@ -50,7 +51,7 @@ async function init() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 3, 40000);
+  const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 3, 60000);
   camera.position.copy(overviewPos(innerWidth / Math.max(1, innerHeight)));
 
   const controls = new OrbitControls(camera, canvas);
@@ -59,7 +60,7 @@ async function init() {
   controls.dampingFactor = 0.06;
   controls.maxPolarAngle = Math.PI * 0.485;
   controls.minDistance = 25;
-  controls.maxDistance = 9000;
+  controls.maxDistance = 30000;
   controls.zoomSpeed = 1.2;
   controls.screenSpacePanning = false;
 
@@ -67,8 +68,11 @@ async function init() {
 
   status('Loading Chicago’s real building footprints');
   // Fetch the five data files together instead of one after another.
-  [ctx.data, ctx.lakeShoreData, ctx.waterfront, ctx.sites, ctx.transitData] =
-    await Promise.all([loadCityData(), loadLakeShore(), loadWaterfront(), loadSites(), loadTransit()]);
+  [ctx.data, ctx.lakeShoreData, ctx.waterfront, ctx.sites, ctx.transitData, ctx.cityTiles] =
+    await Promise.all([loadCityData(), loadLakeShore(), loadWaterfront(), loadSites(), loadTransit(), loadTileIndex()]);
+  // The orbit target may roam the whole city when the streamed tiles are available.
+  ctx.cityTileKeys = ctx.cityTiles && new Set(ctx.cityTiles.tiles.map(([x, z]) => x + '_' + z));
+  const b = ctx.cityTiles?.bbox, CITY_BOUNDS = { x0: Math.min(-5000, b?.x0 ?? 0), x1: Math.max(4500, b?.x1 ?? 0), z0: Math.min(-5000, b?.z0 ?? 0), z1: Math.max(5000, b?.z1 ?? 0) };
   configureShore(ctx.data);
   prepareWorld(ctx);
 
@@ -83,6 +87,8 @@ async function init() {
   buildSignatureArchitecture(scene, ctx);
   buildOfficeArchitecture(scene, ctx);
   buildCity(scene, ctx);
+  // Streamed tiles live on layer 1, which the main camera sees and the lake's mirror camera doesn't.
+  if (ctx.cityTiles) { ctx.tiles = new TileManager(scene, ctx, ctx.cityTiles); camera.layers.enable(1); }
   buildStreets(scene, ctx);
   buildSites(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
@@ -196,11 +202,18 @@ async function init() {
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city
     if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
-    controls.target.x = THREE.MathUtils.clamp(controls.target.x, -5000, 4500);
-    controls.target.z = THREE.MathUtils.clamp(controls.target.z, -5000, 5000);
+    controls.target.x = THREE.MathUtils.clamp(controls.target.x, CITY_BOUNDS.x0, CITY_BOUNDS.x1);
+    controls.target.z = THREE.MathUtils.clamp(controls.target.z, CITY_BOUNDS.z0, CITY_BOUNDS.z1);
     controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 600);
 
     lighting.update(dt, controls.target);
+    // Thinner haze from higher up, so the overview reaches across the whole city.
+    scene.fog.density = lighting.state.fogD * THREE.MathUtils.lerp(1, 0.32, THREE.MathUtils.smoothstep(camera.position.y, 1200, 6000));
+    lighting.sky.position.set(camera.position.x, 0, camera.position.z);
+    // Near plane follows altitude: fine detail at street level, no z-fighting from 10 km up.
+    const near = THREE.MathUtils.clamp(camera.position.y * 0.01, 3, 40);
+    if (Math.abs(near - camera.near) > 0.5) { camera.near = near; camera.updateProjectionMatrix(); }
+    ctx.tiles?.update(dt, controls.target, perf.level);
     const night = lighting.state.night;
     for (const fn of ctx.updaters) fn(ctx.life.time, night);
     if (ctx.water) ctx.water.material.uniforms.time.value += dt * 0.35;

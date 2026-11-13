@@ -126,7 +126,7 @@ export class Lighting {
 
   // Keep the shadow camera centered on what the viewer is looking at
   update(dt, focus) {
-    const f = this.focus.lerp(new THREE.Vector3(focus.x, 0, focus.z).clampLength(0, 8000), 1);
+    const f = this.focus.lerp(new THREE.Vector3(focus.x, 0, focus.z).clampLength(0, 40000), 1);
     const snap = 40;
     const fx = Math.round(f.x / snap) * snap, fz = Math.round(f.z / snap) * snap;
     if (this.sun.target.position.x !== fx || this.sun.target.position.z !== fz) this.shadowDirty = true;

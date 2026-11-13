@@ -80,5 +80,17 @@ export function decode(bytes) {
   return { kind, tx, tz, buildings, streets, water, parks };
 }
 
+// Oriented bounding box of a footprint ring, aligned with its longest edge.
+// Returns centre, width (along that edge), depth and the edge angle atan2(dz, dx).
+export function orientedBox(ring) {
+  let best = 0, angle = 0;
+  for (let i = 0; i < ring.length - 1; i++) { const dx = ring[i + 1][0] - ring[i][0], dz = ring[i + 1][1] - ring[i][1], l = dx * dx + dz * dz; if (l > best) { best = l; angle = Math.atan2(dz, dx); } }
+  const c = Math.cos(angle), s = Math.sin(angle);
+  let u0 = Infinity, u1 = -Infinity, w0 = Infinity, w1 = -Infinity;
+  for (const [x, z] of ring) { const u = x * c + z * s, w = -x * s + z * c; if (u < u0) u0 = u; if (u > u1) u1 = u; if (w < w0) w0 = w; if (w > w1) w1 = w; }
+  const uc = (u0 + u1) / 2, wc = (w0 + w1) / 2;
+  return { x: uc * c - wc * s, z: uc * s + wc * c, w: u1 - u0, d: w1 - w0, angle };
+}
+
 export const tileOf = (x, z, size = TILE) => [Math.floor(x / size), Math.floor(z / size)];
 export const tileKey = (tx, tz) => tx + '_' + tz;

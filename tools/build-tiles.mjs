@@ -11,8 +11,8 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, encodeDetail, encodeSkyline, tileKey } from '../js/tile-format.js';
-import { root, sha256, ringArea, ringBounds, polygonTester } from './geo-source.mjs';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, encodeDetail, encodeSkyline, tileKey, orientedBox } from '../js/tile-format.js';
+import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
 const src = join(root, '.cache', 'city'), out = join(root, 'tiles');
 const read = (name) => JSON.parse(readFileSync(join(src, name), 'utf8'));
@@ -52,17 +52,6 @@ for (const b of items) {
   if (b.h > 40 && b.h / Math.sqrt(b.area) > 4 && b.h > 3 * nb.median) { b.review = true; stats.spike++; }
 }
 log('Heights:', JSON.stringify(stats));
-
-// ---------- Oriented boxes (for skyline tiles and the tall-building table) ----------
-function orientedBox(ring) {
-  let best = 0, angle = 0;
-  for (let i = 0; i < ring.length - 1; i++) { const dx = ring[i + 1][0] - ring[i][0], dz = ring[i + 1][1] - ring[i][1], l = dx * dx + dz * dz; if (l > best) { best = l; angle = Math.atan2(dz, dx); } }
-  const c = Math.cos(angle), s = Math.sin(angle);
-  let u0 = Infinity, u1 = -Infinity, w0 = Infinity, w1 = -Infinity;
-  for (const [x, z] of ring) { const u = x * c + z * s, w = -x * s + z * c; u0 = Math.min(u0, u); u1 = Math.max(u1, u); w0 = Math.min(w0, w); w1 = Math.max(w1, w); }
-  const uc = (u0 + u1) / 2, wc = (w0 + w1) / 2;
-  return { x: uc * c - wc * s, z: uc * s + wc * c, w: u1 - u0, d: w1 - w0, angle };
-}
 
 // ---------- Assign to tiles ----------
 const tiles = new Map();
@@ -147,6 +136,32 @@ for (const p of parkList) {
 for (const a of areasIn) {
   const all = a.polygons.flatMap((poly) => poly[0]), v = ringBounds(all);
   index.areas.push({ id: a.id, name: a.name, label: labelPoint(a.polygons), bbox: [Math.round(v.x0), Math.round(v.x1), Math.round(v.z0), Math.round(v.z1)] });
+}
+// Land outside downtown's surveyed terrain. The lake edge follows the city's east boundary
+// (the shoreline) south to the Indiana line, then turns east; north of the city it runs
+// straight. The client builds the ground as strips west of this line (tile-manager buildLand).
+{
+  const edges = boundary.polygons.flat();
+  const crossings = (z) => { const xs = []; for (const ring of edges) for (let i = 0; i < ring.length; i++) { const a = ring[i], b = ring[(i + 1) % ring.length]; if ((a[1] > z) !== (b[1] > z)) xs.push(a[0] + (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1])); } return xs; };
+  const shore = [];
+  for (let z = Math.ceil(boundary.bbox.z0 / 100) * 100 + 50; z < boundary.bbox.z1; z += 100) {
+    const xs = crossings(z); if (!xs.length) continue;
+    const x = Math.max(...xs); shore.push([x, z]);
+    if (x > 8400) break; // the Illinois-Indiana line: no lake south of here
+  }
+  const line = simplify(shore, 15).map(([x, z]) => [Math.round(x * 10) / 10, Math.round(z * 10) / 10]);
+  const wf = JSON.parse(readFileSync(join(root, 'assets', 'waterfront.json'), 'utf8')).terrain.flat(2);
+  const t = { x0: Math.min(...wf.map((p) => p[0])), x1: Math.max(...wf.map((p) => p[0])), z0: Math.min(...wf.map((p) => p[1])), z1: Math.max(...wf.map((p) => p[1])) };
+  // Inside the surveyed box, the parts west of the shore that waterfront.json's terrain
+  // does not cover (its north and south edges are slanted), as small simple polygons.
+  const shoreAt = (z) => { for (let i = 1; i < line.length; i++) if (line[i][1] >= z) { const [ax, az] = line[i - 1], [bx, bz] = line[i]; return ax + (bx - ax) * (z - az) / (bz - az || 1); } return line.at(-1)[0]; };
+  const west = [[t.x0, t.z0], [shoreAt(t.z0), t.z0], ...line.filter((p) => p[1] > t.z0 && p[1] < t.z1), [shoreAt(t.z1), t.z1], [t.x0, t.z1], [t.x0, t.z0]];
+  const terrainOuter = JSON.parse(readFileSync(join(root, 'assets', 'waterfront.json'), 'utf8')).terrain.map((p) => [p[0].concat([p[0][0]])]);
+  const gaps = clip.difference([west], ...terrainOuter).map((p) => p.map((r) => r.slice(0, -1).map(([x, z]) => [Math.round(x * 10) / 10, Math.round(z * 10) / 10])))
+    .filter((p) => ringArea(p[0]) > 100 && p[0].some(([, z]) => Math.abs(z - t.z0) < 1 || Math.abs(z - t.z1) < 1)); // edge wedges only; slivers along the shore are harbours
+  index.land = { shore: line, surveyed: t, extent: 70000, gaps };
+  log('Land gaps inside the surveyed box:', gaps.length, gaps.map((p) => Math.round(ringArea(p[0]) / 1e4) / 100 + ' km2').join(', '));
+  log('Land: shoreline of', line.length, 'points; surveyed terrain box', JSON.stringify(t));
 }
 writeFileSync(join(out, 'index.json'), JSON.stringify(index));
 const buildingCount = index.tiles.reduce((n, t) => n + t[4], 0);

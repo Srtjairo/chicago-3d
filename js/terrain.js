@@ -16,7 +16,7 @@ export function buildTerrain(scene, ctx) {
   parts.forEach(g=>g.dispose());ground.name='geographic-land';ground.receiveShadow=true;scene.add(ground);
 
   // Lake Michigan with real reflections
-  const water = new Water(new THREE.PlaneGeometry(40000, 40000), {
+  const water = new Water(new THREE.PlaneGeometry(140000, 140000), {
     textureWidth: ctx.quality.water, textureHeight: ctx.quality.water,
     waterNormals: waterNormals(),
     sunDirection: new THREE.Vector3(0.3, 0.8, 0.5).normalize(),

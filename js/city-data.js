@@ -64,7 +64,7 @@ export function segmentBox(items, a, b, width, y, thickness = 0.08) {
 // Each footprint is replaced individually, not by clearing an entire city block.
 export const REPLACED = new Set(['889662-0','824823-0','859995-0','858242-0','864656-0','869193-0','869122-0','863296-0','862723-0','866027-0','855557-0','866163-0','861246-0','893691-0','869294-0']);
 for(const l of LANDMARKS)for(const id of l.footprintIds||[])REPLACED.add(id);
-const FAMILIES = [
+export const FAMILIES = [
   { color: 0xb7aa95, glass: 0x303941, cell: [2.8, 4], winA: [0.53, 0.62], seed: 101 },
   { color: 0x987d68, glass: 0x252e33, cell: [2.9, 3.5], winA: [0.58, 0.65], seed: 102 },
   { color: 0xd1c9b8, glass: 0x3d4950, cell: [2.2, 3.7], winA: [0.5, 0.68], seed: 103 },
