@@ -1,7 +1,7 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FINISHED, TILE } from './tile-format.js';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FINISHED, RAIL_BRIDGE, RAIL_RAISED, TILE } from './tile-format.js';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
 // Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
@@ -231,10 +231,40 @@ function decorate(tile, ground) {
   return { trees: new Float32Array(trees), lamps: new Float32Array(lamps) };
 }
 
+// A main-line railway: at grade a ballast bed; raised, an earth embankment (sloped sides) or a
+// steel viaduct deck that streets pass under; two tracks on top.
+const RAIL_TOP = 6.2;
+function railway(r, fill, steel, track, wall) {
+  const raised = r.flags & RAIL_RAISED, bridge = r.flags & RAIL_BRIDGE, y = raised ? RAIL_TOP : 0.22;
+  for (let i = 1; i < r.points.length; i++) {
+    const [ax, az] = r.points[i - 1], [bx, bz] = r.points[i], len = Math.hypot(bx - ax, bz - az);
+    if (len < 0.05) continue;
+    const dx = (bx - ax) / len, dz = (bz - az) / len, nx = -dz, nz = dx, ex = dx * 0.6, ez = dz * 0.6;
+    const at = (x, z, off, h) => [x + nx * off, h, z + nz * off];
+    const quad = (s, p0, p1, p2, p3, ux, uy, uz) => { s.tri(p0, p1, p2, ux, uy, uz); s.tri(p0, p2, p3, ux, uy, uz); };
+    const A = [ax - ex, az - ez], B = [bx + ex, bz + ez];
+    if (raised && !bridge) {
+      // Embankment between concrete retaining walls (10 m wide), closed at both ends by abutments.
+      quad(fill, at(...A, -5, y), at(...A, 5, y), at(...B, 5, y), at(...B, -5, y), 0, 1, 0);
+      for (const s of [-1, 1]) quad(wall, at(...A, s * 5, 0), at(...A, s * 5, y + 0.5), at(...B, s * 5, y + 0.5), at(...B, s * 5, 0), nx * s, 0, nz * s);
+      if (i === 1) quad(wall, at(...A, -5, 0), at(...A, 5, 0), at(...A, 5, y), at(...A, -5, y), -dx, 0, -dz);
+      if (i === r.points.length - 1) quad(wall, at(...B, -5, 0), at(...B, 5, 0), at(...B, 5, y), at(...B, -5, y), dx, 0, dz);
+    } else if (bridge) {
+      // Viaduct deck: 1 m thick slab with plate-girder sides.
+      quad(steel, at(...A, -4.5, y), at(...A, 4.5, y), at(...B, 4.5, y), at(...B, -4.5, y), 0, 1, 0);
+      quad(steel, at(...A, -4.5, y - 1.6), at(...A, 4.5, y - 1.6), at(...B, 4.5, y - 1.6), at(...B, -4.5, y - 1.6), 0, -1, 0);
+      for (const s of [-1, 1]) quad(steel, at(...A, s * 4.5, y - 1.6), at(...A, s * 4.5, y + 0.9), at(...B, s * 4.5, y + 0.9), at(...B, s * 4.5, y - 1.6), nx * s, 0, nz * s);
+    } else quad(fill, at(...A, -4.5, y), at(...A, 4.5, y), at(...B, 4.5, y), at(...B, -4.5, y), 0, 1, 0);
+    // Two tracks.
+    for (const off of [-2, 2]) quad(track, at(...A, off - 0.8, y + 0.08), at(...A, off + 0.8, y + 0.08), at(...B, off + 0.8, y + 0.08), at(...B, off - 0.8, y + 0.08), 0, 1, 0);
+  }
+}
+
 // Streets (sidewalk band under a carriageway), parks and water for a ground tile.
 const ROAD_WIDTH = { 1: 22, 2: 13, 3: 11, 4: 8.5 };
 function ground(tile) {
-  const roads = new Soup(), walks = new Soup(), parks = new Soup(), water = new Soup(), lines = new Soup();
+  const roads = new Soup(), walks = new Soup(), parks = new Soup(), water = new Soup(), lines = new Soup(), fill = new Soup(), steel = new Soup(), track = new Soup(), wall = new Soup();
+  for (const r of tile.rails) if (r.flags & FINISHED) railway(r, fill, steel, track, wall);
   for (const s of tile.streets) {
     const w = ROAD_WIDTH[s.class] || 8.5; roads.ribbon(s.points, w, 0.16); if (s.class > 1) walks.ribbon(s.points, w + 6, 0.1);
     // Yellow centre line on finished arterials and collectors.
@@ -244,7 +274,7 @@ function ground(tile) {
   for (const p of tile.parks) parks.flat(p.rings.map(open), 0.06);
   for (const p of tile.water) water.flat(p.rings.map(open), 0.12);
   const pick = ({ position, normal }) => ({ position, normal });
-  return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()), lines: pick(lines.arrays()) };
+  return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()), lines: pick(lines.arrays()), fill: pick(fill.arrays()), steel: pick(steel.arrays()), track: pick(track.arrays()), wall: pick(wall.arrays()) };
 }
 
 const buffers = (o) => { const out = []; const walk = (v) => { if (ArrayBuffer.isView(v)) out.push(v.buffer); else if (v && typeof v === 'object') Object.values(v).forEach(walk); }; walk(o); return out; };

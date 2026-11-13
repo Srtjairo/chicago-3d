@@ -126,6 +126,9 @@
       "label": [
         -3150,
         2760
+      ],
+      "raisedRails": [
+        "BNSF Chicago Subdivision"
       ]
     },
     "Douglas": {
@@ -206,5 +209,6 @@
     }
   },
   "_profiles": "Each profile is a list of rules; a building takes the first rule it matches (minArea/maxArea in m2, maxH in m). families maps FAMILIES indices (js/city-data.js) to weights; roof is flat, gable (small near-rectangular houses: ridge at the measured height) or cornice (parapet trim).",
-  "_named": "named: real Cook County footprints (id = objectId-part) located from OpenStreetMap (osm, ODbL) and given a facade family; kind picks the label icon. Churches rise to their nave with a pitched roof, and their tower(s) (twin: true) stand at the front (N/E/S/W, visually estimated) reaching the measured height."
+  "_named": "named: real Cook County footprints (id = objectId-part) located from OpenStreetMap (osm, ODbL) and given a facade family; kind picks the label icon. Churches rise to their nave with a pitched roof, and their tower(s) (twin: true) stand at the front (N/E/S/W, visually estimated) reaching the measured height.",
+  "_raisedRails": "raisedRails: OSM line names that run on an embankment here (OSM rarely tags embankments); streets pass under them through viaducts."
 }

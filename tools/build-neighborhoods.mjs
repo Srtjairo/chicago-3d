@@ -57,7 +57,7 @@ for (const h of hoods) {
   const status = cfg.status || (share < 0.005 ? 'outside' : 'todo');
   const entry = {
     id, name: h.name, display: cfg.display || h.name, aka: cfg.aka || [], area: overlaps[0]?.id, alsoIn: overlaps.slice(1).filter((o) => o.share > 0.1).map((o) => o.id),
-    km2: +(total / 1e6).toFixed(2), share: +share.toFixed(3), status, profile: cfg.profile || null, named: cfg.named || [],
+    km2: +(total / 1e6).toFixed(2), share: +share.toFixed(3), status, profile: cfg.profile || null, named: cfg.named || [], raisedRails: cfg.raisedRails || [],
   };
   if (share >= 0.005) { entry.label = cfg.label || labelPoint(insideMp); entry.polygons = round(insideMp); const all = insideMp.flatMap((p) => p[0]); const v = ringBounds(all); entry.bbox = [Math.round(v.x0), Math.round(v.x1), Math.round(v.z0), Math.round(v.z1)]; }
   out.neighborhoods.push(entry);

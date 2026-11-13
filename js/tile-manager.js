@@ -49,6 +49,10 @@ export class TileManager {
       parks: new THREE.MeshStandardMaterial({ color: 0x7c9a5e, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
       water: ctx.riverMaterial || new THREE.MeshStandardMaterial({ color: 0x285957, roughness: 0.3, metalness: 0.18 }),
       lines: new THREE.MeshStandardMaterial({ color: 0xd2b14c, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
+      fill: new THREE.MeshStandardMaterial({ color: 0x77705f, roughness: 1, side: THREE.DoubleSide }),
+      steel: new THREE.MeshStandardMaterial({ color: 0x4d4943, roughness: 0.7, metalness: 0.2, side: THREE.DoubleSide }),
+      wall: new THREE.MeshStandardMaterial({ color: 0x8f897d, roughness: 0.95, side: THREE.DoubleSide }),
+      track: new THREE.MeshStandardMaterial({ color: 0x3b3632, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     };
     this.groundByCell = new Map(this.ground.map((g) => [tileKey(g.sx, g.sz), g]));
     this.buildDecor(ctx);
@@ -236,7 +240,7 @@ export class TileManager {
   // Streets, parks and rivers for one ground tile.
   makeGround(parts, name) {
     const group = new THREE.Group(); group.name = name; group.visible = false;
-    for (const key of ['water', 'parks', 'walks', 'roads', 'lines']) {
+    for (const key of ['water', 'parks', 'walks', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
       const { position, normal } = parts[key];
       if (!position.length) continue;
       const geometry = new THREE.BufferGeometry();

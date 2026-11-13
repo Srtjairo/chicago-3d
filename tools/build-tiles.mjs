@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FRONTS, FINISHED, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
 import { renderMinimap } from './minimap.mjs';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
@@ -90,7 +90,7 @@ const inDetail = (x, z) => Math.hypot(x, z) < DETAIL_RADIUS;
 // A tile square that reaches inside the detail circle.
 const tileInDetail = (tx, tz) => Math.hypot(Math.max(tx * TILE, 0, -(tx + 1) * TILE), Math.max(tz * TILE, 0, -(tz + 1) * TILE)) < DETAIL_RADIUS;
 const tiles = new Map();
-const tileFor = (tx, tz) => { const k = tileKey(tx, tz); if (!tiles.has(k)) tiles.set(k, { tx, tz, buildings: [], streets: [], water: [], parks: [] }); return tiles.get(k); };
+const tileFor = (tx, tz) => { const k = tileKey(tx, tz); if (!tiles.has(k)) tiles.set(k, { tx, tz, buildings: [], streets: [], water: [], parks: [], rails: [] }); return tiles.get(k); };
 for (const b of items) {
   if (!inDetail(b.x, b.z)) continue;
   const [objectId, part] = b.id.split('-').map(Number);
@@ -104,6 +104,65 @@ for (const s of streetsIn) {
   if (!inDetail(m[0], m[1]) || inCoverage(m[0], m[1])) continue; // downtown draws its own streets
   tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).streets.push({ ...s, flags: inFinished(m[0], m[1]) ? FINISHED : 0 }); streetCount++;
 }
+// Main-line railways (OpenStreetMap), by midpoint, outside downtown.
+// OSM rarely marks embankments, so finished neighborhoods name their raised lines (raisedRails in
+// tools/neighborhood-profiles.json): those run on an embankment, opening into a viaduct wherever a
+// street crosses underneath.
+const railIn = existsSync(join(src, 'rail.json')) ? read('rail.json') : [];
+const streetSegs = new Map(), SEG = 100;
+for (const s of streetsIn) if (s.class >= 1 && s.class <= 4) for (let i = 1; i < s.points.length; i++) {
+  const a = s.points[i - 1], b = s.points[i], w = { 1: 22, 2: 13, 3: 11, 4: 8.5 }[s.class];
+  for (let gx = Math.floor(Math.min(a[0], b[0]) / SEG); gx <= Math.floor(Math.max(a[0], b[0]) / SEG); gx++) for (let gz = Math.floor(Math.min(a[1], b[1]) / SEG); gz <= Math.floor(Math.max(a[1], b[1]) / SEG); gz++) {
+    const k = gx + ',' + gz; if (!streetSegs.has(k)) streetSegs.set(k, []); streetSegs.get(k).push([a, b, w]);
+  }
+}
+// Distances along a polyline where streets cross it, with the street's width.
+function crossings(points) {
+  const out = []; let d = 0;
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i - 1], q = points[i], len = Math.hypot(q[0] - p[0], q[1] - p[1]), seen = new Set();
+    for (let gx = Math.floor(Math.min(p[0], q[0]) / SEG); gx <= Math.floor(Math.max(p[0], q[0]) / SEG); gx++) for (let gz = Math.floor(Math.min(p[1], q[1]) / SEG); gz <= Math.floor(Math.max(p[1], q[1]) / SEG); gz++) for (const seg of streetSegs.get(gx + ',' + gz) || []) {
+      if (seen.has(seg)) continue; seen.add(seg);
+      const [a, b, w] = seg, rx = q[0] - p[0], rz = q[1] - p[1], sx = b[0] - a[0], sz = b[1] - a[1], den = rx * sz - rz * sx;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = ((a[0] - p[0]) * sz - (a[1] - p[1]) * sx) / den, u = ((a[0] - p[0]) * rz - (a[1] - p[1]) * rx) / den;
+      if (t >= 0 && t <= 1 && u >= 0 && u <= 1) out.push([d + t * len, w]);
+    }
+    d += len;
+  }
+  return out;
+}
+// Cuts a polyline into pieces between distances [d0, d1].
+function cut(points, d0, d1) {
+  const out = []; let d = 0;
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i - 1], q = points[i], len = Math.hypot(q[0] - p[0], q[1] - p[1]), at = (t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    if (d + len >= d0 && d <= d1) { if (!out.length) out.push(at(Math.max(0, (d0 - d) / (len || 1)))); out.push(at(Math.min(1, (d1 - d) / (len || 1)))); }
+    d += len;
+  }
+  return out;
+}
+const raisedLines = new Map(finished.map((n) => [n.id, new Set(n.raisedRails || [])]));
+let railPieces = 0;
+for (const r of railIn) {
+  const m = r.points[Math.floor(r.points.length / 2)];
+  if (!inDetail(m[0], m[1]) || inCoverage(m[0], m[1])) continue;
+  // Railways often are the boundary between neighborhoods: within 60 m of a finished one counts.
+  const hood = finished.find((n) => [[0, 0], [60, 0], [-60, 0], [0, 60], [0, -60]].some(([dx, dz]) => { const x = m[0] + dx, z = m[1] + dz; return x >= n.bbox[0] && x <= n.bbox[1] && z >= n.bbox[2] && z <= n.bbox[3] && n.inside(x, z); }));
+  const push = (points, flags) => { const c = points[Math.floor(points.length / 2)]; tileFor(Math.floor(c[0] / TILE), Math.floor(c[1] / TILE)).rails.push({ points, flags }); railPieces++; };
+  if (hood && raisedLines.get(hood.id).has(r.name) && !r.tunnel) {
+    // Embankment pieces between viaducts at every street crossing.
+    const total = r.points.slice(1).reduce((t, p, i) => t + Math.hypot(p[0] - r.points[i][0], p[1] - r.points[i][1]), 0);
+    const spans = crossings(r.points).map(([d, w]) => [d - w / 2 - 6, d + w / 2 + 6]).sort((a, b) => a[0] - b[0]);
+    let at = 0;
+    for (const [a, b] of [...spans, [total, total]]) {
+      if (a > at + 1) push(cut(r.points, at, a), FINISHED | RAIL_RAISED);
+      if (b > a && a < total) push(cut(r.points, Math.max(a, 0), Math.min(b, total)), FINISHED | RAIL_RAISED | RAIL_BRIDGE);
+      at = Math.max(at, b);
+    }
+  } else push(r.points, (hood ? FINISHED : 0) | (r.bridge ? RAIL_BRIDGE | RAIL_RAISED : 0) | (r.raised ? RAIL_RAISED : 0));
+}
+log('Rail pieces:', railPieces);
 // Water and parks are clipped to tile squares, leaving out downtown, which draws its own.
 const downtownHoles = COVERAGE_RECTS.map((r) => [[[r.minX, r.minZ], [r.maxX, r.minZ], [r.maxX, r.maxZ], [r.minX, r.maxZ], [r.minX, r.minZ]]]);
 const closed = (ring) => { const r = ring.map(([x, z]) => [x, z]); const a = r[0], b = r.at(-1); if (a[0] !== b[0] || a[1] !== b[1]) r.push([a[0], a[1]]); return r; };
@@ -137,13 +196,13 @@ let total = 0, largest = 0;
 const ground = new Map(), ratio = SKY / TILE;
 for (const t of tiles.values()) {
   const sx = Math.floor(t.tx / ratio), sz = Math.floor(t.tz / ratio), k = tileKey(sx, sz);
-  if (!ground.has(k)) ground.set(k, { tx: sx * ratio, tz: sz * ratio, sx, sz, buildings: [], streets: [], water: [], parks: [] });
-  const g = ground.get(k); g.streets.push(...t.streets); g.water.push(...t.water); g.parks.push(...t.parks);
-  t.streets = []; t.water = []; t.parks = [];
+  if (!ground.has(k)) ground.set(k, { tx: sx * ratio, tz: sz * ratio, sx, sz, buildings: [], streets: [], water: [], parks: [], rails: [] });
+  const g = ground.get(k); g.streets.push(...t.streets); g.water.push(...t.water); g.parks.push(...t.parks); g.rails.push(...t.rails);
+  t.streets = []; t.water = []; t.parks = []; t.rails = [];
 }
 let groundTotal = 0;
 for (const g of [...ground.values()].sort((a, b) => a.sx - b.sx || a.sz - b.sz)) {
-  if (!g.streets.length && !g.water.length && !g.parks.length) continue;
+  if (!g.streets.length && !g.water.length && !g.parks.length && !g.rails.length) continue;
   const { bytes, hash } = write('g', tileKey(g.sx, g.sz), encodeDetail(g));
   index.ground.push([g.sx, g.sz, hash, bytes, g.streets.length]); groundTotal += bytes; largest = Math.max(largest, bytes);
 }

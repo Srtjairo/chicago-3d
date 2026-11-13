@@ -9,7 +9,7 @@
 // (exactly the rule buildMeasuredCity uses), so those buildings are left out here.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { project, unproject, inCoverage } from '../js/coverage.js';
+import { project, unproject, inCoverage, DETAIL_RADIUS } from '../js/coverage.js';
 import { root, createLock, cachedJson, soda, simplify, ringArea, ringBounds, polygonTester, polygonsOf } from './geo-source.mjs';
 
 const out = join(root, '.cache', 'city');
@@ -116,5 +116,21 @@ const parks = parkRows.map((p) => ({ id: String(p.park_no ?? p.objectid ?? ''), 
   .filter((p) => p.polygons.length);
 write('parks.json', parks);
 log('Parks:', parks.length, 'over 25 acres:', parks.filter((p) => p.acres > 25).length);
+// Main-line railways from OpenStreetMap (ODbL), for embankments and viaducts in finished
+// neighborhoods. OSM tags the viaducts (bridge=yes) but rarely the embankments between them, so a
+// main-line stretch shorter than 450 m whose both ends meet viaducts of the same line counts as
+// raised (Pilsen's 16th Street embankment, for example).
+{
+  const [w, s0] = unproject([-DETAIL_RADIUS, DETAIL_RADIUS]), [e, n] = unproject([DETAIL_RADIUS, -DETAIL_RADIUS]);
+  const q = `[out:json][timeout:180];way["railway"="rail"]["usage"~"^(main|branch)$"](${s0.toFixed(4)},${w.toFixed(4)},${n.toFixed(4)},${e.toFixed(4)});out tags geom;`;
+  const rows = await cachedJson(lock, 'city/src-osm-rail', 'https://overpass.kumi.systems/api/interpreter', { body: { data: q } });
+  const ways = rows.elements.filter((x) => x.geometry?.length >= 2).map((x) => ({ id: x.id, name: x.tags.name || x.tags.operator || '', bridge: !!x.tags.bridge && x.tags.bridge !== 'no', tunnel: !!x.tags.tunnel && x.tags.tunnel !== 'no', points: x.geometry.map((g) => project([g.lon, g.lat])) }));
+  const length = (pts) => pts.slice(1).reduce((t, p, i) => t + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0);
+  const ends = ways.filter((r) => r.bridge).flatMap((r) => [r.points[0], r.points.at(-1)].map((p) => ({ p, name: r.name })));
+  const meets = (p, name) => ends.some((b) => b.name === name && Math.hypot(b.p[0] - p[0], b.p[1] - p[1]) < 15);
+  for (const r of ways) r.raised = r.bridge || (!r.tunnel && length(r.points) < 450 && meets(r.points[0], r.name) && meets(r.points.at(-1), r.name));
+  write('rail.json', ways);
+  log('Rail (OSM main lines):', ways.length, 'ways,', ways.filter((r) => r.bridge).length, 'viaducts,', ways.filter((r) => r.raised && !r.bridge).length, 'embankments');
+}
 lock.save();
 log('Done.');

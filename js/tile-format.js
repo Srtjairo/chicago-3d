@@ -12,14 +12,15 @@
 //               + 64 * church front (0 north, 1 east, 2 south, 3 west) + 256 * twin towers
 //     streets:   class, dir(0 two-way,1 F,2 T), levelFrom+8, levelTo+8, flags, n, points
 //     water:     nRings, rings          parks: parkIndex, flags, nRings, rings
-//       street/park flags: FINISHED (inside a finished neighborhood: trees, lamps, markings)
+//     rails:     flags, n, points      (main-line railways, OpenStreetMap)
+//       street/park/rail flags: FINISHED (inside a finished neighborhood); rails also RAIL_BRIDGE, RAIL_RAISED
 //   kind 1 (skyline, one per 4 km tile): boxes: cx, cz, w, d (dm), h_dm, angle (0..255 → 0..255/256·π)
 
 export const MAGIC = [67, 72, 84, 49]; // 'CHT1'
 export const VERSION = 2;
 export const TILE = 1000, SKY = 4000; // metres
 export const FLAG_ESTIMATED = 1, FLAG_SPIKE = 2, FLAG_OVERRIDE = 4;
-export const FINISHED = 1;
+export const FINISHED = 1, RAIL_BRIDGE = 2, RAIL_RAISED = 4;
 export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3;
 export const FRONTS = { N: 0, E: 1, S: 2, W: 3 };
 export const styleOf = (family, roof = ROOF_FLAT, front = 0, twin = false) => family + 16 * roof + 64 * front + (twin ? 256 : 0);
@@ -50,11 +51,13 @@ function header(w, kind, tx, tz) { for (const b of MAGIC) w.byte(b); w.u(VERSION
 export function encodeDetail(tile) {
   const w = new Writer(), ox = tile.tx * TILE * 10, oz = tile.tz * TILE * 10;
   header(w, 0, tile.tx, tile.tz);
-  w.u(tile.buildings.length); w.u(tile.streets.length); w.u(tile.water.length); w.u(tile.parks.length);
+  const rails = tile.rails || [];
+  w.u(tile.buildings.length); w.u(tile.streets.length); w.u(tile.water.length); w.u(tile.parks.length); w.u(rails.length);
   for (const b of tile.buildings) { w.u(b.objectId); w.u(b.part); w.u(Math.round(b.h * 10)); w.u(b.flags); w.u(b.style ?? 0); w.u(b.rings.length); for (const r of b.rings) w.points(r, ox, oz); }
   for (const s of tile.streets) { w.u(s.class); w.u(DIRS[s.dir] ?? 0); w.u((s.level?.[0] ?? 0) + 8); w.u((s.level?.[1] ?? 0) + 8); w.u(s.flags ?? 0); w.points(s.points, ox, oz); }
   for (const p of tile.water) { w.u(p.rings.length); for (const r of p.rings) w.points(r, ox, oz); }
   for (const p of tile.parks) { w.u(p.park); w.u(p.flags ?? 0); w.u(p.rings.length); for (const r of p.rings) w.points(r, ox, oz); }
+  for (const r of rails) { w.u(r.flags ?? 0); w.points(r.points, ox, oz); }
   return w.bytes();
 }
 
@@ -78,15 +81,16 @@ export function decode(bytes) {
     return { kind, sx: tx, sz: tz, boxes };
   }
   const ox = tx * TILE * 10, oz = tz * TILE * 10;
-  const nb = r.u(), ns = r.u(), nw = r.u(), np = r.u();
-  const buildings = new Array(nb), streets = new Array(ns), water = new Array(nw), parks = new Array(np);
+  const nb = r.u(), ns = r.u(), nw = r.u(), np = r.u(), nr = r.u();
+  const buildings = new Array(nb), streets = new Array(ns), water = new Array(nw), parks = new Array(np), rails = new Array(nr);
   const rings = () => { const n = r.u(), out = new Array(n); for (let k = 0; k < n; k++) out[k] = r.points(ox, oz); return out; };
   for (let k = 0; k < nb; k++) buildings[k] = { objectId: r.u(), part: r.u(), h: r.u() / 10, flags: r.u(), style: r.u(), rings: rings() };
   for (let k = 0; k < ns; k++) streets[k] = { class: r.u(), dir: ['', 'F', 'T'][r.u()], level: [r.u() - 8, r.u() - 8], flags: r.u(), points: r.points(ox, oz) };
   for (let k = 0; k < nw; k++) water[k] = { rings: rings() };
   for (let k = 0; k < np; k++) parks[k] = { park: r.u(), flags: r.u(), rings: rings() };
+  for (let k = 0; k < nr; k++) rails[k] = { flags: r.u(), points: r.points(ox, oz) };
   if (!r.done) throw new Error('Trailing bytes in tile');
-  return { kind, tx, tz, buildings, streets, water, parks };
+  return { kind, tx, tz, buildings, streets, water, parks, rails };
 }
 
 // Oriented bounding box of a footprint ring, aligned with its longest edge.
