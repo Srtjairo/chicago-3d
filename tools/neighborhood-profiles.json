@@ -266,7 +266,74 @@
       ]
     },
     "Little Italy, UIC": {
-      "display": "Little Italy & UIC"
+      "display": "Little Italy & UIC",
+      "profile": "campus",
+      "status": "done",
+      "raisedRails": [
+        "BNSF Chicago Subdivision"
+      ],
+      "named": [
+        {
+          "id": "925849-0",
+          "name": "Holy Family Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "928613-0",
+          "name": "St. Francis of Assisi Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "924924-0",
+          "name": "St. Ignatius College Prep",
+          "kind": "school",
+          "family": 8
+        },
+        {
+          "id": "915858-0",
+          "name": "Jane Addams Hull-House Museum",
+          "kind": "museum",
+          "family": 6
+        },
+        {
+          "id": "908012-0",
+          "name": "University Hall (UIC)",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "904459-0",
+          "name": "Rush University Medical Center",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "916655-0",
+          "name": "Jesse Brown VA Medical Center",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "919940-0",
+          "name": "UI Health Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "908660-0",
+          "name": "Old Cook County Hospital",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "930822-0",
+          "name": "Vorwaerts Turner Hall",
+          "kind": "venue",
+          "family": 6
+        }
+      ]
     },
     "Sheffield & DePaul": {
       "display": "Sheffield & DePaul"
@@ -648,6 +715,211 @@
           "name": "Muddy Waters House",
           "kind": "landmark",
           "family": 15
+        }
+      ]
+    },
+    "United Center": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "raisedRails": [
+        "UP Geneva Subdivision"
+      ],
+      "named": [
+        {
+          "id": "884830-0",
+          "name": "United Center",
+          "kind": "venue",
+          "family": 7
+        },
+        {
+          "id": "896791-0",
+          "name": "Crane Medical Prep",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "878206-0",
+          "name": "First Baptist Congregational Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "879330-0",
+          "name": "Metropolitan Missionary Baptist Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "880165-0",
+          "name": "Greater Union Baptist Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "887978-0",
+          "name": "Fourth Presbyterian Church of the West Side",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "884035-0",
+          "name": "West Town State Bank Building",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "889134-0",
+          "name": "Phoenix Military Academy",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "890349-0",
+          "name": "Chicago Bulls College Prep",
+          "kind": "school",
+          "family": 24
+        }
+      ]
+    },
+    "West Loop": {
+      "profile": "loft-district",
+      "status": "done",
+      "raisedRails": [
+        "UP Geneva Subdivision",
+        "C&M Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "887846-0",
+          "name": "West Side YMCA Complex",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "881253-0",
+          "name": "Union Park Hotel",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "883519-0",
+          "name": "Holden Block",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "877823-0",
+          "name": "Groesbeck House",
+          "kind": "landmark",
+          "family": 21
+        },
+        {
+          "id": "870807-0",
+          "name": "Former Schlitz Brewery Tied House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ],
+      "minNamed": 3
+    },
+    "Garfield Park": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "raisedRails": [
+        "UP Geneva Subdivision"
+      ],
+      "named": [
+        {
+          "id": "865175-0",
+          "name": "Garfield Park Conservatory",
+          "kind": "greenhouse",
+          "family": 26
+        },
+        {
+          "id": "879444-0",
+          "name": "Garfield Park Gold Dome Fieldhouse",
+          "kind": "park",
+          "family": 9
+        },
+        {
+          "id": "898385-0",
+          "name": "Our Lady of Sorrows Basilica",
+          "kind": "church",
+          "family": 9,
+          "twin": true
+        },
+        {
+          "id": "890184-0",
+          "name": "Marshall Metropolitan High School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "918176-0",
+          "name": "Manley Career Academy",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "917989-0",
+          "name": "Former Anshe Sholom Synagogue",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "885386-0",
+          "name": "Midwest Athletic Club",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "887689-0",
+          "name": "Kedzie Telephone Exchange",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "870235-0",
+          "name": "Waller Apartments (Frank Lloyd Wright)",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "North Lawndale": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "921031-0",
+          "name": "Sears, Roebuck Administration Building",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "939876-0",
+          "name": "Stone Temple Baptist Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "939492-0",
+          "name": "Jewish People's Institute",
+          "kind": "school",
+          "family": 20
+        },
+        {
+          "id": "944113-0",
+          "name": "Mount Sinai Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "952257-0",
+          "name": "North Lawndale College Prep",
+          "kind": "school",
+          "family": 6
         }
       ]
     }

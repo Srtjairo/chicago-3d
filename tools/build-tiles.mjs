@@ -332,7 +332,9 @@ function downtownForMap() {
 // Named buildings of finished neighborhoods, with positions and heights for their labels.
 {
   const byId = new Map(items.map((b) => [b.id, b]));
-  index.named = finished.flatMap((n) => n.named.map((d) => { const b = byId.get(d.id); if (!b) throw new Error(`${n.name}: named building ${d.id} (${d.name}) not found`); return { id: d.id, name: d.name, kind: d.kind || 'landmark', hood: n.id, x: Math.round(b.x), z: Math.round(b.z), h: Math.round(b.h) }; }));
+  // Downtown-owned buildings (assets/downtown.json) keep their label here; their styling is downtown's.
+  const downtownById = new Map(downtownForMap().map((b) => [b.id, b]));
+  index.named = finished.flatMap((n) => n.named.map((d) => { const b = byId.get(d.id) || downtownById.get(d.id); if (!b) throw new Error(`${n.name}: named building ${d.id} (${d.name}) not found`); return { id: d.id, name: d.name, kind: d.kind || 'landmark', hood: n.id, x: Math.round(b.x), z: Math.round(b.z), h: Math.round(b.h) }; }));
 }
 // Registries for labels and the neighbourhood menu. Label point = interior point nearest the
 // polygon's bounding-box centre (sampled), so U-shaped areas still get a label inside them.
