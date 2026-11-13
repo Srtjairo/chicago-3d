@@ -35,9 +35,9 @@ for (const [key, p] of Object.entries(cfg.profiles)) {
   assert(p.rules?.length, key + ': rules');
   const last = p.rules.at(-1); assert(last.minArea == null && last.maxArea == null && last.maxH == null, key + ': the last rule must match every building');
   for (const r of p.rules) {
-    assert(['flat', 'gable', 'cornice', undefined].includes(r.roof), key + ': roof ' + r.roof);
+    assert(['flat', 'gable', 'cornice', 'open', 'greenhouse', undefined].includes(r.roof), key + ': roof ' + r.roof);
     const fams = Object.entries(r.families); assert(fams.length, key + ': families');
-    for (const [f, w] of fams) assert(Number(f) >= 0 && Number(f) < 16 && w > 0, `${key}: family ${f} weight ${w}`);
+    for (const [f, w] of fams) assert(Number(f) >= 0 && Number(f) < 32 && w > 0, `${key}: family ${f} weight ${w}`);
   }
 }
 
@@ -53,7 +53,7 @@ for (const n of done) {
   assert(n.named.length >= 1, `${n.name}: at least one named building`);
   assert(Array.isArray(n.water), `${n.name}: water for Mini Fellow`);
   for (const b of n.named) {
-    assert(/^\d+-\d+$/.test(b.id) && b.name && b.family >= 0 && b.family < 16, `${n.name}: named ${JSON.stringify(b)}`);
+    assert(/^\d+-\d+$/.test(b.id) && b.name && b.family >= 0 && b.family < 32, `${n.name}: named ${JSON.stringify(b)}`);
     if (b.front) assert('NESW'.includes(b.front), `${b.name}: front`);
     if (tiles) {
       const t = tiles.named.find((x) => x.id === b.id); assert(t, `${b.name} (${b.id}) is not in the tiles: rebuild with tools/build-tiles.mjs`);

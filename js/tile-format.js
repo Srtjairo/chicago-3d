@@ -8,8 +8,8 @@
 //   magic 'CHT1', version, kind, tx, tz (zig-zag), counts...
 //   kind 0 (detail, one per 1 km tile):
 //     buildings: objectId, part, h_dm, flags, style, nRings, per ring: n, points
-//       style = facade family (FAMILIES index) + 16 * roof (ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH)
-//               + 64 * church front (0 north, 1 east, 2 south, 3 west) + 256 * twin towers
+//       style = facade family (FAMILIES index, < 32) + 32 * roof (ROOF_*, < 8)
+//               + 256 * church front (0 north, 1 east, 2 south, 3 west) + 1024 * twin towers
 //     streets:   class, dir(0 two-way,1 F,2 T), levelFrom+8, levelTo+8, flags, n, points
 //     water:     nRings, rings          parks: parkIndex, flags, nRings, rings
 //     rails:     flags, n, points      (main-line railways, OpenStreetMap)
@@ -24,11 +24,11 @@ export const TILE = 1000, SKY = 4000; // metres
 export const FLAG_ESTIMATED = 1, FLAG_SPIKE = 2, FLAG_OVERRIDE = 4;
 export const FINISHED = 1, RAIL_BRIDGE = 2, RAIL_RAISED = 4;
 export const SURF_YARD = 1, SURF_PAVED = 2, SURF_INDUSTRIAL = 3, SURF_PARKING = 4, PATH_ALLEY = 1;
-export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3;
+export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3, ROOF_OPEN = 4, ROOF_GREENHOUSE = 5;
 export const FRONTS = { N: 0, E: 1, S: 2, W: 3 };
-export const styleOf = (family, roof = ROOF_FLAT, front = 0, twin = false) => family + 16 * roof + 64 * front + (twin ? 256 : 0);
-export const familyOfStyle = (style) => style % 16, roofOfStyle = (style) => Math.floor(style / 16) % 4;
-export const frontOfStyle = (style) => Math.floor(style / 64) % 4, twinOfStyle = (style) => Math.floor(style / 256) % 2 === 1;
+export const styleOf = (family, roof = ROOF_FLAT, front = 0, twin = false) => family + 32 * roof + 256 * front + (twin ? 1024 : 0);
+export const familyOfStyle = (style) => style % 32, roofOfStyle = (style) => Math.floor(style / 32) % 8;
+export const frontOfStyle = (style) => Math.floor(style / 256) % 4, twinOfStyle = (style) => Math.floor(style / 1024) % 2 === 1;
 const DIRS = { '': 0, B: 0, F: 1, T: 2 };
 
 export class Writer {

@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
 import { renderMinimap } from './minimap.mjs';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
@@ -67,12 +67,13 @@ log('Heights:', JSON.stringify(stats));
 // the default familyFor() with a flat roof, exactly as before.
 const registry = JSON.parse(readFileSync(join(root, 'assets', 'neighborhoods.json'), 'utf8'));
 const profiles = JSON.parse(readFileSync(join(root, 'tools', 'neighborhood-profiles.json'), 'utf8')).profiles;
-const ROOFS = { flat: ROOF_FLAT, gable: ROOF_GABLE, cornice: ROOF_CORNICE, church: ROOF_CHURCH };
+const ROOFS = { flat: ROOF_FLAT, gable: ROOF_GABLE, cornice: ROOF_CORNICE, church: ROOF_CHURCH, open: ROOF_OPEN, greenhouse: ROOF_GREENHOUSE };
+const KIND_ROOF = { church: 'church', stadium: 'open', greenhouse: 'greenhouse' };
 const finished = registry.neighborhoods.filter((n) => (n.status === 'pilot' || n.status === 'done') && n.profile).map((n) => {
   if (!profiles[n.profile]) throw new Error(`${n.name}: unknown profile ${n.profile}`);
   return { ...n, inside: polygonTester(n.polygons), rules: profiles[n.profile].rules };
 });
-const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || (b.kind === 'church' ? 'church' : 'flat')], FRONTS[b.front || 'N'], !!b.twin)])));
+const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || KIND_ROOF[b.kind] || 'flat'], FRONTS[b.front || 'N'], !!b.twin)])));
 const pick = (weights, seed) => { const e = Object.entries(weights), total = e.reduce((s, [, w]) => s + w, 0); let r = ((seed * 2654435761) >>> 0) % total; for (const [f, w] of e) { if ((r -= w) < 0) return Number(f); } return Number(e[0][0]); };
 const styleStats = {};
 const inFinished = (x, z) => finished.some((n) => x >= n.bbox[0] && x <= n.bbox[1] && z >= n.bbox[2] && z <= n.bbox[3] && n.inside(x, z));

@@ -38,6 +38,10 @@ export class TileManager {
     // Cottage roofs (shingles) and cornices.
     this.familyMaterials.roof = new THREE.MeshStandardMaterial({ color: 0x5d524c, roughness: 0.92 });
     this.familyMaterials.trim = new THREE.MeshStandardMaterial({ color: 0x9e958a, roughness: 0.85 });
+    this.familyMaterials.seats = new THREE.MeshStandardMaterial({ color: 0x4b5763, roughness: 0.8, side: THREE.DoubleSide });
+    this.familyMaterials.field = new THREE.MeshStandardMaterial({ color: 0x5f8f45, roughness: 1 });
+    this.familyMaterials.glassroof = new THREE.MeshStandardMaterial({ color: 0xcfe2e3, roughness: 0.12, metalness: 0.25, emissive: 0x9fc4b0, emissiveIntensity: 0, side: THREE.DoubleSide });
+    ctx.glows?.push({ mat: this.familyMaterials.glassroof, day: 0, night: 0.25 });
     this.detail = new Map(index.tiles.map(([tx, tz, hash, bytes, count]) => {
       const path = `b/${tx}_${tz}.${hash}.bin`;
       return [tileKey(tx, tz), { tx, tz, path, bytes, count, mesh: null, state: 'idle', lastWanted: 0, real: { path, mode: 'real', bytes: 0, mesh: null, state: 'idle', lastWanted: 0 } }];
@@ -187,17 +191,23 @@ export class TileManager {
   // Shared geometry and materials for street trees and lamps (the downtown look: terrain.js trees,
   // city-world.js lamps, whose glow follows the time of day through ctx.glows).
   buildDecor(ctx) {
-    const canopy = new THREE.SphereGeometry(1, 8, 6), cp = canopy.attributes.position;
+    // Light low-poly canopies (about 50 triangles): thousands of trees are drawn near the camera.
+    const canopy = new THREE.SphereGeometry(1, 6, 5), cp = canopy.attributes.position;
     for (let i = 0; i < cp.count; i++) { const x = cp.getX(i), y = cp.getY(i), z = cp.getZ(i), k = 1 + 0.13 * Math.sin(x * 8 + y * 4) * Math.sin(z * 7 - y * 3); cp.setXYZ(i, x * k, y * k, z * k); }
     canopy.computeVertexNormals();
-    const trunk = new THREE.CylinderGeometry(0.25, 0.35, 1, 5); trunk.translate(0, 0.5, 0);
+    const trunk = new THREE.CylinderGeometry(0.25, 0.35, 1, 4, 1, true); trunk.translate(0, 0.5, 0);
     const post = new THREE.BoxGeometry(0.16, 7, 0.16); post.translate(0, 3.5 + 0.6, 0);
+    // Parked cars: body and cabin, the same proportions as the moving ones.
+    const carBody = new THREE.BoxGeometry(1.9, 1.15, 4.5); carBody.translate(0, 0.16 + 0.78, 0);
+    const carCabin = new THREE.BoxGeometry(1.7, 0.62, 2.4); carCabin.translate(0, 0.16 + 1.64, -0.2);
     const head = new THREE.BoxGeometry(1.3, 0.18, 0.7); head.translate(0.55, 7.2 + 0.6, 0);
-    for (const g of [canopy, trunk, post, head]) g.userData.shared = true;
+    for (const g of [canopy, trunk, post, head, carBody, carCabin]) g.userData.shared = true;
     const glow = new THREE.MeshStandardMaterial({ color: 0xe3d7bd, emissive: 0xffc982, emissiveIntensity: 0, roughness: 0.65 });
     ctx.glows?.push({ mat: glow, day: 0, night: 0.8 });
     this.decor = {
-      canopy, trunk, post, head, glow,
+      canopy, trunk, post, head, glow, carBody, carCabin,
+      paint: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.2 }),
+      carGlass: new THREE.MeshStandardMaterial({ color: 0x22343c, roughness: 0.25, metalness: 0.3 }),
       leaf: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 }),
       bark: new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 }),
       steel: new THREE.MeshStandardMaterial({ color: 0x424a4b, roughness: 0.7 }),
@@ -211,11 +221,11 @@ export class TileManager {
   }
 
   // Instanced street trees, park trees and lamps for one real tile.
-  addDecor(group, { trees, lamps }) {
+  addDecor(group, { trees, lamps, parked = new Float32Array(0) }) {
     if (!group) return;
     const D = this.decor, m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
     const nt = trees.length / 4, nl = lamps.length / 3;
-    const add = (geo, mat, n, fill) => { if (!n) return; const im = new THREE.InstancedMesh(geo, mat, n); for (let i = 0; i < n; i++) { fill(i); im.setMatrixAt(i, m); } im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.layers.set(1); im.receiveShadow = true; group.add(im); return im; };
+    const add = (geo, mat, n, fill) => { if (!n) return; const im = new THREE.InstancedMesh(geo, mat, n); im.userData.decor = true; for (let i = 0; i < n; i++) { fill(i); im.setMatrixAt(i, m); } im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.layers.set(1); im.receiveShadow = true; group.add(im); return im; };
     const leaves = add(D.canopy, D.leaf, nt, (i) => {
       const [x, z, k, seed] = trees.subarray(i * 4, i * 4 + 4), r = 3.4 * k;
       e.set(0, seed * 0.37, 0); q.setFromEuler(e);
@@ -224,6 +234,10 @@ export class TileManager {
     if (leaves) { const col = new Float32Array(nt * 3); for (let i = 0; i < nt; i++) { const seed = trees[i * 4 + 3]; c.setHSL(0.25 + (seed % 9) * 0.009, 0.36 + (seed % 5) * 0.03, 0.2 + (seed % 7) * 0.014).toArray(col, i * 3); } leaves.instanceColor = new THREE.InstancedBufferAttribute(col, 3); }
     add(D.trunk, D.bark, nt, (i) => { const [x, z, k] = trees.subarray(i * 4, i * 4 + 3); m.compose(v.set(x, 0.6, z), q.identity(), s.set(k, 3.2 * k, k)); });
     add(D.post, D.steel, nl, (i) => { const [x, z] = lamps.subarray(i * 3, i * 3 + 2); m.compose(v.set(x, 0, z), q.identity(), s.set(1, 1, 1)); });
+    const np = parked.length / 4, PAINT = [0xd9dcd8, 0x23272b, 0x8c9399, 0x6d1f1f, 0x1f3b5a, 0xb9b2a4, 0x3d4f3a, 0xe6e2d7, 0x55606a];
+    const cars = add(D.carBody, D.paint, np, (i) => { const [x, z, a] = parked.subarray(i * 4, i * 4 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
+    if (cars) { const col = new Float32Array(np * 3); for (let i = 0; i < np; i++) c.set(PAINT[parked[i * 4 + 3] % PAINT.length]).toArray(col, i * 3); cars.instanceColor = new THREE.InstancedBufferAttribute(col, 3); }
+    add(D.carCabin, D.carGlass, np, (i) => { const [x, z, a] = parked.subarray(i * 4, i * 4 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
     add(D.head, D.glow, nl, (i) => { const [x, z, a] = lamps.subarray(i * 3, i * 3 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
   }
 
@@ -310,6 +324,8 @@ export class TileManager {
         const tile = this.index.tile, dist = Math.hypot(Math.max(d.tx * tile - focus.x, 0, focus.x - (d.tx + 1) * tile), Math.max(d.tz * tile - focus.z, 0, focus.z - (d.tz + 1) * tile));
         if (d.state === 'idle' && !(d.retryAt > this.clock)) this.request(d, dist / 1000);
         d.wantReal = dist < real;
+        // Trees, lamps and parked cars only within about 1 km (600 m at low quality): they cost the most.
+        d.decorNear = dist < (level >= 3 ? 600 : 1000);
         if (d.wantReal) { d.real.lastWanted = this.clock; if (d.real.state === 'idle' && !(d.real.retryAt > this.clock)) this.request(d.real, 0.5 + dist / 1000); }
       } else for (const d of cell.children) d.wantReal = false;
     }
@@ -328,7 +344,7 @@ export class TileManager {
       for (const d of cell.children) {
         const real = ready && d.wantReal && d.real.state === 'ready' && d.real.mesh;
         if (d.mesh) d.mesh.visible = ready && !real;
-        if (d.real.mesh) d.real.mesh.visible = !!real;
+        if (d.real.mesh) { d.real.mesh.visible = !!real; for (const o of d.real.mesh.children) if (o.userData.decor) o.visible = !!d.decorNear; }
       }
     }
     this.dirty = false;

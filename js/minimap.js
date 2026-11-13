@@ -3,7 +3,8 @@
 // looking on top of it. Click (or tap) the map to fly there; the corner button enlarges it.
 import * as THREE from 'three';
 
-export function setupMinimap({ index, camera, controls, flyer, hoods }) {
+// Neighborhood names stay off the map (they live in the 3D view and the Neighborhoods menu).
+export function setupMinimap({ index, camera, controls, flyer }) {
   if (!index?.minimap) return { update() {}, toggle() {} };
   const R = index.radius, [hash] = index.minimap;
   const host = document.createElement('section');
@@ -36,17 +37,6 @@ export function setupMinimap({ index, camera, controls, flyer, hoods }) {
     if (canvas.width !== s) { canvas.width = s; canvas.height = s; }
     g.clearRect(0, 0, s, s);
     const k = s / (2 * R), P = (x, z) => [(x + R) * k, (z + R) * k];
-    // Neighborhood names: finished ones always; the rest too when the map is enlarged.
-    const big = host.classList.contains('big');
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    for (const n of hoods?.inside || []) {
-      const done = hoods.finished.includes(n);
-      if (!done && !big) continue;
-      const [x, z] = P(n.label[0], n.label[1]);
-      g.font = `${done ? 700 : 600} ${(done ? (big ? 12 : 10) : 9.5) * dpr}px system-ui, sans-serif`;
-      g.lineWidth = 3 * dpr; g.strokeStyle = 'rgba(10,13,20,0.85)'; g.strokeText(n.display.toUpperCase(), x, z);
-      g.fillStyle = done ? '#ffe7b0' : 'rgba(255,255,255,0.78)'; g.fillText(n.display.toUpperCase(), x, z);
-    }
     const t = controls.target, c = camera.position;
     const [tx, tz] = P(t.x, t.z);
     // View wedge: from the target, opening toward where the camera looks.

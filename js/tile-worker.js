@@ -1,7 +1,7 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, TILE } from './tile-format.js';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, TILE } from './tile-format.js';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
 // Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
@@ -85,13 +85,13 @@ function walls(s, r, outer, y0, y1, seed, each) {
 // A cottage: the footprint's rectangle with walls to the eaves, two sloped roof planes and
 // gable-end triangles; the ridge (at the measured height) runs along the long side. Returns
 // false for footprints that aren't close to a rectangle, which then get a flat roof.
-function gable(walls_, roofSoup, ring, h, seed) {
+function gable(walls_, roofSoup, ring, h, seed, riseFrac = 0) {
   const o = orientedBox(ring);
   if (Math.abs(signedArea(ring)) < 0.85 * o.w * o.d || o.w < 3 || o.d < 3) return false;
   const c = Math.cos(o.angle), s = Math.sin(o.angle);
   // Long axis (ridge direction) L and across axis A, with half-lengths.
   let [Lx, Lz, hl, Ax, Az, ha] = o.w >= o.d ? [c, s, o.w / 2, -s, c, o.d / 2] : [-s, c, o.d / 2, c, s, o.w / 2];
-  const top = BASE + h, rise = Math.min(Math.max(ha * 0.75, 1.2), h * 0.45), eave = top - rise;
+  const top = BASE + h, rise = riseFrac ? h * riseFrac : Math.min(Math.max(ha * 0.75, 1.2), h * 0.45), eave = top - rise;
   const P = (l, a, y) => [o.x + Lx * l + Ax * a, y, o.z + Lz * l + Az * a];
   const box = [[-hl, -ha], [hl, -ha], [hl, ha], [-hl, ha]].map(([l, a]) => { const p = P(l, a, 0); return [p[0], p[2]]; });
   walls(walls_, box, true, BASE, eave, seed);
@@ -136,6 +136,21 @@ function church(s, roofSoup, rings, h, seed, front, twin) {
   }
 }
 
+// An open-air stadium: outer walls to the measured height, a seating bowl sloping down and in,
+// and a grass field in the middle (the bowl's inner edge is the footprint shrunk to 62%).
+function stadium(s, seats, field, rings, h, seed) {
+  const r = rings[0], cx = r.reduce((t, p) => t + p[0], 0) / r.length, cz = r.reduce((t, p) => t + p[1], 0) / r.length, top = BASE + h, low = BASE + 2.5;
+  walls(s, r, true, BASE, top, seed);
+  const inner = r.map(([x, z]) => [cx + (x - cx) * 0.62, cz + (z - cz) * 0.62]);
+  for (let i = 0; i < r.length; i++) {
+    const a = r[i], b = r[(i + 1) % r.length], ai = inner[i], bi = inner[(i + 1) % r.length];
+    const mx = (a[0] + b[0]) / 2 - cx, mz = (a[1] + b[1]) / 2 - cz, ml = Math.hypot(mx, mz) || 1;
+    seats.tri([a[0], top, a[1]], [b[0], top, b[1]], [bi[0], low, bi[1]], -mx / ml * 0.6, 0.8, -mz / ml * 0.6);
+    seats.tri([a[0], top, a[1]], [bi[0], low, bi[1]], [ai[0], low, ai[1]], -mx / ml * 0.6, 0.8, -mz / ml * 0.6);
+  }
+  field.flat([inner], low);
+}
+
 // A parapet cornice around a flat roof: an outward band and its top cap.
 function cornice(trim, ax, az, bx, bz, nx, nz, top) {
   const o = 0.3, y0 = top - 0.8, y1 = top + 0.35, ox = nx * o, oz = nz * o;
@@ -154,6 +169,8 @@ function extrude(tile) {
     const seed = b.objectId % 10007, roof = roofOfStyle(b.style), top = BASE + b.h, s = get(familyOfStyle(b.style));
     if (roof === ROOF_GABLE && rings.length === 1 && gable(s, get('roof'), rings[0], b.h, seed)) continue;
     if (roof === ROOF_CHURCH) { church(s, get('roof'), rings, b.h, seed, frontOfStyle(b.style), twinOfStyle(b.style)); continue; }
+    if (roof === ROOF_OPEN) { stadium(s, get('seats'), get('field'), rings, b.h, seed); continue; }
+    if (roof === ROOF_GREENHOUSE && rings.length === 1 && gable(s, get('glassroof'), rings[0], b.h, seed, 0.55)) continue;
     const trim = roof === ROOF_CORNICE ? get('trim') : null;
     rings.forEach((r, k) => walls(s, r, k === 0, BASE, top, seed, trim && k === 0 ? (ax, az, bx, bz, nx, nz) => cornice(trim, ax, az, bx, bz, nx, nz, top) : null));
     s.flat(rings, top, seed);
@@ -196,7 +213,7 @@ function along(points, step, skip, jitter, rand, fn) {
 function decorate(tile, ground) {
   const x0 = tile.tx * TILE, z0 = tile.tz * TILE, inTile = (x, z) => x >= x0 && x < x0 + TILE && z >= z0 && z < z0 + TILE;
   const blocked = blockers([...tile.buildings.map((b) => b.rings.map(open)), ...ground.water.map((w) => w.rings.map(open))]);
-  const trees = [], lamps = [], lanes = { pts: [], counts: [] }, walks = { pts: [], counts: [] };
+  const trees = [], lamps = [], parked = [], lanes = { pts: [], counts: [] }, walks = { pts: [], counts: [] };
   const line = (into, pts) => { into.counts.push(pts.length); for (const [x, z] of pts) into.pts.push(x, z); };
   // A polyline shifted sideways (positive = to the right of travel; x east, z south).
   const shift = (pts, off) => pts.map((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [p[0] - dz / l * off, p[1] + dx / l * off]; });
@@ -205,8 +222,15 @@ function decorate(tile, ground) {
     if (!(s.flags & FINISHED) || !inTile(m[0], m[1]) || s.class === 1) continue;
     const w = ROAD_WIDTH[s.class] || 8.5, rand = rng(Math.round(m[0] * 31 + m[1] * 17) >>> 0);
     // Driving lanes (right-hand traffic, respecting one-way streets) and both sidewalks.
-    if (s.dir !== 'T') line(lanes, shift(s.points, w / 4));
-    if (s.dir !== 'F') line(lanes, shift([...s.points].reverse(), w / 4));
+    // Moving lanes stay clear of the parked cars along each curb.
+    const lane = s.class === 4 ? 1.3 : s.class === 3 ? w / 4 - 0.4 : w / 4;
+    if (s.dir !== 'T') line(lanes, shift(s.points, lane));
+    if (s.dir !== 'F') line(lanes, shift([...s.points].reverse(), lane));
+    // Parked cars along both curbs, about 60% of the spaces, clear of the corners.
+    for (const side of [-1, 1]) along(s.points, 6.5, 12, 0.08, rand, (x, z, dx, dz) => {
+      if (rand() > 0.6) return;
+      parked.push(x - dz * side * (w / 2 - 1.05), z + dx * side * (w / 2 - 1.05), Math.atan2(dx, dz) + (side < 0 ? Math.PI : 0), Math.floor(rand() * 9));
+    });
     const sw = s.class >= 3 ? w / 2 + 3.5 : w / 2 + 1.8; // beyond the parkway on residential streets
     line(walks, shift(s.points, sw)); line(walks, shift(s.points, -sw));
     // Parkway trees on both sides of collectors and local streets; arterials get fewer.
@@ -236,11 +260,41 @@ function decorate(tile, ground) {
       if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz)) trees.push(px, pz, 0.8 + rand() * 0.7, Math.floor(rand() * 1000));
     }
   }
-  // Footprints for Mini Fellow's collisions (outer ring and height).
+  // Backyard trees: a jittered 16 m grid over the yards, about 40% kept, clear of buildings,
+  // water, parking lots, alleys and streets (with their sidewalks).
+  const roadGrid = new Map(), RG = 40, rkey = (i, j) => i * 100003 + j;
+  const addSeg = (a, b, half) => { for (let i = Math.floor((Math.min(a[0], b[0]) - half) / RG); i <= Math.floor((Math.max(a[0], b[0]) + half) / RG); i++) for (let j = Math.floor((Math.min(a[1], b[1]) - half) / RG); j <= Math.floor((Math.max(a[1], b[1]) + half) / RG); j++) { const k = rkey(i, j); if (!roadGrid.has(k)) roadGrid.set(k, []); roadGrid.get(k).push([a, b, half]); } };
+  for (const s of ground.streets) for (let i = 1; i < s.points.length; i++) addSeg(s.points[i - 1], s.points[i], (ROAD_WIDTH[s.class] || 8.5) / 2 + 5);
+  for (const p of ground.paths) for (let i = 1; i < p.points.length; i++) addSeg(p.points[i - 1], p.points[i], 3.5);
+  const nearRoad = (x, z) => (roadGrid.get(rkey(Math.floor(x / RG), Math.floor(z / RG))) || []).some(([a, b, half]) => { const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1))); return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < half; });
+  const lots = blockers(ground.surfaces.filter((s) => s.kind === SURF_PARKING).map((s) => s.rings.map(open)));
+  for (const s of ground.surfaces) {
+    if (s.kind !== SURF_YARD) continue;
+    const r = s.rings.map(open), o = r[0];
+    let ax = Infinity, bx = -Infinity, az = Infinity, bz = -Infinity;
+    for (const [x, z] of o) { ax = Math.min(ax, x); bx = Math.max(bx, x); az = Math.min(az, z); bz = Math.max(bz, z); }
+    if (!inTile((ax + bx) / 2, (az + bz) / 2)) continue;
+    const rand = rng(Math.round(ax * 7 + az * 11) >>> 0);
+    for (let x = ax + 8; x < bx; x += 16) for (let z = az + 8; z < bz; z += 16) {
+      if (rand() < 0.6) continue;
+      const px = x + (rand() - 0.5) * 12, pz = z + (rand() - 0.5) * 12;
+      if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz) && !lots(px, pz) && !nearRoad(px, pz)) trees.push(px, pz, 0.6 + rand() * 0.6, Math.floor(rand() * 1000));
+    }
+  }
+  // Footprints for Mini Fellow's collisions (outer ring and height), plus raised rail embankments.
   const solids = { pts: [], counts: [] }, heights = [];
   for (const b of tile.buildings) { const r = open(b.rings[0]); if (r.length >= 3) { line(solids, r); heights.push(b.h + 0.6); } }
+  for (const rl of ground.rails) {
+    if (!(rl.flags & FINISHED) || !(rl.flags & RAIL_RAISED) || rl.flags & RAIL_BRIDGE) continue;
+    for (let i = 1; i < rl.points.length; i++) {
+      const [ax, az] = rl.points[i - 1], [bx, bz] = rl.points[i], len = Math.hypot(bx - ax, bz - az);
+      if (len < 0.5 || !inTile((ax + bx) / 2, (az + bz) / 2)) continue;
+      const nx = -(bz - az) / len * 5, nz = (bx - ax) / len * 5;
+      line(solids, [[ax + nx, az + nz], [bx + nx, bz + nz], [bx - nx, bz - nz], [ax - nx, az - nz]]); heights.push(6.7);
+    }
+  }
   const pack = (l) => ({ pts: new Float32Array(l.pts), counts: new Uint16Array(l.counts) });
-  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps), lanes: pack(lanes), walks: pack(walks), solids: pack(solids), heights: new Float32Array(heights) };
+  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps), parked: new Float32Array(parked), lanes: pack(lanes), walks: pack(walks), solids: pack(solids), heights: new Float32Array(heights) };
 }
 
 // A main-line railway: at grade a ballast bed; raised, an earth embankment (sloped sides) or a

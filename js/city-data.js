@@ -80,6 +80,19 @@ export const FAMILIES = [
   { name: 'siding', color: 0xc9c3b6, glass: 0x2a3034, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 112 },
   { name: 'siding blue-grey', color: 0x8d9aa0, glass: 0x262d31, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 113 },
   { name: 'siding sand', color: 0xd3bf96, glass: 0x2b3033, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 114 },
+  { name: 'greystone light', color: 0xc4bdab, glass: 0x283036, cell: [3.0, 3.6], winA: [0.42, 0.6], seed: 115 },
+  { name: 'greystone dark', color: 0x8d887c, glass: 0x252b30, cell: [3.0, 3.6], winA: [0.42, 0.6], seed: 116 },
+  { name: 'frame white', color: 0xe2ded3, glass: 0x2a3034, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 117 },
+  { name: 'frame mint', color: 0xa8c2ad, glass: 0x283033, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 118 },
+  { name: 'frame blue', color: 0x8ea6bb, glass: 0x262d32, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 119 },
+  { name: 'frame yellow', color: 0xd8c37f, glass: 0x2b3033, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 120 },
+  { name: 'yellow brick', color: 0xcbb07c, glass: 0x2a3034, cell: [3.1, 3.4], winA: [0.44, 0.56], seed: 121 },
+  { name: 'brownstone', color: 0x7b5747, glass: 0x24292d, cell: [3.0, 3.8], winA: [0.4, 0.62], seed: 122 },
+  { name: 'chinatown brick', color: 0xa5463b, glass: 0x2c2a2c, cell: [3.2, 3.4], winA: [0.5, 0.56], seed: 123 },
+  { name: 'loft brick', color: 0x8b5240, glass: 0x262c30, cell: [3.6, 4.2], winA: [0.62, 0.62], seed: 124 },
+  { name: 'modernist concrete', color: 0xb5b1a7, glass: 0x2f3a42, cell: [3.4, 3.8], winA: [0.7, 0.5], seed: 125 },
+  { name: 'lakefront glass', color: 0x748b98, glass: 0x3f5f72, style: 1, cell: [1.7, 3.4], roughness: 0.3, seed: 126 },
+  { name: 'greenhouse glass', color: 0xbcd3d4, glass: 0x9fc3c6, style: 1, cell: [1.4, 1.6], roughness: 0.15, seed: 127 },
 ];
 export function buildMeasuredCity(scene, ctx) {
   const group = new THREE.Group(); group.name = 'measured-city';
