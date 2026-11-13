@@ -185,12 +185,14 @@ clipToTiles(rivers.map((w) => w.rings), (t, rings) => t.water.push({ rings }));
 const parkList = parksIn.map((p, i) => ({ ...p, index: i }));
 for (const p of parkList) clipToTiles(p.polygons, (t, rings) => { const v = ringBounds(rings[0]); t.parks.push({ park: p.index, flags: inFinished(v.x, v.z) ? FINISHED : 0, rings }); });
 log('Styled by neighborhood profile:', JSON.stringify(styleStats));
+// The same ground cover, unclipped, for the bird's-eye map.
+const mapCover = { yard: [], paved: [], industrial: [], parking: [] };
 // Ground cover in finished neighborhoods. The whole neighborhood is yard (grass) by default;
 // zoning then marks business/commercial land as paved and manufacturing/transport land as
 // industrial yards; OpenStreetMap adds parking lots and alleys on top.
 {
   const optional = (name) => existsSync(join(src, name)) ? read(name) : [];
-  const zoningIn = optional('zoning.json'), alleysIn = optional('alleys.json'), parkingIn = optional('parking.json');
+  const zoningIn = optional('zoning.json'), alleysIn = optional('alleys.json').map((a) => a.points ?? a), parkingIn = optional('parking.json');
   const ZONE = { commercial: SURF_PAVED, industrial: SURF_INDUSTRIAL, transport: SURF_INDUSTRIAL };
   const counts = { yard: 0, zoned: 0, parking: 0, alleys: 0, derivedAlleys: 0 };
   // Without OpenStreetMap alleys for a neighborhood, derive them: Chicago's residential blocks
@@ -223,16 +225,19 @@ log('Styled by neighborhood profile:', JSON.stringify(styleStats));
   }
   for (const n of finished) {
     const hood = n.polygons.map((p) => p.map(closed)), [hx0, hx1, hz0, hz1] = n.bbox;
+    mapCover.yard.push(...n.polygons);
     const overlaps = (rings) => { const v = ringBounds(rings[0]); return v.x1 > hx0 && v.x0 < hx1 && v.z1 > hz0 && v.z0 < hz1; };
     clipToTiles(n.polygons, (t, rings) => { t.surfaces.push({ kind: SURF_YARD, rings }); counts.yard++; });
     for (const z of zoningIn) {
       if (!ZONE[z.kind] || !overlaps(z.rings)) continue;
       let parts; try { parts = clip.intersection([z.rings.map(closed)], hood); } catch { continue; }
+      (ZONE[z.kind] === SURF_PAVED ? mapCover.paved : mapCover.industrial).push(...parts);
       clipToTiles(parts, (t, rings) => { t.surfaces.push({ kind: ZONE[z.kind], rings }); counts.zoned++; });
     }
     for (const rings of parkingIn) {
       const v = ringBounds(rings[0]);
       if (!overlaps(rings) || !n.inside(v.x, v.z)) continue;
+      mapCover.parking.push(rings);
       clipToTiles([rings], (t, r) => { t.surfaces.push({ kind: SURF_PARKING, rings: r }); counts.parking++; });
     }
     const osmHere = alleysIn.filter((points) => { const m = points[Math.floor(points.length / 2)]; return m[0] >= hx0 && m[0] <= hx1 && m[1] >= hz0 && m[1] <= hz1 && n.inside(m[0], m[1]); });
@@ -303,7 +308,7 @@ function downtownForMap() {
   return JSON.parse(readFileSync(join(root, 'assets', 'downtown.json'), 'utf8')).buildings.map((b) => { const v = ringBounds(b.rings[0]); return { id: b.id, h: b.h, rings: b.rings, x: v.x, z: v.z }; });
 }
 {
-  const img = renderMinimap({ radius: CITY_RADIUS, boundary, buildings: [...items, ...downtownForMap()].map((b) => ({ rings: b.rings, h: b.h, x: b.x, z: b.z, seed: parseInt(b.id, 10) })), streets: streetsIn, water: waterIn, parks: parksIn });
+  const img = renderMinimap({ radius: CITY_RADIUS, boundary, buildings: [...items, ...downtownForMap()].map((b) => ({ rings: b.rings, h: b.h, x: b.x, z: b.z, seed: parseInt(b.id, 10) })), streets: streetsIn, water: waterIn, parks: parksIn, cover: mapCover });
   const hash = sha256(img).slice(0, 10);
   writeFileSync(join(out, `minimap.${hash}.png`), img);
   index.minimap = [hash, img.length, 1024];

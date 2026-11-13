@@ -7,7 +7,7 @@ import { deflateSync } from 'node:zlib';
 const hex = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
 // Base colours; every entry also gets a darker "in shadow" twin.
 const BASE = {
-  lake: 0x2d5a6b, land: 0x74776f, park: 0x62844e, river: 0x2f6676, street: 0x43484c, expressway: 0x34393d,
+  lake: 0x2d5a6b, land: 0x74776f, yard: 0x56713f, paved: 0x8a877f, industrial: 0x6f6b62, parking: 0x4a4e51, park: 0x62844e, river: 0x2f6676, street: 0x43484c, expressway: 0x34393d,
   b0: 0x9a7b66, b1: 0xa98a70, b2: 0xb7a089, b3: 0xc3b29b, b4: 0xcfc5b4, b5: 0xd9d3c6, b6: 0xe7e3da, b7: 0xb9c3c9,
 };
 const NAMES = Object.keys(BASE);
@@ -17,7 +17,7 @@ const palette = [[0, 0, 0], ...NAMES.map((n) => hex(BASE[n])), ...NAMES.map((n) 
 const IDX = Object.fromEntries(NAMES.map((n, i) => [n, i + 1]));
 const dark = (i) => (i >= 1 && i <= NAMES.length ? i + NAMES.length : i);
 
-export function renderMinimap({ radius, size = 1024, boundary, buildings, streets, water, parks }) {
+export function renderMinimap({ radius, size = 1024, boundary, buildings, streets, water, parks, cover = null }) {
   const px = new Uint8Array(size * size), k = size / (2 * radius);
   const X = (x) => (x + radius) * k, Z = (z) => (z + radius) * k;
 
@@ -57,6 +57,8 @@ export function renderMinimap({ radius, size = 1024, boundary, buildings, street
 
   px.fill(IDX.lake);
   for (const rings of boundary.polygons) fill(rings, paint(IDX.land));
+  // Finished neighborhoods: yards, then paved and industrial land and parking lots (as in 3D).
+  if (cover) for (const key of ['yard', 'paved', 'industrial', 'parking']) for (const rings of cover[key]) fill(rings, paint(IDX[key]));
   for (const p of parks) for (const rings of p.polygons) if (rings[0].some(([x, z]) => inside(x, z, 500))) fill(rings, paint(IDX.park));
   for (const w of water) if (!/LAKE MICHIGAN/i.test(w.name) && w.rings[0].some(([x, z]) => inside(x, z, 500))) fill(w.rings, paint(IDX.river));
   const WIDTH = { 1: 24, 2: 14, 3: 11, 4: 9 };

@@ -7,7 +7,8 @@
 //
 // Downtown keeps owning everything whose bounding-box centre is inside COVERAGE_RECTS
 // (exactly the rule buildMeasuredCity uses), so those buildings are left out here.
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import { project, unproject, inCoverage, DETAIL_RADIUS } from '../js/coverage.js';
 import { root, createLock, cachedJson, soda, simplify, ringArea, ringBounds, polygonTester, polygonsOf } from './geo-source.mjs';
@@ -144,32 +145,30 @@ log('Parks:', parks.length, 'over 25 acres:', parks.filter((p) => p.acres > 25).
   write('zoning.json', zoning);
   log('Zoning districts in the circle:', zoning.length);
 
-  // Alleys and parking lots are fetched per finished neighborhood (assets/neighborhoods.json),
-  // which keeps each Overpass request small; mirrors are tried in turn.
-  const overpass = async (key, q) => {
-    let last;
-    for (const url of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']) {
-      try { return await cachedJson(lock, key, url, { body: { data: q }, tries: 3 }); } catch (err) { last = err; }
-    }
-    throw last;
-  };
+  // Alleys and parking lots come from the OpenStreetMap cache written by tools/fetch-osm.mjs (run
+  // separately; Overpass is often busy), for finished neighborhoods only.
   const registry = JSON.parse(readFileSync(join(root, 'assets', 'neighborhoods.json'), 'utf8'));
-  const alleys = [], parking = [];
-  // Overpass is often overloaded; a failure here keeps the previous files (build-tiles then
-  // derives alleys from the block shapes) instead of stopping the whole import.
-  try {
+  const cached = (key) => { const f = join(root, '.cache', key + '.json.gz'); return existsSync(f) ? JSON.parse(gunzipSync(readFileSync(f)).toString('utf8')) : null; };
+  const alleys = [], parking = [], missing = [];
   for (const h of registry.neighborhoods.filter((x) => (x.status === 'pilot' || x.status === 'done') && x.bbox)) {
-    const [x0, x1, z0, z1] = h.bbox, [w, s0] = unproject([x0 - 100, z1 + 100]), [e, n] = unproject([x1 + 100, z0 - 100]);
-    const bbox = `${s0.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)}`;
-    const ar = await overpass(`city/src-osm-alleys-${h.id}`, `[out:json][timeout:120];way["highway"="service"]["service"="alley"](${bbox});out geom;`);
-    alleys.push(...ar.elements.filter((x) => x.geometry?.length >= 2).map((x) => x.geometry.map((g) => project([g.lon, g.lat]))));
-    const pr = await overpass(`city/src-osm-parking-${h.id}`, `[out:json][timeout:120];way["amenity"="parking"]["parking"!~"underground|multi-storey|rooftop"](${bbox});out geom;`);
-    parking.push(...pr.elements.filter((x) => x.geometry?.length >= 4).map((x) => [simplify(x.geometry.map((g) => project([g.lon, g.lat])), 0.5)]));
+    const ar = cached(`osm/alleys-${h.id}`), pr = cached(`osm/parking-${h.id}`);
+    if (!ar || !pr) missing.push(h.display);
+    if (ar) alleys.push(...ar.elements.filter((x) => x.geometry?.length >= 2).map((x) => ({ hood: h.id, points: x.geometry.map((g) => project([g.lon, g.lat])) })));
+    if (pr) parking.push(...pr.elements.filter((x) => x.geometry?.length >= 4).map((x) => [simplify(x.geometry.map((g) => project([g.lon, g.lat])), 0.5)]));
   }
   write('alleys.json', alleys);
   write('parking.json', parking);
-  } catch (err) { log('OpenStreetMap alleys/parking unavailable, keeping previous files:', err.message); }
+  if (missing.length) log('No OpenStreetMap cache yet (run tools/fetch-osm.mjs) for:', missing.join(', '), '- alleys will be derived there');
   if (alleys.length || parking.length) log('OSM alleys:', alleys.length, 'parking lots:', parking.length);
+}
+// Chicago Landmarks (City of Chicago, uct4-hrvh): designated buildings with their parcels, used by
+// tools/find-named.mjs to pick each neighborhood's named buildings.
+{
+  const rows = await cachedJson(lock, 'city/src-landmarks', soda('uct4-hrvh', { $select: 'the_geom,id,name,address,architect,date_built', $limit: '5000' }));
+  const landmarks = rows.map((r) => ({ id: r.id, name: String(r.name || '').trim(), address: r.address || '', architect: r.architect || '', built: r.date_built || '', polygons: polygonsOf(r.the_geom).map((p) => p.map((ring) => ring.map(project))) }))
+    .filter((l) => l.name && l.polygons.length && l.polygons[0][0].some(([x, z]) => Math.hypot(x, z) < DETAIL_RADIUS));
+  write('landmarks.json', landmarks);
+  log('City landmarks in the circle:', landmarks.length);
 }
 lock.save();
 log('Done.');
