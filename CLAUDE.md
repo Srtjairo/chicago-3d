@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Sandbox first (the most important rule)
+
+Nothing reaches the live model (https://srtjairo.github.io/chicago-3d/) until it has been tried locally and Jairo approves it.
+- **`dev` branch = sandbox.** Make and commit every change on `dev`, which exists only on this computer. Never push `dev`. Never edit, commit or merge on `main` directly.
+- **See it:** `/preview` → http://127.0.0.1:8080 (`tools/serve.mjs` binds to 127.0.0.1, so only this computer can open it).
+- **`main` = live.** Only `/ship` changes it: build + checks pass → Jairo explicitly says "ship it" → merge `dev` into `main` → push `main` (GitHub Pages redeploys from `main/docs`). That is the only push that ever happens.
+- A guard hook (`.claude/hooks/guard-main.ps1`) blocks every git push, and any commit, merge or edit on `main`, unless `/ship` has unlocked it with `.claude/ship-approved` (gitignored). Never create that file outside `/ship`.
+- jairomora.com links to this model from its "Now" card and Projects carousel. Those texts live in the website repo (`Desktop\JAIROs WEBSITE\js\data.js`) and are changed from there, not here.
+
 ## What this is
 
 A browser-viewable 3D model of downtown Chicago built with plain Three.js r160. There is no package.json or linter: `index.html` plus ES modules in `js/`, and bundled geographic data in `assets/`. `tools/build-site.mjs` makes the public copy; `node tools/check.mjs` checks river geometry, landmark views and deployed dependency versions. `node tools/check-city.mjs` validates the geographic data, movement math and signal clearance. Three.js loads from jsDelivr through the import map (`three` and `three/addons/` pinned to `0.160.0`). See `SOURCES.md` for data provenance and limitations.
@@ -42,7 +51,7 @@ A hidden browser tab throttles `requestAnimationFrame`, so animations and enviro
 - Commits use the `Srtjairo <Srtjairo@users.noreply.github.com>` identity, set in the local repo config. Git Credential Manager already holds the GitHub login, so `git push` works without prompts.
 - `gh` (GitHub CLI) is not installed. Repo settings such as Pages are changed through github.com in the browser.
 
-After changing `index.html` or `js/`, rebuild, commit and push. Pages redeploys in about a minute and the URL never changes:
+After changing `index.html` or `js/`, commit on `dev` and publish with `/ship` (it rebuilds, runs the checks and pushes `main` after approval). Pages redeploys in about a minute and the URL never changes. The build command:
 
 ```bash
 node tools/build-site.mjs https://srtjairo.github.io/chicago-3d/
