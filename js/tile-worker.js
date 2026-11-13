@@ -1,7 +1,7 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, ROOF_GABLE, ROOF_CORNICE, FINISHED, TILE } from './tile-format.js';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FINISHED, TILE } from './tile-format.js';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
 // Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
@@ -107,6 +107,35 @@ function gable(walls_, roofSoup, ring, h, seed) {
   return true;
 }
 
+// A church: the lidar height is the top of its tower(s), so the footprint rises only to the nave
+// (about 40% of that), with a pitched roof along its long axis, and the tower(s) stand at the
+// front end (`front`: 0 north, 1 east, 2 south, 3 west), reaching the measured height with a spire.
+function church(s, roofSoup, rings, h, seed, front, twin) {
+  const o = orientedBox(rings[0]), c = Math.cos(o.angle), sn = Math.sin(o.angle);
+  const nave = Math.min(Math.max(h * 0.4, 12), 24), top = BASE + h, eave = BASE + nave * 0.78;
+  rings.forEach((r, k) => walls(s, r, k === 0, BASE, eave, seed));
+  s.flat(rings, eave, seed);
+  let [Lx, Lz, hl, Ax, Az, ha] = o.w >= o.d ? [c, sn, o.w / 2, -sn, c, o.d / 2] : [-sn, c, o.d / 2, c, sn, o.w / 2];
+  const P = (l, a, y) => [o.x + Lx * l + Ax * a, y, o.z + Lz * l + Az * a];
+  // Pitched roof over the nave, a little inside the walls.
+  const rl = hl * 0.96, ra = ha * 0.92, ridge = BASE + nave + Math.min(ha * 0.5, 8), n = Math.hypot(ridge - eave, ra);
+  for (const side of [-1, 1]) roofSoup.tri(P(-rl, 0, ridge), P(rl, 0, ridge), P(rl, side * ra, eave), Ax * side * (ridge - eave) / n, ra / n, Az * side * (ridge - eave) / n), roofSoup.tri(P(-rl, 0, ridge), P(rl, side * ra, eave), P(-rl, side * ra, eave), Ax * side * (ridge - eave) / n, ra / n, Az * side * (ridge - eave) / n);
+  for (const l of [-rl, rl]) s.tri(P(l, -ra, eave), P(l, ra, eave), P(l, 0, ridge), Lx * Math.sign(l), 0, Lz * Math.sign(l), seed);
+  // Front end: the end of the long axis that best faces the given direction.
+  const want = [[0, -1], [1, 0], [0, 1], [-1, 0]][front], end = Lx * want[0] + Lz * want[1] >= 0 ? 1 : -1;
+  const side = Math.min(Math.max(ha * (twin ? 0.42 : 0.55), 5), 10), body = BASE + Math.max(nave + 4, h * 0.7);
+  for (const a of twin ? [-(ha - side / 2), ha - side / 2] : [0]) {
+    const cl = end * (hl - side / 2), sq = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => { const p = P(cl + u * side / 2, a + v * side / 2, 0); return [p[0], p[2]]; });
+    walls(s, sq, true, BASE, body, seed);
+    // Spire: a four-sided pyramid to the measured height.
+    const apex = P(cl, a, top);
+    for (let i = 0; i < 4; i++) {
+      const p = sq[i], q = sq[(i + 1) % 4], mx = (p[0] + q[0]) / 2 - apex[0], mz = (p[1] + q[1]) / 2 - apex[2], ml = Math.hypot(mx, mz) || 1, rise = top - body, nn = Math.hypot(rise, ml);
+      roofSoup.tri([p[0], body, p[1]], [q[0], body, q[1]], apex, mx / ml * rise / nn, ml / nn, mz / ml * rise / nn);
+    }
+  }
+}
+
 // A parapet cornice around a flat roof: an outward band and its top cap.
 function cornice(trim, ax, az, bx, bz, nx, nz, top) {
   const o = 0.3, y0 = top - 0.8, y1 = top + 0.35, ox = nx * o, oz = nz * o;
@@ -124,6 +153,7 @@ function extrude(tile) {
     if (!rings.length || Math.abs(signedArea(rings[0])) < 6) continue;
     const seed = b.objectId % 10007, roof = roofOfStyle(b.style), top = BASE + b.h, s = get(familyOfStyle(b.style));
     if (roof === ROOF_GABLE && rings.length === 1 && gable(s, get('roof'), rings[0], b.h, seed)) continue;
+    if (roof === ROOF_CHURCH) { church(s, get('roof'), rings, b.h, seed, frontOfStyle(b.style), twinOfStyle(b.style)); continue; }
     const trim = roof === ROOF_CORNICE ? get('trim') : null;
     rings.forEach((r, k) => walls(s, r, k === 0, BASE, top, seed, trim && k === 0 ? (ax, az, bx, bz, nx, nz) => cornice(trim, ax, az, bx, bz, nx, nz, top) : null));
     s.flat(rings, top, seed);

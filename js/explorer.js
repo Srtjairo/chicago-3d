@@ -12,8 +12,18 @@ export const DISTRICTS={
 };
 export function setupExplorer({ctx,camera,controls,flyer,ui}){
   const host=document.createElement('section');host.className='explore glass';host.setAttribute('aria-label','Explore Chicago');
-  host.innerHTML='<div class="explore-actions"><button id="life-toggle" type="button" aria-pressed="false">Pause city life</button><button id="map-toggle" type="button" aria-expanded="true" aria-controls="minimap">Map</button></div><button id="sources-open" type="button">About this model</button>';
+  host.innerHTML='<label for="hood-select">Neighborhoods</label><select id="hood-select"><option value="">Fly to a neighborhood…</option></select><div class="explore-actions"><button id="life-toggle" type="button" aria-pressed="false">Pause city life</button><button id="map-toggle" type="button" aria-expanded="true" aria-controls="minimap">Map</button></div><button id="sources-open" type="button">About this model</button>';
   document.body.append(host);
+  // Neighborhood menu: every neighborhood inside the circle, grouped by community area.
+  const pickHood=host.querySelector('#hood-select'),hoods=ctx.hoods;
+  if(!hoods?.inside.length)pickHood.hidden=host.querySelector('label[for="hood-select"]').hidden=true;
+  else{
+    const groups=new Map();for(const n of hoods.inside){const a=hoods.areaName[n.area]||'Chicago';if(!groups.has(a))groups.set(a,[]);groups.get(a).push(n);}
+    for(const [area,list] of [...groups].sort((a,b)=>a[0].localeCompare(b[0]))){const og=document.createElement('optgroup');og.label=area;
+      for(const n of list.sort((a,b)=>a.display.localeCompare(b.display))){const o=document.createElement('option');o.value=n.id;o.textContent=(hoods.finished.includes(n)?'★ ':'')+n.display+(n.share<0.99?' (part)':'');og.append(o);}
+      pickHood.append(og);}
+    pickHood.onchange=()=>{const n=hoods.inside.find(h=>h.id===pickHood.value);if(n)hoods.flyTo(n);pickHood.value='';};
+  }
   const life=host.querySelector('#life-toggle');
   const syncLife=()=>{life.setAttribute('aria-pressed',String(ctx.life.paused));life.textContent=ctx.life.paused?'Resume city life':'Pause city life';};
   syncLife();life.onclick=()=>{ctx.life.paused=!ctx.life.paused;syncLife();};

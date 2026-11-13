@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, FINISHED, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FRONTS, FINISHED, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
 import { renderMinimap } from './minimap.mjs';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
@@ -67,12 +67,12 @@ log('Heights:', JSON.stringify(stats));
 // the default familyFor() with a flat roof, exactly as before.
 const registry = JSON.parse(readFileSync(join(root, 'assets', 'neighborhoods.json'), 'utf8'));
 const profiles = JSON.parse(readFileSync(join(root, 'tools', 'neighborhood-profiles.json'), 'utf8')).profiles;
-const ROOFS = { flat: ROOF_FLAT, gable: ROOF_GABLE, cornice: ROOF_CORNICE };
+const ROOFS = { flat: ROOF_FLAT, gable: ROOF_GABLE, cornice: ROOF_CORNICE, church: ROOF_CHURCH };
 const finished = registry.neighborhoods.filter((n) => (n.status === 'pilot' || n.status === 'done') && n.profile).map((n) => {
   if (!profiles[n.profile]) throw new Error(`${n.name}: unknown profile ${n.profile}`);
   return { ...n, inside: polygonTester(n.polygons), rules: profiles[n.profile].rules };
 });
-const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || 'flat'])])));
+const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || (b.kind === 'church' ? 'church' : 'flat')], FRONTS[b.front || 'N'], !!b.twin)])));
 const pick = (weights, seed) => { const e = Object.entries(weights), total = e.reduce((s, [, w]) => s + w, 0); let r = ((seed * 2654435761) >>> 0) % total; for (const [f, w] of e) { if ((r -= w) < 0) return Number(f); } return Number(e[0][0]); };
 const styleStats = {};
 const inFinished = (x, z) => finished.some((n) => x >= n.bbox[0] && x <= n.bbox[1] && z >= n.bbox[2] && z <= n.bbox[3] && n.inside(x, z));
@@ -188,6 +188,11 @@ function downtownForMap() {
   writeFileSync(join(out, `minimap.${hash}.png`), img);
   index.minimap = [hash, img.length, 1024];
   log(`Minimap: ${(img.length / 1e3).toFixed(0)} KB`);
+}
+// Named buildings of finished neighborhoods, with positions and heights for their labels.
+{
+  const byId = new Map(items.map((b) => [b.id, b]));
+  index.named = finished.flatMap((n) => n.named.map((d) => { const b = byId.get(d.id); if (!b) throw new Error(`${n.name}: named building ${d.id} (${d.name}) not found`); return { id: d.id, name: d.name, kind: d.kind || 'landmark', hood: n.id, x: Math.round(b.x), z: Math.round(b.z), h: Math.round(b.h) }; }));
 }
 // Registries for labels and the neighbourhood menu. Label point = interior point nearest the
 // polygon's bounding-box centre (sampled), so U-shaped areas still get a label inside them.

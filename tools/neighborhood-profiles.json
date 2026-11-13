@@ -21,7 +21,112 @@
         "Lower West Side",
         "Heart of Chicago"
       ],
-      "profile": "pilsen-brick"
+      "profile": "pilsen-brick",
+      "named": [
+        {
+          "id": "950205-0",
+          "name": "St. Adalbert Church",
+          "family": 10,
+          "kind": "church",
+          "osm": "way/209810303",
+          "front": "N",
+          "twin": true
+        },
+        {
+          "id": "952607-0",
+          "name": "St. Procopius Church",
+          "family": 10,
+          "kind": "church",
+          "osm": "way/210257535",
+          "front": "E"
+        },
+        {
+          "id": "962677-0",
+          "name": "St. Pius V Church",
+          "family": 10,
+          "kind": "church",
+          "osm": "way/31921751",
+          "front": "W"
+        },
+        {
+          "id": "980312-0",
+          "name": "St. Paul Church",
+          "family": 6,
+          "kind": "church",
+          "osm": "way/209785975",
+          "front": "W",
+          "twin": true
+        },
+        {
+          "id": "957460-0",
+          "name": "St. Vitus Church",
+          "family": 10,
+          "kind": "church",
+          "osm": "way/209783802",
+          "front": "W"
+        },
+        {
+          "id": "959686-0",
+          "name": "Holy Trinity Croatian Church",
+          "family": 10,
+          "kind": "church",
+          "osm": "way/31918612",
+          "front": "W"
+        },
+        {
+          "id": "955174-0",
+          "name": "Thalia Hall",
+          "family": 6,
+          "kind": "venue",
+          "osm": "way/210222291"
+        },
+        {
+          "id": "960995-0",
+          "name": "National Museum of Mexican Art",
+          "family": 8,
+          "kind": "museum",
+          "osm": "way/202372249"
+        },
+        {
+          "id": "970246-0",
+          "name": "Benito Juárez Community Academy",
+          "family": 8,
+          "kind": "school",
+          "osm": "way/31921440"
+        },
+        {
+          "id": "965251-0",
+          "name": "Dvořák Park Fieldhouse",
+          "family": 6,
+          "kind": "park",
+          "osm": "way/55060749"
+        },
+        {
+          "id": "957974-0",
+          "name": "Harrison Park Fieldhouse",
+          "family": 6,
+          "kind": "park",
+          "osm": "way/209783832"
+        },
+        {
+          "id": "955462-0",
+          "name": "Rudy Lozano Library",
+          "family": 8,
+          "kind": "library",
+          "osm": "way/210224420"
+        },
+        {
+          "id": "980580-0",
+          "name": "Fisk Generating Station",
+          "family": 7,
+          "kind": "landmark",
+          "osm": "way/210224418"
+        }
+      ],
+      "label": [
+        -3150,
+        2760
+      ]
     },
     "Douglas": {
       "aka": [
@@ -100,5 +205,6 @@
       ]
     }
   },
-  "_profiles": "Each profile is a list of rules; a building takes the first rule it matches (minArea/maxArea in m2, maxH in m). families maps FAMILIES indices (js/city-data.js) to weights; roof is flat, gable (small near-rectangular houses: ridge at the measured height) or cornice (parapet trim)."
+  "_profiles": "Each profile is a list of rules; a building takes the first rule it matches (minArea/maxArea in m2, maxH in m). families maps FAMILIES indices (js/city-data.js) to weights; roof is flat, gable (small near-rectangular houses: ridge at the measured height) or cornice (parapet trim).",
+  "_named": "named: real Cook County footprints (id = objectId-part) located from OpenStreetMap (osm, ODbL) and given a facade family; kind picks the label icon. Churches rise to their nave with a pitched roof, and their tower(s) (twin: true) stand at the front (N/E/S/W, visually estimated) reaching the measured height."
 }

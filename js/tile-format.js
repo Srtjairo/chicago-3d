@@ -8,7 +8,8 @@
 //   magic 'CHT1', version, kind, tx, tz (zig-zag), counts...
 //   kind 0 (detail, one per 1 km tile):
 //     buildings: objectId, part, h_dm, flags, style, nRings, per ring: n, points
-//       style = facade family (FAMILIES index) + 16 * roof (ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE)
+//       style = facade family (FAMILIES index) + 16 * roof (ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH)
+//               + 64 * church front (0 north, 1 east, 2 south, 3 west) + 256 * twin towers
 //     streets:   class, dir(0 two-way,1 F,2 T), levelFrom+8, levelTo+8, flags, n, points
 //     water:     nRings, rings          parks: parkIndex, flags, nRings, rings
 //       street/park flags: FINISHED (inside a finished neighborhood: trees, lamps, markings)
@@ -19,9 +20,11 @@ export const VERSION = 2;
 export const TILE = 1000, SKY = 4000; // metres
 export const FLAG_ESTIMATED = 1, FLAG_SPIKE = 2, FLAG_OVERRIDE = 4;
 export const FINISHED = 1;
-export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2;
-export const styleOf = (family, roof = ROOF_FLAT) => family + 16 * roof;
-export const familyOfStyle = (style) => style % 16, roofOfStyle = (style) => Math.floor(style / 16);
+export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3;
+export const FRONTS = { N: 0, E: 1, S: 2, W: 3 };
+export const styleOf = (family, roof = ROOF_FLAT, front = 0, twin = false) => family + 16 * roof + 64 * front + (twin ? 256 : 0);
+export const familyOfStyle = (style) => style % 16, roofOfStyle = (style) => Math.floor(style / 16) % 4;
+export const frontOfStyle = (style) => Math.floor(style / 64) % 4, twinOfStyle = (style) => Math.floor(style / 256) % 2 === 1;
 const DIRS = { '': 0, B: 0, F: 1, T: 2 };
 
 export class Writer {

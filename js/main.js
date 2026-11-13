@@ -19,6 +19,7 @@ import { buildOfficeArchitecture } from './offices.js';
 import { buildCityLife } from './city-life.js';
 import { setupExplorer } from './explorer.js';
 import { setupMinimap } from './minimap.js';
+import { loadNeighborhoods, setupNeighborhoods } from './neighborhoods.js';
 import { loadTransit } from './transit-data.js';
 import { buildTransit } from './transit.js';
 import { setupMiniFellow } from './mini-fellow.js';
@@ -85,8 +86,8 @@ async function init() {
 
   status('Loading Chicago’s real building footprints');
   // Fetch the five data files together instead of one after another.
-  [ctx.data, ctx.lakeShoreData, ctx.waterfront, ctx.sites, ctx.transitData, ctx.cityTiles] =
-    await Promise.all([loadCityData(), loadLakeShore(), loadWaterfront(), loadSites(), loadTransit(), loadTileIndex()]);
+  [ctx.data, ctx.lakeShoreData, ctx.waterfront, ctx.sites, ctx.transitData, ctx.cityTiles, ctx.neighborhoods] =
+    await Promise.all([loadCityData(), loadLakeShore(), loadWaterfront(), loadSites(), loadTransit(), loadTileIndex(), loadNeighborhoods()]);
   ctx.cityTileKeys = ctx.cityTiles && new Set(ctx.cityTiles.tiles.map(([x, z]) => x + '_' + z));
   // Without the streamed tiles the explorable area falls back to downtown's old 5 km box.
   if (!ctx.cityTiles) WALL.radius = 5000;
@@ -158,7 +159,8 @@ async function init() {
     ui.showInfo(L);
   }
   ui.select = select;
-  ui.minimap = setupMinimap({ index: ctx.cityTiles, camera, controls, flyer });
+  ctx.hoods = setupNeighborhoods({ scene, camera, flyer, registry: ctx.neighborhoods, named: ctx.cityTiles?.named });
+  ui.minimap = setupMinimap({ index: ctx.cityTiles, camera, controls, flyer, hoods: ctx.hoods });
   const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
   const miniFellow = setupMiniFellow({ scene, ctx, camera, controls, flyer, ui, canvas });
 
@@ -219,6 +221,7 @@ async function init() {
     miniFellow.update(dt);
     explorer.update(dt);
     ui.minimap.update(dt);
+    ctx.hoods.update(dt);
     // keep the camera above the ground and the target inside the city
     if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
     containCamera(camera, controls, dt);
