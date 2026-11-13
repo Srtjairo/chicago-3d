@@ -590,5 +590,6 @@
  "city/src-parks": "14d1ec0ac6c155da08b315bd47d280aa0da7a1e08037763d4dce52eb8ded401d",
  "city/src-streets-0": "2438a9af6e5ad3cf3027fbb1b3dd30ff963ecb1c4a0dbc7eb3ae15ccc9194654",
  "city/src-streets-50000": "375e448ff44fef493e00a386a28204e35730250facf0f38fb6086e2ad546da38",
- "city/src-water": "a52df1368620e19cb3177cfb0eaff4e5ef75ce07e810c5bd1a2855d456497451"
+ "city/src-water": "a52df1368620e19cb3177cfb0eaff4e5ef75ce07e810c5bd1a2855d456497451",
+ "city/src-zoning": "fc368e8771b8ec202ccd8d7d0714c56cb5f7150e4a7b0b7cf4acbc1dffc673d7"
 }

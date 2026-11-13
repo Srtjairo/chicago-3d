@@ -155,6 +155,9 @@ log('Parks:', parks.length, 'over 25 acres:', parks.filter((p) => p.acres > 25).
   };
   const registry = JSON.parse(readFileSync(join(root, 'assets', 'neighborhoods.json'), 'utf8'));
   const alleys = [], parking = [];
+  // Overpass is often overloaded; a failure here keeps the previous files (build-tiles then
+  // derives alleys from the block shapes) instead of stopping the whole import.
+  try {
   for (const h of registry.neighborhoods.filter((x) => (x.status === 'pilot' || x.status === 'done') && x.bbox)) {
     const [x0, x1, z0, z1] = h.bbox, [w, s0] = unproject([x0 - 100, z1 + 100]), [e, n] = unproject([x1 + 100, z0 - 100]);
     const bbox = `${s0.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)}`;
@@ -165,7 +168,8 @@ log('Parks:', parks.length, 'over 25 acres:', parks.filter((p) => p.acres > 25).
   }
   write('alleys.json', alleys);
   write('parking.json', parking);
-  log('OSM alleys:', alleys.length, 'parking lots:', parking.length);
+  } catch (err) { log('OpenStreetMap alleys/parking unavailable, keeping previous files:', err.message); }
+  if (alleys.length || parking.length) log('OSM alleys:', alleys.length, 'parking lots:', parking.length);
 }
 lock.save();
 log('Done.');
