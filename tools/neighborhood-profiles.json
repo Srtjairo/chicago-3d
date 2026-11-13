@@ -336,7 +336,50 @@
       ]
     },
     "Sheffield & DePaul": {
-      "display": "Sheffield & DePaul"
+      "display": "Sheffield & DePaul",
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision"
+      ],
+      "named": [
+        {
+          "id": "710659-0",
+          "name": "Biograph Theater",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "705041-0",
+          "name": "Apollo Theater",
+          "kind": "venue",
+          "family": 24
+        },
+        {
+          "id": "729359-0",
+          "name": "Byrne Hall (DePaul)",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "720664-0",
+          "name": "Cortelyou Commons (DePaul)",
+          "kind": "school",
+          "family": 9
+        },
+        {
+          "id": "718265-0",
+          "name": "Sullivan Athletic Center (DePaul)",
+          "kind": "venue",
+          "family": 24
+        },
+        {
+          "id": "718364-0",
+          "name": "DePaul Art Museum",
+          "kind": "museum",
+          "family": 24
+        }
+      ]
     },
     "Mckinley Park": {
       "display": "McKinley Park",
@@ -1295,6 +1338,282 @@
         "C&M Subdivision"
       ],
       "named": []
+    },
+    "Lincoln Park": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision"
+      ],
+      "named": [
+        {
+          "id": "719303-0",
+          "name": "Lincoln Park Conservatory",
+          "kind": "greenhouse",
+          "family": 26
+        },
+        {
+          "id": "771452-0",
+          "name": "Chicago History Museum",
+          "kind": "museum",
+          "family": 6
+        },
+        {
+          "id": "707819-0",
+          "name": "Peggy Notebaert Nature Museum",
+          "kind": "museum",
+          "family": 24
+        },
+        {
+          "id": "733794-0",
+          "name": "Lion House, Lincoln Park Zoo",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "744218-0",
+          "name": "Café Brauer (South Pond Refectory)",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "683508-0",
+          "name": "Elks National Veterans Memorial",
+          "kind": "landmark",
+          "family": 2
+        },
+        {
+          "id": "719129-0",
+          "name": "Reebie Storage Warehouse",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "723564-0",
+          "name": "Kaufmann Store and Flats (Adler & Sullivan)",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "724782-0",
+          "name": "St. Josaphat Church",
+          "kind": "church",
+          "family": 7
+        },
+        {
+          "id": "769735-0",
+          "name": "Steppenwolf Theatre",
+          "kind": "venue",
+          "family": 24
+        },
+        {
+          "id": "695832-0",
+          "name": "Former North Chicago Hospital",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "Old Town": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "named": [
+        {
+          "id": "770210-0",
+          "name": "Moody Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "774330-0",
+          "name": "The Second City",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "777375-0",
+          "name": "Village Theatre",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "778954-0",
+          "name": "Germania Club Building",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "776476-0",
+          "name": "Yondorf Block and Hall",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "802835-0",
+          "name": "LaSalle Towers",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "766427-0",
+          "name": "Carl Street Studios",
+          "kind": "landmark",
+          "family": 16
+        }
+      ]
+    },
+    "Lake View": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "679511-0",
+          "name": "Brewster Apartments",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "666812-0",
+          "name": "St. Alphonsus Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "594501-0",
+          "name": "Anshe Emet Synagogue",
+          "kind": "church",
+          "family": 24
+        },
+        {
+          "id": "656963-0",
+          "name": "Advocate Illinois Masonic",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "674701-0",
+          "name": "Saint Joseph Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "648873-0",
+          "name": "Belmont-Sheffield Trust & Savings Bank",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "648018-0",
+          "name": "St. Peter's Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "610321-0",
+          "name": "Town Hall Police Station",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "653496-0",
+          "name": "Best Brewing Company Building",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "649380-0",
+          "name": "Theatre Building Chicago",
+          "kind": "venue",
+          "family": 6
+        }
+      ]
+    },
+    "Boystown": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "named": [
+        {
+          "id": "645076-0",
+          "name": "Our Lady of Mount Carmel Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "638873-0",
+          "name": "Nettelhorst School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "611684-0",
+          "name": "Lake View Presbyterian Church",
+          "kind": "church",
+          "family": 13
+        },
+        {
+          "id": "645439-0",
+          "name": "John Merlo Library",
+          "kind": "library",
+          "family": 8
+        }
+      ]
+    },
+    "Wrigleyville": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "named": [
+        {
+          "id": "606338-0",
+          "name": "Wrigley Field",
+          "kind": "stadium",
+          "family": 7
+        },
+        {
+          "id": "600654-0",
+          "name": "Metro",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "604841-0",
+          "name": "Engine Company 78",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "609961-0",
+          "name": "Hotel Zachary",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "612715-0",
+          "name": "Trinity Lutheran Church",
+          "kind": "church",
+          "family": 6
+        }
+      ]
+    },
+    "North Center": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "651374-0",
+          "name": "Former Schlitz Brewery Tied House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ],
+      "minNamed": 1
     }
   },
   "profiles": {

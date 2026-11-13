@@ -6,7 +6,7 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 
 | # | Community area | In circle | Neighborhoods (share in circle · status) |
 |---|---|---|---|
-| 7 | Lincoln Park | all | Lincoln Park · all · ⬜ to do<br>Old Town · all · ⬜ to do<br>Sheffield & DePaul · all · ⬜ to do |
+| 7 | Lincoln Park | all | Lincoln Park · all · ✅ finished<br>Old Town · all · ✅ finished<br>Sheffield & DePaul · all · ✅ finished |
 | 8 | Near North Side | all | Gold Coast · all · ⬜ to do<br>Magnificent Mile · all · ⬜ to do<br>River North · all · ⬜ to do<br>Rush & Division · all · ⬜ to do<br>Streeterville · all · ⬜ to do |
 | 24 | West Town | all | East Village · all · ✅ finished<br>Ukrainian Village · all · ✅ finished<br>West Town · all · ✅ finished<br>Wicker Park · all · ✅ finished |
 | 27 | East Garfield Park | all | Garfield Park · 67% · ✅ finished |
@@ -19,7 +19,7 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 | 36 | Oakland | all | Oakland · all · ✅ finished |
 | 60 | Bridgeport | all | Bridgeport · all · ✅ finished |
 | 59 | Mckinley Park | all | McKinley Park (Mckinley Park) · all · ✅ finished |
-| 6 | Lake View | 77% | Boystown · all · ⬜ to do<br>Lake View · 79% · ⬜ to do<br>Wrigleyville · 47% · ⬜ to do |
+| 6 | Lake View | 77% | Boystown · all · ✅ finished<br>Lake View · 79% · ✅ finished<br>Wrigleyville · 47% · ✅ finished |
 | 22 | Logan Square | 64% | Bucktown · all · ✅ finished<br>Logan Square · 49% · ✅ finished |
 | 38 | Grand Boulevard | 62% | Grand Boulevard · 62% · ✅ finished |
 | 29 | North Lawndale | 52% | North Lawndale · 52% · ✅ finished |
@@ -27,7 +27,7 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 | 23 | Humboldt Park | 48% | Humboldt Park · 58% · ✅ finished |
 | 30 | South Lawndale | 36% | Little Village · 36% · ✅ finished |
 | 61 | New City | 30% | New City · 30% · ✅ finished |
-| 5 | North Center | 24% | North Center · 24% · ⬜ to do |
+| 5 | North Center | 24% | North Center · 24% · ✅ finished |
 | 39 | Kenwood | 20% | Kenwood · 20% · ✅ finished |
 | 26 | West Garfield Park | 17% | — |
 | 58 | Brighton Park | 7% | Brighton Park · 7% · ✅ finished |
