@@ -15,7 +15,7 @@
       "status": "downtown"
     },
     "Lower West Side": {
-      "status": "pilot",
+      "status": "done",
       "display": "Pilsen",
       "aka": [
         "Lower West Side",
@@ -26,101 +26,100 @@
         {
           "id": "950205-0",
           "name": "St. Adalbert Church",
-          "family": 10,
           "kind": "church",
-          "osm": "way/209810303",
-          "front": "N",
+          "family": 10,
           "twin": true
         },
         {
           "id": "952607-0",
           "name": "St. Procopius Church",
-          "family": 10,
           "kind": "church",
-          "osm": "way/210257535",
-          "front": "E"
+          "family": 10
         },
         {
           "id": "962677-0",
           "name": "St. Pius V Church",
-          "family": 10,
           "kind": "church",
-          "osm": "way/31921751",
-          "front": "W"
+          "family": 10
         },
         {
           "id": "980312-0",
           "name": "St. Paul Church",
-          "family": 6,
           "kind": "church",
-          "osm": "way/209785975",
-          "front": "W",
+          "family": 6,
           "twin": true
         },
         {
           "id": "957460-0",
           "name": "St. Vitus Church",
-          "family": 10,
           "kind": "church",
-          "osm": "way/209783802",
-          "front": "W"
+          "family": 10
         },
         {
           "id": "959686-0",
           "name": "Holy Trinity Croatian Church",
-          "family": 10,
           "kind": "church",
-          "osm": "way/31918612",
-          "front": "W"
+          "family": 10
+        },
+        {
+          "id": "968737-0",
+          "name": "St. Matthew Lutheran Church",
+          "kind": "church",
+          "family": 6
         },
         {
           "id": "955174-0",
           "name": "Thalia Hall",
-          "family": 6,
           "kind": "venue",
-          "osm": "way/210222291"
+          "family": 6
         },
         {
           "id": "960995-0",
           "name": "National Museum of Mexican Art",
-          "family": 8,
           "kind": "museum",
-          "osm": "way/202372249"
+          "family": 8
         },
         {
           "id": "970246-0",
           "name": "Benito Juárez Community Academy",
-          "family": 8,
           "kind": "school",
-          "osm": "way/31921440"
+          "family": 8
+        },
+        {
+          "id": "977066-0",
+          "name": "Cristo Rey Jesuit High School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "953695-0",
+          "name": "Schoenhofen Brewery",
+          "kind": "landmark",
+          "family": 6
         },
         {
           "id": "965251-0",
           "name": "Dvořák Park Fieldhouse",
-          "family": 6,
           "kind": "park",
-          "osm": "way/55060749"
+          "family": 6
         },
         {
           "id": "957974-0",
           "name": "Harrison Park Fieldhouse",
-          "family": 6,
           "kind": "park",
-          "osm": "way/209783832"
+          "family": 6
         },
         {
           "id": "955462-0",
           "name": "Rudy Lozano Library",
-          "family": 8,
           "kind": "library",
-          "osm": "way/210224420"
+          "family": 8
         },
         {
           "id": "980580-0",
           "name": "Fisk Generating Station",
-          "family": 7,
           "kind": "landmark",
-          "osm": "way/210224418"
+          "family": 7
         }
       ],
       "label": [
@@ -148,7 +147,191 @@
       "display": "Sheffield & DePaul"
     },
     "Mckinley Park": {
-      "display": "McKinley Park"
+      "display": "McKinley Park",
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1068090-0",
+          "name": "Sts. Peter and Paul Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1063179-0",
+          "name": "St. Andrew Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "1051942-0",
+          "name": "Grand Theatre",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "1051821-0",
+          "name": "McKinley Park Library",
+          "kind": "library",
+          "family": 8
+        },
+        {
+          "id": "1057388-0",
+          "name": "DuPont-Whitehouse House",
+          "kind": "landmark",
+          "family": 21
+        },
+        {
+          "id": "1051506-0",
+          "name": "Former Schlitz Brewery Tied House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "Little Village": {
+      "profile": "pilsen-brick",
+      "status": "done",
+      "raisedRails": [
+        "BNSF Chicago Subdivision"
+      ],
+      "named": [
+        {
+          "id": "978952-0",
+          "name": "Our Lady of Tepeyac High School",
+          "kind": "school",
+          "family": 8
+        },
+        {
+          "id": "987076-0",
+          "name": "Harrison Technical High School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "984482-0",
+          "name": "Farragut Career Academy",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "978736-0",
+          "name": "Apollo's 2000",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "1004728-0",
+          "name": "Little Village Arch",
+          "kind": "landmark",
+          "family": 22
+        }
+      ]
+    },
+    "Bridgeport": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1033670-0",
+          "name": "St. Mary of Perpetual Help Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1062560-0",
+          "name": "Nativity of Our Lord Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "1009446-0",
+          "name": "St. Barbara Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1007974-0",
+          "name": "All Saints-St. Anthony Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "1050387-0",
+          "name": "Ramova Theater",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "1027557-0",
+          "name": "Monastery of the Holy Cross",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "1049315-0",
+          "name": "Spiegel Administration Building",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "1047918-0",
+          "name": "Bridgeport Art Center",
+          "kind": "museum",
+          "family": 6
+        },
+        {
+          "id": "1044696-0",
+          "name": "Daley Branch Library",
+          "kind": "library",
+          "family": 8
+        }
+      ]
+    },
+    "New City": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1107638-0",
+          "name": "St. Gabriel Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1087338-0",
+          "name": "Former Stock Yards National Bank",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "1093501-0",
+          "name": "Canaryville Library",
+          "kind": "library",
+          "family": 8
+        }
+      ],
+      "label": [
+        -1460,
+        7240
+      ]
+    },
+    "Fuller Park": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1097126-0",
+          "name": "Atom Theatre",
+          "kind": "venue",
+          "family": 8
+        }
+      ]
+    },
+    "Brighton Park": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": []
     }
   },
   "profiles": {
@@ -206,9 +389,430 @@
           }
         }
       ]
+    },
+    "worker-cottage": {
+      "about": "Frame and brick worker cottages with pitched roofs, painted siding, brick two-flats, corner taverns and churches; industry along the river",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1,
+            "23": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 170,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "11": 2,
+            "12": 2,
+            "13": 1,
+            "16": 3,
+            "17": 1,
+            "18": 2,
+            "19": 1
+          }
+        },
+        {
+          "maxH": 16,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "7": 3,
+            "8": 1,
+            "20": 2
+          }
+        },
+        {
+          "maxH": 30,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "9": 1,
+            "20": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "5": 1,
+            "24": 1
+          }
+        }
+      ]
+    },
+    "greystone-flats": {
+      "about": "Greystone and brick two- and three-flats, brick apartment courts, mansions on the boulevards",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1,
+            "23": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 2,
+            "12": 1
+          }
+        },
+        {
+          "maxH": 18,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "9": 3,
+            "14": 4,
+            "15": 2,
+            "21": 1
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "6": 1,
+            "9": 2,
+            "14": 2,
+            "20": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "5": 1,
+            "24": 2
+          }
+        }
+      ]
+    },
+    "chinatown": {
+      "about": "Painted and red brick storefronts and walk-ups, newer mid-rises",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1,
+            "23": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 1,
+            "11": 2
+          }
+        },
+        {
+          "maxH": 20,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "8": 2,
+            "20": 1,
+            "22": 4
+          }
+        },
+        {
+          "maxH": 45,
+          "roof": "flat",
+          "families": {
+            "8": 1,
+            "22": 2,
+            "24": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "24": 2,
+            "25": 1
+          }
+        }
+      ]
+    },
+    "brick-two-flat": {
+      "about": "Brick two- and three-flats, frame cottages, corner storefronts, converted lofts",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 1,
+            "23": 3
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 160,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 2,
+            "12": 2,
+            "13": 1
+          }
+        },
+        {
+          "maxH": 16,
+          "roof": "cornice",
+          "families": {
+            "6": 4,
+            "7": 3,
+            "8": 1,
+            "9": 1,
+            "20": 1
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "8": 1,
+            "23": 2,
+            "24": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "24": 1,
+            "25": 2
+          }
+        }
+      ]
+    },
+    "lincoln-brownstone": {
+      "about": "Greystones, brownstones and brick three-flats, frame cottages, courtyard buildings, lakefront high-rises",
+      "rules": [
+        {
+          "minArea": 3000,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 1,
+            "23": 2
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "11": 2,
+            "12": 1,
+            "16": 1,
+            "21": 1
+          }
+        },
+        {
+          "maxH": 17,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "9": 2,
+            "14": 3,
+            "20": 1,
+            "21": 3
+          }
+        },
+        {
+          "maxH": 45,
+          "roof": "cornice",
+          "families": {
+            "6": 1,
+            "8": 1,
+            "14": 2,
+            "20": 2,
+            "24": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "2": 1,
+            "25": 3
+          }
+        }
+      ]
+    },
+    "loft-district": {
+      "about": "Brick warehouse lofts, newer glass and concrete mid- and high-rises",
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 1
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "1": 2,
+            "6": 2,
+            "7": 2,
+            "23": 5
+          }
+        },
+        {
+          "maxH": 80,
+          "roof": "flat",
+          "families": {
+            "5": 1,
+            "23": 1,
+            "24": 2,
+            "25": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "3": 2,
+            "4": 1,
+            "25": 3
+          }
+        }
+      ]
+    },
+    "campus": {
+      "about": "University campus: modernist concrete and brick halls, older brick houses around it",
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 1
+          }
+        },
+        {
+          "maxH": 16,
+          "maxArea": 600,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "7": 2,
+            "8": 1
+          }
+        },
+        {
+          "minArea": 2000,
+          "roof": "flat",
+          "families": {
+            "5": 2,
+            "6": 1,
+            "24": 4
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "8": 2,
+            "24": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "24": 3,
+            "25": 1
+          }
+        }
+      ]
+    },
+    "lakefront-highrise": {
+      "about": "Greystone and brownstone row houses and mansions among lakefront apartment towers",
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "14": 2,
+            "21": 2
+          }
+        },
+        {
+          "maxH": 20,
+          "roof": "cornice",
+          "families": {
+            "6": 1,
+            "9": 2,
+            "14": 3,
+            "21": 3
+          }
+        },
+        {
+          "maxH": 60,
+          "roof": "cornice",
+          "families": {
+            "2": 1,
+            "9": 1,
+            "14": 2,
+            "20": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "2": 2,
+            "3": 1,
+            "25": 4
+          }
+        }
+      ]
     }
   },
   "_profiles": "Each profile is a list of rules; a building takes the first rule it matches (minArea/maxArea in m2, maxH in m). families maps FAMILIES indices (js/city-data.js) to weights; roof is flat, gable (small near-rectangular houses: ridge at the measured height) or cornice (parapet trim).",
   "_named": "named: real Cook County footprints (id = objectId-part) located from OpenStreetMap (osm, ODbL) and given a facade family; kind picks the label icon. Churches rise to their nave with a pitched roof, and their tower(s) (twin: true) stand at the front (N/E/S/W, visually estimated) reaching the measured height.",
-  "_raisedRails": "raisedRails: OSM line names that run on an embankment here (OSM rarely tags embankments); streets pass under them through viaducts."
+  "_raisedRails": "raisedRails: OSM line names that run on an embankment here (OSM rarely tags embankments); streets pass under them through viaducts.",
+  "_families": "FAMILIES (js/city-data.js): 0-5 downtown mix (0 beige stone, 1 brown brick, 2 pale stone, 3 blue glass, 4 dark glass, 5 concrete); 6 red brick; 7 brown brick; 8 cream brick; 9 greystone; 10 church stone; 11 siding; 12 siding blue-grey; 13 siding sand; 14 greystone light; 15 greystone dark; 16 frame white; 17 frame mint; 18 frame blue; 19 frame yellow; 20 yellow brick; 21 brownstone; 22 Chinatown brick; 23 loft brick; 24 modernist concrete; 25 lakefront glass; 26 greenhouse glass."
 }

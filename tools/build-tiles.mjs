@@ -73,7 +73,22 @@ const finished = registry.neighborhoods.filter((n) => (n.status === 'pilot' || n
   if (!profiles[n.profile]) throw new Error(`${n.name}: unknown profile ${n.profile}`);
   return { ...n, inside: polygonTester(n.polygons), rules: profiles[n.profile].rules };
 });
-const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || KIND_ROOF[b.kind] || 'flat'], FRONTS[b.front || 'N'], !!b.twin)])));
+// A church without a stated front faces its nearest street: whichever end of its long axis is
+// closer to a street centreline is the front, as for nearly all city churches.
+const frontGrid = new Map(), FG = 100;
+for (const st of streetsIn) if (st.class >= 1 && st.class <= 4) for (let i = 1; i < st.points.length; i++) {
+  const a = st.points[i - 1], b = st.points[i];
+  for (let gx = Math.floor(Math.min(a[0], b[0]) / FG); gx <= Math.floor(Math.max(a[0], b[0]) / FG); gx++) for (let gz = Math.floor(Math.min(a[1], b[1]) / FG); gz <= Math.floor(Math.max(a[1], b[1]) / FG); gz++) { const k = gx + ',' + gz; if (!frontGrid.has(k)) frontGrid.set(k, []); frontGrid.get(k).push([a, b]); }
+}
+const streetDist = (x, z) => { let best = Infinity; for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const [a, b] of frontGrid.get((Math.floor(x / FG) + i) + ',' + (Math.floor(z / FG) + j)) || []) { const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1))); best = Math.min(best, Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t)); } return best; };
+const itemById = new Map(items.map((b) => [b.id, b]));
+function autoFront(id) {
+  const b = itemById.get(id); if (!b) return 'N';
+  const o = orientedBox(b.rings[0]), c = Math.cos(o.angle), sn = Math.sin(o.angle), [lx, lz, hl] = o.w >= o.d ? [c, sn, o.w / 2] : [-sn, c, o.d / 2];
+  const end = streetDist(o.x + lx * hl, o.z + lz * hl) <= streetDist(o.x - lx * hl, o.z - lz * hl) ? 1 : -1, dx = lx * end, dz = lz * end;
+  return Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 'E' : 'W') : (dz > 0 ? 'S' : 'N');
+}
+const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || KIND_ROOF[b.kind] || 'flat'], FRONTS[b.front || (b.kind === 'church' ? autoFront(b.id) : 'N')], !!b.twin)])));
 const pick = (weights, seed) => { const e = Object.entries(weights), total = e.reduce((s, [, w]) => s + w, 0); let r = ((seed * 2654435761) >>> 0) % total; for (const [f, w] of e) { if ((r -= w) < 0) return Number(f); } return Number(e[0][0]); };
 const styleStats = {};
 const inFinished = (x, z) => finished.some((n) => x >= n.bbox[0] && x <= n.bbox[1] && z >= n.bbox[2] && z <= n.bbox[3] && n.inside(x, z));

@@ -65,6 +65,18 @@ for (const e of osm) {
   if (!inHood(x, z)) continue;
   add(containing(x, z).sort((a, b) => b.area - a.area)[0] || nearest(x, z, 25), { name: e.tags.name, kind: kindOf(e.tags.name, e.tags), source: `OSM ${e.type}/${e.id}`, note: [e.tags.amenity, e.tags.building].filter(Boolean).join(' ') });
 }
+// 3. Wikidata places (CC0) that are buildings, skipping demolished ones. Coordinates are approximate:
+//    the footprint containing the point, else the largest within 30 m.
+const WD_KIND = [['church', /church|cathedral|basilica|synagogue|temple|mosque|chapel|monastery/], ['stadium', /stadium|baseball venue|arena|ballpark/],
+  ['greenhouse', /conservatory|greenhouse/], ['museum', /museum/], ['library', /library/], ['school', /school|university|college|educational/],
+  ['venue', /theat|music venue|concert hall|auditorium|cinema/], ['landmark', /skyscraper|tower block|office building|building|house|hospital|hotel|built structure|fire station|police station/]];
+for (const p of existsSync(join(root, '.cache/city/wikidata.json')) ? read('.cache/city/wikidata.json') : []) {
+  if (p.types.some((t) => /destroyed|demolished|former/.test(t)) || !inHood(p.x, p.z)) continue;
+  const types = p.types.join(' | '), k = WD_KIND.find(([, re]) => re.test(types));
+  if (!k) continue;
+  const f = containing(p.x, p.z).sort((a, b) => b.area - a.area)[0] || near.filter((b) => Math.hypot(b.x - p.x, b.z - p.z) < 30).sort((a, b) => b.area - a.area)[0];
+  add(f, { name: p.name, kind: k[0] === 'landmark' ? kindOf(p.name) : k[0], source: `Wikidata ${p.id}`, note: types });
+}
 const list = [...out.values()].sort((a, b) => (a.source.startsWith('City') ? 0 : 1) - (b.source.startsWith('City') ? 0 : 1) || b.h - a.h);
 if (asJson) console.log(JSON.stringify(list, null, 1));
 else {

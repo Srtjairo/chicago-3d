@@ -267,7 +267,8 @@ function decorate(tile, ground) {
   for (const s of ground.streets) for (let i = 1; i < s.points.length; i++) addSeg(s.points[i - 1], s.points[i], (ROAD_WIDTH[s.class] || 8.5) / 2 + 5);
   for (const p of ground.paths) for (let i = 1; i < p.points.length; i++) addSeg(p.points[i - 1], p.points[i], 3.5);
   const nearRoad = (x, z) => (roadGrid.get(rkey(Math.floor(x / RG), Math.floor(z / RG))) || []).some(([a, b, half]) => { const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1))); return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < half; });
-  const lots = blockers(ground.surfaces.filter((s) => s.kind === SURF_PARKING).map((s) => s.rings.map(open)));
+  // Not on parking lots, paved commercial land or industrial yards: trees grow in yards.
+  const lots = blockers(ground.surfaces.filter((s) => s.kind === SURF_PARKING || s.kind === SURF_PAVED || s.kind === SURF_INDUSTRIAL).map((s) => s.rings.map(open)));
   for (const s of ground.surfaces) {
     if (s.kind !== SURF_YARD) continue;
     const r = s.rings.map(open), o = r[0];

@@ -170,5 +170,22 @@ log('Parks:', parks.length, 'over 25 acres:', parks.filter((p) => p.acres > 25).
   write('landmarks.json', landmarks);
   log('City landmarks in the circle:', landmarks.length);
 }
+// Wikidata (CC0): named places with coordinates in the circle and what they are (church building,
+// stadium, theatre, museum...). A dependable source of named buildings when Overpass is busy;
+// demolished ones are marked so tools/find-named.mjs can skip them.
+{
+  const [w, s0] = unproject([-DETAIL_RADIUS, DETAIL_RADIUS]), [e, n] = unproject([DETAIL_RADIUS, -DETAIL_RADIUS]);
+  const q = `SELECT ?item ?itemLabel ?coord ?typeLabel WHERE { SERVICE wikibase:box { ?item wdt:P625 ?coord . bd:serviceParam wikibase:cornerSouthWest "Point(${w.toFixed(4)} ${s0.toFixed(4)})"^^geo:wktLiteral . bd:serviceParam wikibase:cornerNorthEast "Point(${e.toFixed(4)} ${n.toFixed(4)})"^^geo:wktLiteral . } ?item wdt:P31 ?type . SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }`;
+  const rows = await cachedJson(lock, 'city/src-wikidata', 'https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q), { headers: { Accept: 'application/sparql-results+json' } });
+  const byItem = new Map();
+  for (const r of rows.results.bindings) {
+    const id = r.item.value.split('/').pop(), m = /Point\(([-\d.]+) ([-\d.]+)\)/.exec(r.coord.value); if (!m) continue;
+    if (!byItem.has(id)) { const [x, z] = project([Number(m[1]), Number(m[2])]); byItem.set(id, { id, name: r.itemLabel.value, types: [], x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 }); }
+    const t = byItem.get(id); if (!t.types.includes(r.typeLabel.value)) t.types.push(r.typeLabel.value);
+  }
+  const places = [...byItem.values()].filter((p) => Math.hypot(p.x, p.z) < DETAIL_RADIUS && !/^Q\d+$/.test(p.name));
+  write('wikidata.json', places);
+  log('Wikidata places in the circle:', places.length);
+}
 lock.save();
 log('Done.');

@@ -28,14 +28,15 @@ export function createLock(path) {
 
 // Fetch JSON once and keep the raw response gzipped under .cache/. `key` names the
 // cache file and the lock entry; `body` switches to a form-encoded POST (long queries).
-export async function cachedJson(lock, key, url, { body, tries = 4 } = {}) {
+export async function cachedJson(lock, key, url, { body, tries = 4, headers = {} } = {}) {
   const path = join(root, '.cache', key + '.json.gz');
   let text;
   if (existsSync(path)) text = gunzipSync(readFileSync(path)).toString('utf8');
   else {
     for (let attempt = 1; ; attempt++) {
       try {
-        const r = await fetch(url, { signal: AbortSignal.timeout(180000), ...(body ? { method: 'POST', body: new URLSearchParams(body) } : {}) });
+        // A generic client name: some services (Wikidata, Overpass) refuse anonymous scripts.
+        const r = await fetch(url, { signal: AbortSignal.timeout(180000), headers: { 'User-Agent': 'chicago-3d-model/1.0 (open-data city model)', Accept: 'application/json', ...headers }, ...(body ? { method: 'POST', body: new URLSearchParams(body) } : {}) });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         text = await r.text();
         const value = JSON.parse(text);

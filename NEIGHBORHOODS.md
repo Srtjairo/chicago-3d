@@ -11,26 +11,26 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 | 24 | West Town | all | East Village · all · ⬜ to do<br>Ukrainian Village · all · ⬜ to do<br>West Town · all · ⬜ to do<br>Wicker Park · all · ⬜ to do |
 | 27 | East Garfield Park | all | Garfield Park · 67% · ⬜ to do |
 | 28 | Near West Side | all | Greektown · all · ⬜ to do<br>Little Italy & UIC (Little Italy, UIC) · all · ⬜ to do<br>United Center · all · ⬜ to do<br>West Loop · all · ⬜ to do |
-| 31 | Lower West Side | all | Pilsen (Lower West Side) · all · 🔨 pilot |
+| 31 | Lower West Side | all | Pilsen (Lower West Side) · all · ✅ finished |
 | 32 | Loop | all | Grant Park · all · ✅ downtown<br>Loop · all · ✅ downtown<br>Millennium Park (Millenium Park) · all · ✅ downtown<br>Printers Row · all · ✅ downtown |
 | 33 | Near South Side | all | Museum Campus · all · ⬜ to do<br>Near South Side · all · ⬜ to do |
 | 34 | Armour Square | all | Armour Square · all · ⬜ to do<br>Chinatown · all · ⬜ to do |
 | 35 | Douglas | all | Douglas · all · ⬜ to do |
 | 36 | Oakland | all | Oakland · all · ⬜ to do |
-| 60 | Bridgeport | all | Bridgeport · all · ⬜ to do |
-| 59 | Mckinley Park | all | McKinley Park (Mckinley Park) · all · ⬜ to do |
+| 60 | Bridgeport | all | Bridgeport · all · ✅ finished |
+| 59 | Mckinley Park | all | McKinley Park (Mckinley Park) · all · ✅ finished |
 | 6 | Lake View | 77% | Boystown · all · ⬜ to do<br>Lake View · 79% · ⬜ to do<br>Wrigleyville · 47% · ⬜ to do |
 | 22 | Logan Square | 64% | Bucktown · all · ⬜ to do<br>Logan Square · 49% · ⬜ to do |
 | 38 | Grand Boulevard | 62% | Grand Boulevard · 62% · ⬜ to do |
 | 29 | North Lawndale | 52% | North Lawndale · 52% · ⬜ to do |
-| 37 | Fuller Park | 48% | Fuller Park · 48% · ⬜ to do |
+| 37 | Fuller Park | 48% | Fuller Park · 48% · ✅ finished |
 | 23 | Humboldt Park | 48% | Humboldt Park · 58% · ⬜ to do |
-| 30 | South Lawndale | 36% | Little Village · 36% · ⬜ to do |
-| 61 | New City | 30% | New City · 30% · ⬜ to do |
+| 30 | South Lawndale | 36% | Little Village · 36% · ✅ finished |
+| 61 | New City | 30% | New City · 30% · ✅ finished |
 | 5 | North Center | 24% | North Center · 24% · ⬜ to do |
 | 39 | Kenwood | 20% | Kenwood · 20% · ⬜ to do |
 | 26 | West Garfield Park | 17% | — |
-| 58 | Brighton Park | 7% | Brighton Park · 7% · ⬜ to do |
+| 58 | Brighton Park | 7% | Brighton Park · 7% · ✅ finished |
 | 21 | Avondale | 5% | Avondale · 5% · ⬜ to do |
 | 1 | Rogers Park | — | Rogers Park · — · · outside |
 | 2 | West Ridge | — | West Ridge · — · · outside |
