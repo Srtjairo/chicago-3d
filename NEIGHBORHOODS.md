@@ -8,7 +8,7 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 |---|---|---|---|
 | 7 | Lincoln Park | all | Lincoln Park · all · ⬜ to do<br>Old Town · all · ⬜ to do<br>Sheffield & DePaul · all · ⬜ to do |
 | 8 | Near North Side | all | Gold Coast · all · ⬜ to do<br>Magnificent Mile · all · ⬜ to do<br>River North · all · ⬜ to do<br>Rush & Division · all · ⬜ to do<br>Streeterville · all · ⬜ to do |
-| 24 | West Town | all | East Village · all · ⬜ to do<br>Ukrainian Village · all · ⬜ to do<br>West Town · all · ⬜ to do<br>Wicker Park · all · ⬜ to do |
+| 24 | West Town | all | East Village · all · ✅ finished<br>Ukrainian Village · all · ✅ finished<br>West Town · all · ✅ finished<br>Wicker Park · all · ✅ finished |
 | 27 | East Garfield Park | all | Garfield Park · 67% · ✅ finished |
 | 28 | Near West Side | all | Greektown · all · ⬜ to do<br>Little Italy & UIC (Little Italy, UIC) · all · ✅ finished<br>United Center · all · ✅ finished<br>West Loop · all · ✅ finished |
 | 31 | Lower West Side | all | Pilsen (Lower West Side) · all · ✅ finished |
@@ -20,18 +20,18 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 | 60 | Bridgeport | all | Bridgeport · all · ✅ finished |
 | 59 | Mckinley Park | all | McKinley Park (Mckinley Park) · all · ✅ finished |
 | 6 | Lake View | 77% | Boystown · all · ⬜ to do<br>Lake View · 79% · ⬜ to do<br>Wrigleyville · 47% · ⬜ to do |
-| 22 | Logan Square | 64% | Bucktown · all · ⬜ to do<br>Logan Square · 49% · ⬜ to do |
+| 22 | Logan Square | 64% | Bucktown · all · ✅ finished<br>Logan Square · 49% · ✅ finished |
 | 38 | Grand Boulevard | 62% | Grand Boulevard · 62% · ✅ finished |
 | 29 | North Lawndale | 52% | North Lawndale · 52% · ✅ finished |
 | 37 | Fuller Park | 48% | Fuller Park · 48% · ✅ finished |
-| 23 | Humboldt Park | 48% | Humboldt Park · 58% · ⬜ to do |
+| 23 | Humboldt Park | 48% | Humboldt Park · 58% · ✅ finished |
 | 30 | South Lawndale | 36% | Little Village · 36% · ✅ finished |
 | 61 | New City | 30% | New City · 30% · ✅ finished |
 | 5 | North Center | 24% | North Center · 24% · ⬜ to do |
 | 39 | Kenwood | 20% | Kenwood · 20% · ✅ finished |
 | 26 | West Garfield Park | 17% | — |
 | 58 | Brighton Park | 7% | Brighton Park · 7% · ✅ finished |
-| 21 | Avondale | 5% | Avondale · 5% · ⬜ to do |
+| 21 | Avondale | 5% | Avondale · 5% · ✅ finished |
 | 1 | Rogers Park | — | Rogers Park · — · · outside |
 | 2 | West Ridge | — | West Ridge · — · · outside |
 | 3 | Uptown | — | Uptown · — · · outside |
