@@ -94,7 +94,10 @@ export const FAMILIES = [
   { name: 'lakefront glass', color: 0x748b98, glass: 0x3f5f72, style: 1, cell: [1.7, 3.4], roughness: 0.3, seed: 126 },
   { name: 'greenhouse glass', color: 0xbcd3d4, glass: 0x9fc3c6, style: 1, cell: [1.4, 1.6], roughness: 0.15, seed: 127 },
 ];
+import { finishedNeighborhoods, ruleFor, pickFamily } from './neighborhood-style.js';
+const footArea = (r) => Math.abs(r.reduce((s, p, i) => s + p[0] * r[(i + 1) % r.length][1] - r[(i + 1) % r.length][0] * p[1], 0) / 2);
 export function buildMeasuredCity(scene, ctx) {
+  const districtAt = finishedNeighborhoods(ctx.neighborhoods), profiles = ctx.neighborhoods?.profiles || {};
   const group = new THREE.Group(); group.name = 'measured-city';
   const materials = FAMILIES.map((f,i) => facadeMaterial({ ...f, lightingProfile:i===3||i===4?'office':'mixed', features:true }));
   const chunks = new Map(), details = new Map(), distant = new Map(), chunkViews = new Map();
@@ -107,7 +110,10 @@ export function buildMeasuredCity(scene, ctx) {
     if ((v.x > 280 && v.x < 610 && v.z > -220 && v.z < 60)) continue;
     // One Prudential's antenna belongs above its roof, not across its whole footprint.
     const h = b.id==='870263-0' ? 183.2 : b.h; if (v.w < 2 || v.d < 2) continue;
-    const family = h > 130 ? (Number(b.id.split('-')[0]) % 3 === 0 ? 4 : 3)
+    // Facade family from the district's profile (Loop masonry, Streeterville glass, River North
+    // lofts...), the same rules the neighborhoods use; the original choice otherwise.
+    const district = districtAt(v.x, v.z), rule = district && ruleFor(profiles[district.profile].rules, h, footArea(b.rings[0]));
+    const family = rule ? pickFamily(rule.families, Number(b.id.split('-')[0]) % 10007) : h > 130 ? (Number(b.id.split('-')[0]) % 3 === 0 ? 4 : 3)
       : v.x < -550 && v.z < -650 ? (rand() < 0.7 ? 1 : 5) : Math.floor(rand() * 3);
     const cell = `${Math.floor(v.x / 600)},${Math.floor(v.z / 600)}`;
     const key = cell + ':' + family;

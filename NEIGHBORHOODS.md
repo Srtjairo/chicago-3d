@@ -7,12 +7,12 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 | # | Community area | In circle | Neighborhoods (share in circle · status) |
 |---|---|---|---|
 | 7 | Lincoln Park | all | Lincoln Park · all · ✅ finished<br>Old Town · all · ✅ finished<br>Sheffield & DePaul · all · ✅ finished |
-| 8 | Near North Side | all | Gold Coast · all · ✅ finished<br>Magnificent Mile · all · ⬜ to do<br>River North · all · ✅ finished<br>Rush & Division · all · ✅ finished<br>Streeterville · all · ⬜ to do |
+| 8 | Near North Side | all | Gold Coast · all · ✅ finished<br>Magnificent Mile · all · ✅ finished<br>River North · all · ✅ finished<br>Rush & Division · all · ✅ finished<br>Streeterville · all · ✅ finished |
 | 24 | West Town | all | East Village · all · ✅ finished<br>Ukrainian Village · all · ✅ finished<br>West Town · all · ✅ finished<br>Wicker Park · all · ✅ finished |
 | 27 | East Garfield Park | all | Garfield Park · 67% · ✅ finished |
-| 28 | Near West Side | all | Greektown · all · ⬜ to do<br>Little Italy & UIC (Little Italy, UIC) · all · ✅ finished<br>United Center · all · ✅ finished<br>West Loop · all · ✅ finished |
+| 28 | Near West Side | all | Greektown · all · ✅ finished<br>Little Italy & UIC (Little Italy, UIC) · all · ✅ finished<br>United Center · all · ✅ finished<br>West Loop · all · ✅ finished |
 | 31 | Lower West Side | all | Pilsen (Lower West Side) · all · ✅ finished |
-| 32 | Loop | all | Grant Park · all · ✅ downtown<br>Loop · all · ✅ downtown<br>Millennium Park (Millenium Park) · all · ✅ downtown<br>Printers Row · all · ✅ downtown |
+| 32 | Loop | all | Grant Park · all · ✅ finished<br>Loop · all · ✅ finished<br>Millennium Park (Millenium Park) · all · ✅ finished<br>Printers Row · all · ✅ finished |
 | 33 | Near South Side | all | Museum Campus · all · ✅ finished<br>Near South Side · all · ✅ finished |
 | 34 | Armour Square | all | Armour Square · all · ✅ finished<br>Chinatown · all · ✅ finished |
 | 35 | Douglas | all | Douglas · all · ✅ finished |

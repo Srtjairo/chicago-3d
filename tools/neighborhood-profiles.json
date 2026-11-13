@@ -2,17 +2,174 @@
   "_about": "Hand-edited neighborhood settings, merged into assets/neighborhoods.json by tools/build-neighborhoods.mjs. Keys are the City's neighborhood names. status: downtown | pilot | done | todo (default) | outside (automatic). profile: a key of profiles. named: real buildings to style and label.",
   "neighborhoods": {
     "Loop": {
-      "status": "downtown"
+      "status": "done",
+      "profile": "loop-masonry",
+      "named": [
+        {
+          "id": "889481-0",
+          "name": "The Rookery",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "895554-0",
+          "name": "Monadnock Building",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "887374-0",
+          "name": "Marquette Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "877597-0",
+          "name": "Reliance Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "899852-0",
+          "name": "Auditorium Building",
+          "kind": "venue",
+          "family": 9
+        },
+        {
+          "id": "881549-0",
+          "name": "Sullivan Center (Carson Pirie Scott)",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "873352-0",
+          "name": "Chicago Cultural Center",
+          "kind": "library",
+          "family": 9
+        },
+        {
+          "id": "873707-0",
+          "name": "Daley Center",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "873508-0",
+          "name": "City Hall",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "877681-0",
+          "name": "Chicago Temple",
+          "kind": "church",
+          "family": 2
+        },
+        {
+          "id": "885605-0",
+          "name": "Palmer House",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "888940-0",
+          "name": "Symphony Center",
+          "kind": "venue",
+          "family": 9
+        },
+        {
+          "id": "898670-0",
+          "name": "Fine Arts Building",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "896402-0",
+          "name": "Fisher Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "883919-0",
+          "name": "Inland Steel Building",
+          "kind": "landmark",
+          "family": 5
+        },
+        {
+          "id": "869093-0",
+          "name": "Thompson Center",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "877918-0",
+          "name": "Civic Opera House",
+          "kind": "venue",
+          "family": 9
+        },
+        {
+          "id": "887494-0",
+          "name": "Field Building",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "891571-0",
+          "name": "Kluczynski Federal Building",
+          "kind": "landmark",
+          "family": 4
+        }
+      ]
     },
     "Millenium Park": {
-      "status": "downtown",
-      "display": "Millennium Park"
+      "status": "done",
+      "display": "Millennium Park",
+      "profile": "loop-masonry",
+      "named": [],
+      "minNamed": 0
     },
     "Grant Park": {
-      "status": "downtown"
+      "status": "done",
+      "profile": "loop-masonry",
+      "named": [
+        {
+          "id": "885857-0",
+          "name": "Art Institute of Chicago",
+          "kind": "museum",
+          "family": 9
+        }
+      ],
+      "minNamed": 1
     },
     "Printers Row": {
-      "status": "downtown"
+      "status": "done",
+      "profile": "printers-row-brick",
+      "named": [
+        {
+          "id": "913589-0",
+          "name": "Dearborn Station",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "911034-0",
+          "name": "Lakeside Press Building",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "905895-0",
+          "name": "Transportation Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "907784-0",
+          "name": "Jones College Prep",
+          "kind": "school",
+          "family": 24
+        }
+      ]
     },
     "Lower West Side": {
       "status": "done",
@@ -711,6 +868,24 @@
       "status": "done",
       "named": [
         {
+          "id": "924330-0",
+          "name": "Shedd Aquarium",
+          "kind": "museum",
+          "family": 9
+        },
+        {
+          "id": "928203-0",
+          "name": "Field Museum",
+          "kind": "museum",
+          "family": 9
+        },
+        {
+          "id": "928439-0",
+          "name": "Adler Planetarium",
+          "kind": "museum",
+          "family": 9
+        },
+        {
           "id": "937968-0",
           "name": "Soldier Field",
           "kind": "stadium",
@@ -862,6 +1037,24 @@
           "name": "Former Schlitz Brewery Tied House",
           "kind": "landmark",
           "family": 6
+        },
+        {
+          "id": "890004-0",
+          "name": "Union Station",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "898602-0",
+          "name": "Old Main Post Office",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "890174-0",
+          "name": "Old St. Patrick's Church",
+          "kind": "church",
+          "family": 9
         }
       ],
       "minNamed": 3
@@ -1768,6 +1961,92 @@
           "family": 6
         }
       ]
+    },
+    "Streeterville": {
+      "profile": "streeterville-glass",
+      "status": "done",
+      "named": [
+        {
+          "id": "855557-0",
+          "name": "Tribune Tower",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "821196-0",
+          "name": "Palmolive Building",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "824449-0",
+          "name": "860–880 Lake Shore Drive (Mies)",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "840567-0",
+          "name": "Allerton Hotel",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "828186-0",
+          "name": "Water Tower Place",
+          "kind": "landmark",
+          "family": 2
+        },
+        {
+          "id": "856925-0",
+          "name": "NBC Tower",
+          "kind": "landmark",
+          "family": 2
+        },
+        {
+          "id": "835610-0",
+          "name": "Lurie Children's Hospital",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "846046-0",
+          "name": "Woman's Athletic Club",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "824993-0",
+          "name": "Fourth Presbyterian Church",
+          "kind": "church",
+          "family": 9
+        }
+      ]
+    },
+    "Magnificent Mile": {
+      "profile": "streeterville-glass",
+      "status": "done",
+      "named": [
+        {
+          "id": "833197-0",
+          "name": "Chicago Water Tower",
+          "kind": "landmark",
+          "family": 9
+        }
+      ],
+      "minNamed": 1
+    },
+    "Greektown": {
+      "profile": "loft-district",
+      "status": "done",
+      "named": [
+        {
+          "id": "897035-0",
+          "name": "National Hellenic Museum",
+          "kind": "museum",
+          "family": 24
+        }
+      ],
+      "minNamed": 1
     }
   },
   "profiles": {
@@ -2242,6 +2521,131 @@
             "2": 2,
             "3": 1,
             "25": 4
+          }
+        }
+      ]
+    },
+    "loop-masonry": {
+      "about": "The Loop: terracotta, limestone and brick Chicago School office blocks, Art Deco towers, modern glass skyscrapers",
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "7": 1
+          }
+        },
+        {
+          "maxH": 30,
+          "roof": "cornice",
+          "families": {
+            "1": 2,
+            "6": 2,
+            "7": 1,
+            "8": 2,
+            "9": 1,
+            "20": 2
+          }
+        },
+        {
+          "maxH": 130,
+          "roof": "cornice",
+          "families": {
+            "0": 3,
+            "2": 3,
+            "5": 2,
+            "9": 2,
+            "14": 2,
+            "20": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "2": 1,
+            "3": 3,
+            "4": 2,
+            "25": 2
+          }
+        }
+      ]
+    },
+    "streeterville-glass": {
+      "about": "Streeterville and the Magnificent Mile: limestone and greystone pre-war towers, lakefront glass and concrete high-rises",
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "14": 1,
+            "21": 1
+          }
+        },
+        {
+          "maxH": 25,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "9": 1,
+            "14": 3,
+            "21": 2
+          }
+        },
+        {
+          "maxH": 100,
+          "roof": "cornice",
+          "families": {
+            "0": 2,
+            "2": 3,
+            "5": 1,
+            "14": 2,
+            "25": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "2": 2,
+            "3": 2,
+            "4": 1,
+            "25": 3
+          }
+        }
+      ]
+    },
+    "printers-row-brick": {
+      "about": "Printers Row: brick and terracotta printing lofts",
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "7": 1
+          }
+        },
+        {
+          "maxH": 80,
+          "roof": "cornice",
+          "families": {
+            "1": 2,
+            "6": 2,
+            "7": 2,
+            "20": 1,
+            "23": 4
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "2": 2,
+            "5": 1,
+            "25": 2
           }
         }
       ]

@@ -1,7 +1,7 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, TILE } from './tile-format.js';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, TILE } from './tile-format.js';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
 // Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
@@ -334,8 +334,8 @@ function ground(tile) {
   for (const r of tile.rails) if (r.flags & FINISHED) railway(r, fill, steel, track, wall);
   // Ground cover in finished neighborhoods: yards (grass), paved and industrial land, parking
   // lots and alleys, all below the sidewalks.
-  const yard = new Soup(), paved = new Soup(), industrial = new Soup(), parking = new Soup(), alley = new Soup(), parkway = new Soup();
-  const cover = { [SURF_YARD]: [yard, 0.03], [SURF_PAVED]: [paved, 0.04], [SURF_INDUSTRIAL]: [industrial, 0.045], [SURF_PARKING]: [parking, 0.085] };
+  const yard = new Soup(), paved = new Soup(), industrial = new Soup(), parking = new Soup(), alley = new Soup(), parkway = new Soup(), plaza = new Soup();
+  const cover = { [SURF_YARD]: [yard, 0.03], [SURF_PAVED]: [paved, 0.04], [SURF_INDUSTRIAL]: [industrial, 0.045], [SURF_PARKING]: [parking, 0.085], [SURF_PLAZA]: [plaza, 0.05] };
   for (const s of tile.surfaces) { const [soup, y] = cover[s.kind] || []; if (soup) soup.flat(s.rings.map(open), y); }
   for (const p of tile.paths) if (p.kind === PATH_ALLEY) alley.ribbon(p.points, 4.6, 0.085);
   for (const s of tile.streets) {
@@ -352,7 +352,7 @@ function ground(tile) {
   for (const p of tile.water) water.flat(p.rings.map(open), 0.12);
   const pick = ({ position, normal }) => ({ position, normal });
   return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()), lines: pick(lines.arrays()), fill: pick(fill.arrays()), steel: pick(steel.arrays()), track: pick(track.arrays()), wall: pick(wall.arrays()),
-    yard: pick(yard.arrays()), paved: pick(paved.arrays()), industrial: pick(industrial.arrays()), parking: pick(parking.arrays()), alley: pick(alley.arrays()), parkway: pick(parkway.arrays()) };
+    yard: pick(yard.arrays()), paved: pick(paved.arrays()), industrial: pick(industrial.arrays()), parking: pick(parking.arrays()), alley: pick(alley.arrays()), parkway: pick(parkway.arrays()), plaza: pick(plaza.arrays()) };
 }
 
 const buffers = (o) => { const out = []; const walk = (v) => { if (ArrayBuffer.isView(v)) out.push(v.buffer); else if (v && typeof v === 'object') Object.values(v).forEach(walk); }; walk(o); return out; };

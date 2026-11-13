@@ -18,8 +18,9 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
 import { renderMinimap } from './minimap.mjs';
+import { pickFamily, ruleFor } from '../js/neighborhood-style.js';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
 const src = join(root, '.cache', 'city'), out = join(root, 'tiles');
@@ -89,14 +90,14 @@ function autoFront(id) {
   return Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 'E' : 'W') : (dz > 0 ? 'S' : 'N');
 }
 const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || KIND_ROOF[b.kind] || 'flat'], FRONTS[b.front || (b.kind === 'church' ? autoFront(b.id) : 'N')], !!b.twin)])));
-const pick = (weights, seed) => { const e = Object.entries(weights), total = e.reduce((s, [, w]) => s + w, 0); let r = ((seed * 2654435761) >>> 0) % total; for (const [f, w] of e) { if ((r -= w) < 0) return Number(f); } return Number(e[0][0]); };
+const pick = pickFamily;
 const styleStats = {};
 const inFinished = (x, z) => finished.some((n) => x >= n.bbox[0] && x <= n.bbox[1] && z >= n.bbox[2] && z <= n.bbox[3] && n.inside(x, z));
 function styleFor(b, seed) {
   if (namedStyle.has(b.id)) return namedStyle.get(b.id);
   const hood = finished.find((n) => b.x >= n.bbox[0] && b.x <= n.bbox[1] && b.z >= n.bbox[2] && b.z <= n.bbox[3] && n.inside(b.x, b.z));
   if (!hood) return styleOf(familyFor(b.h, seed));
-  const rule = hood.rules.find((r) => (r.minArea == null || b.area >= r.minArea) && (r.maxArea == null || b.area <= r.maxArea) && (r.maxH == null || b.h <= r.maxH));
+  const rule = ruleFor(hood.rules, b.h, b.area);
   styleStats[hood.id] = (styleStats[hood.id] || 0) + 1;
   return styleOf(pick(rule.families, seed), ROOFS[rule.roof || 'flat']);
 }
@@ -215,7 +216,7 @@ const mapCover = { yard: [], paved: [], industrial: [], parking: [] };
   // neighborhood minus its streets; rectangular residential ones get a midline alley.
   const residential = zoningIn.filter((z) => z.kind === 'residential' || z.kind === 'business').map((z) => ({ v: ringBounds(z.rings[0]), test: polygonTester([z.rings]) }));
   const isResidential = (x, z) => residential.some((r) => x >= r.v.x0 && x <= r.v.x1 && z >= r.v.z0 && z <= r.v.z1 && r.test(x, z));
-  function deriveAlleys(n, hood) {
+  function deriveAlleys(n, hood, downtown = false) {
     const [hx0, hx1, hz0, hz1] = n.bbox, quads = [];
     for (const s of streetsIn) {
       if (!(s.class >= 1 && s.class <= 4) || !s.points.some(([x, z]) => x > hx0 - 50 && x < hx1 + 50 && z > hz0 - 50 && z < hz1 + 50)) continue;
@@ -231,7 +232,7 @@ const mapCover = { yard: [], paved: [], industrial: [], parking: [] };
     for (const b of blocks) {
       const ring = b[0].slice(0, -1), o = orientedBox(b[0]), area = ringArea(b[0]);
       const long = Math.max(o.w, o.d), short = Math.min(o.w, o.d);
-      if (long < 90 || short < 40 || short > 140 || area < 0.8 * o.w * o.d || !isResidential(o.x, o.z)) continue;
+      if (long < 90 || short < 40 || short > 140 || area < 0.8 * o.w * o.d || !(downtown || isResidential(o.x, o.z))) continue;
       // Midline along the long axis, stopping at the block edges.
       const c = Math.cos(o.angle), s = Math.sin(o.angle), [lx, lz] = o.w >= o.d ? [c, s] : [-s, c], half = long / 2 + 1;
       out.push([[o.x - lx * half, o.z - lz * half], [o.x + lx * half, o.z + lz * half]]);
@@ -262,6 +263,26 @@ const mapCover = { yard: [], paved: [], industrial: [], parking: [] };
       if (m[0] < hx0 || m[0] > hx1 || m[1] < hz0 || m[1] > hz1 || !n.inside(m[0], m[1])) continue;
       tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).paths.push({ kind: PATH_ALLEY, points }); counts.alleys++;
     }
+  }
+  // Downtown (COVERAGE_RECTS), which the tiles otherwise leave to its hand-built city: in finished
+  // downtown districts, plaza paving on downtown/business/commercial land, yards on residential land,
+  // industrial yards, and alleys down the middle of the blocks.
+  const coverRects = COVERAGE_RECTS.map((r) => [[[r.minX, r.minZ], [r.maxX, r.minZ], [r.maxX, r.maxZ], [r.minX, r.maxZ], [r.minX, r.minZ]]]);
+  const DT = { downtown: SURF_PLAZA, business: SURF_PLAZA, commercial: SURF_PLAZA, residential: SURF_YARD, industrial: SURF_INDUSTRIAL, transport: SURF_INDUSTRIAL };
+  const toTiles = (parts, kind) => { for (const p of parts) { const v = ringBounds(p[0]); if (ringArea(p[0]) < 20) continue; tileFor(Math.floor(v.x / TILE), Math.floor(v.z / TILE)).surfaces.push({ kind, rings: p.map((r) => r.slice(0, -1)) }); counts.downtown = (counts.downtown || 0) + 1; } };
+  for (const n of finished) {
+    const [hx0, hx1, hz0, hz1] = n.bbox;
+    if (!COVERAGE_RECTS.some((r) => hx1 > r.minX && hx0 < r.maxX && hz1 > r.minZ && hz0 < r.maxZ)) continue;
+    let core; try { core = clip.intersection(n.polygons.map((p) => p.map(closed)), clip.union(...coverRects)); } catch { continue; }
+    if (!core.length) continue;
+    for (const z of zoningIn) {
+      if (!DT[z.kind]) continue;
+      const v = ringBounds(z.rings[0]); if (v.x1 < hx0 || v.x0 > hx1 || v.z1 < hz0 || v.z0 > hz1) continue;
+      let parts; try { parts = clip.intersection([z.rings.map(closed)], core); } catch { continue; }
+      // Split large pieces along the 1 km tile grid so each lands in its own ground tile.
+      for (const p of parts) { const b = ringBounds(p[0]); for (let tx = Math.floor(b.x0 / TILE); tx <= Math.floor(b.x1 / TILE); tx++) for (let tz = Math.floor(b.z0 / TILE); tz <= Math.floor(b.z1 / TILE); tz++) { const sq = [[[tx * TILE, tz * TILE], [(tx + 1) * TILE, tz * TILE], [(tx + 1) * TILE, (tz + 1) * TILE], [tx * TILE, (tz + 1) * TILE], [tx * TILE, tz * TILE]]]; let q; try { q = clip.intersection([p], sq); } catch { continue; } toTiles(q, DT[z.kind]); } }
+    }
+    for (const points of deriveAlleys(n, core, true)) { const m = [(points[0][0] + points[1][0]) / 2, (points[0][1] + points[1][1]) / 2]; tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).paths.push({ kind: PATH_ALLEY, points }); counts.downtownAlleys = (counts.downtownAlleys || 0) + 1; }
   }
   log('Ground cover in finished neighborhoods:', JSON.stringify(counts));
 }

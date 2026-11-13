@@ -41,6 +41,7 @@ function labelPoint(mp) {
 const areaPolys = areas.map((a) => ({ ...a, mp: multi(a.polygons) }));
 const out = { version: 1, built: new Date().toISOString().slice(0, 10), radius: CITY_RADIUS,
   sources: ['City of Chicago, Boundaries – Community Areas (igwz-8jzy)', 'City of Chicago, Neighborhoods 2012 (y6yq-dbs2)'],
+  profiles: Object.fromEntries(Object.entries(config.profiles).map(([k, p]) => [k, { about: p.about, rules: p.rules }])),
   statuses: { downtown: 'Hand-built downtown (finished)', pilot: 'Being finished now', done: 'Finished', todo: 'Inside the circle, not finished yet', outside: 'Outside the explorable circle' },
   areas: [], neighborhoods: [] };
 

@@ -21,6 +21,7 @@ import { setupExplorer } from './explorer.js';
 import { setupMinimap } from './minimap.js';
 import { loadNeighborhoods, setupNeighborhoods, neighborhoodWalk } from './neighborhoods.js';
 import { setupNeighborhoodLife } from './neighborhood-life.js';
+import { buildDowntownTouchup } from './downtown-touchup.js';
 import { loadTransit } from './transit-data.js';
 import { buildTransit } from './transit.js';
 import { setupMiniFellow } from './mini-fellow.js';
@@ -117,6 +118,8 @@ async function init() {
     ctx.tiles.onRealGone = (entry) => { ctx.hoodLife.remove(entry.path); ctx.hoodWalk.remove(entry.path); };
   }
   buildStreets(scene, ctx);
+  // Parked cars on downtown side streets and lit lobbies (no building changes).
+  ctx.downtownTouchup = buildDowntownTouchup(scene, ctx);
   buildSites(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
   rebuildBeacons(scene, ctx);

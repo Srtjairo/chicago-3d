@@ -58,6 +58,8 @@ export class TileManager {
       // Ground cover in finished neighborhoods (yards and parkways use a grass texture in world metres).
       yard: new THREE.MeshStandardMaterial({ color: 0xc9d4b4, map: grassTexture(), roughness: 1 }),
       parkway: new THREE.MeshStandardMaterial({ color: 0xdde6c6, map: grassTexture(), roughness: 1, polygonOffset: true, polygonOffsetFactor: -2.5, polygonOffsetUnits: -2.5 }),
+      // Downtown plazas and forecourts: lighter granite and concrete paving.
+      plaza: new THREE.MeshStandardMaterial({ color: 0x9c988f, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5 }),
       paved: new THREE.MeshStandardMaterial({ color: 0x8e8b84, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5 }),
       industrial: new THREE.MeshStandardMaterial({ color: 0x7b766c, roughness: 1, polygonOffset: true, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5 }),
       parking: new THREE.MeshStandardMaterial({ color: 0x4b4f52, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 }),
@@ -261,7 +263,7 @@ export class TileManager {
   // Streets, parks and rivers for one ground tile.
   makeGround(parts, name) {
     const group = new THREE.Group(); group.name = name; group.visible = false;
-    for (const key of ['yard', 'paved', 'industrial', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
+    for (const key of ['yard', 'plaza', 'paved', 'industrial', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
       const { position, normal } = parts[key];
       if (!position.length) continue;
       const geometry = new THREE.BufferGeometry();

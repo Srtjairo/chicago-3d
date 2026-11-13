@@ -23,7 +23,7 @@ export const VERSION = 2;
 export const TILE = 1000, SKY = 4000; // metres
 export const FLAG_ESTIMATED = 1, FLAG_SPIKE = 2, FLAG_OVERRIDE = 4;
 export const FINISHED = 1, RAIL_BRIDGE = 2, RAIL_RAISED = 4;
-export const SURF_YARD = 1, SURF_PAVED = 2, SURF_INDUSTRIAL = 3, SURF_PARKING = 4, PATH_ALLEY = 1;
+export const SURF_YARD = 1, SURF_PAVED = 2, SURF_INDUSTRIAL = 3, SURF_PARKING = 4, SURF_PLAZA = 5, PATH_ALLEY = 1;
 export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3, ROOF_OPEN = 4, ROOF_GREENHOUSE = 5;
 export const FRONTS = { N: 0, E: 1, S: 2, W: 3 };
 export const styleOf = (family, roof = ROOF_FLAT, front = 0, twin = false) => family + 32 * roof + 256 * front + (twin ? 1024 : 0);
