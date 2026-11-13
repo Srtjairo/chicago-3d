@@ -1,6 +1,6 @@
 // Citywide source snapshot for the streamed city (milestone M2).
 // Downloads every building footprint inside the Chicago city limits plus streets, waterways,
-// community areas and parks; pins every response in tools/city-sources.lock.json; and writes
+// community areas, neighborhoods and parks; pins every response in tools/city-sources.lock.json; and writes
 // projected, simplified intermediates to .cache/city/ for tools/build-tiles.mjs.
 //
 //   node tools/import-city-tiles.mjs            (resumable; cached pages are reused)
@@ -103,6 +103,13 @@ const areas = areaRows.map((a) => ({ id: Number(a.area_numbe ?? a.area_num_1), n
   .sort((a, b) => a.id - b.id);
 write('areas.json', areas);
 log('Community areas:', areas.length);
+
+// Familiar neighborhood names (the City's 2012 "Neighborhoods" boundaries, 98 of them).
+const hoodRows = await cachedJson(lock, 'city/src-neighborhoods', soda('y6yq-dbs2', { $select: 'the_geom,pri_neigh,sec_neigh', $limit: '1000' }));
+const hoods = hoodRows.map((h) => ({ name: String(h.pri_neigh || '').trim(), sec: String(h.sec_neigh || '').trim(), polygons: polygonsOf(h.the_geom).map((p) => projectRings(p, 5)).filter((r) => r.length) }))
+  .filter((h) => h.name && h.polygons.length).sort((a, b) => a.name.localeCompare(b.name));
+write('neighborhoods.json', hoods);
+log('Neighborhoods:', hoods.length);
 
 const parkRows = await cachedJson(lock, 'city/src-parks', soda('ejsh-fztr', { $select: 'the_geom,park_no,park,label,acres,park_class', $limit: '5000' }));
 const parks = parkRows.map((p) => ({ id: String(p.park_no ?? p.objectid ?? ''), name: String(p.park || p.label || ''), acres: Number(p.acres || 0), polygons: polygonsOf(p.the_geom).map((poly) => projectRings(poly, 1.5)).filter((r) => r.length) }))

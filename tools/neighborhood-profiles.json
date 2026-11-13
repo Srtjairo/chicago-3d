@@ -1,0 +1,51 @@
+{
+  "_about": "Hand-edited neighborhood settings, merged into assets/neighborhoods.json by tools/build-neighborhoods.mjs. Keys are the City's neighborhood names. status: downtown | pilot | done | todo (default) | outside (automatic). profile: a key of profiles. named: real buildings to style and label.",
+  "neighborhoods": {
+    "Loop": {
+      "status": "downtown"
+    },
+    "Millenium Park": {
+      "status": "downtown",
+      "display": "Millennium Park"
+    },
+    "Grant Park": {
+      "status": "downtown"
+    },
+    "Printers Row": {
+      "status": "downtown"
+    },
+    "Lower West Side": {
+      "status": "pilot",
+      "display": "Pilsen",
+      "aka": [
+        "Lower West Side",
+        "Heart of Chicago"
+      ],
+      "profile": "pilsen-brick"
+    },
+    "Douglas": {
+      "aka": [
+        "Bronzeville"
+      ]
+    },
+    "Grand Boulevard": {
+      "aka": [
+        "Bronzeville"
+      ]
+    },
+    "Little Italy, UIC": {
+      "display": "Little Italy & UIC"
+    },
+    "Sheffield & DePaul": {
+      "display": "Sheffield & DePaul"
+    },
+    "Mckinley Park": {
+      "display": "McKinley Park"
+    }
+  },
+  "profiles": {
+    "pilsen-brick": {
+      "about": "Red and brown brick 2–3 flats and worker cottages, cream-brick storefronts, stone churches"
+    }
+  }
+}
