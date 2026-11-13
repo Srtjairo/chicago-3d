@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
 import { renderMinimap } from './minimap.mjs';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
@@ -90,7 +90,7 @@ const inDetail = (x, z) => Math.hypot(x, z) < DETAIL_RADIUS;
 // A tile square that reaches inside the detail circle.
 const tileInDetail = (tx, tz) => Math.hypot(Math.max(tx * TILE, 0, -(tx + 1) * TILE), Math.max(tz * TILE, 0, -(tz + 1) * TILE)) < DETAIL_RADIUS;
 const tiles = new Map();
-const tileFor = (tx, tz) => { const k = tileKey(tx, tz); if (!tiles.has(k)) tiles.set(k, { tx, tz, buildings: [], streets: [], water: [], parks: [], rails: [] }); return tiles.get(k); };
+const tileFor = (tx, tz) => { const k = tileKey(tx, tz); if (!tiles.has(k)) tiles.set(k, { tx, tz, buildings: [], streets: [], water: [], parks: [], rails: [], surfaces: [], paths: [] }); return tiles.get(k); };
 for (const b of items) {
   if (!inDetail(b.x, b.z)) continue;
   const [objectId, part] = b.id.split('-').map(Number);
@@ -184,6 +184,66 @@ clipToTiles(rivers.map((w) => w.rings), (t, rings) => t.water.push({ rings }));
 const parkList = parksIn.map((p, i) => ({ ...p, index: i }));
 for (const p of parkList) clipToTiles(p.polygons, (t, rings) => { const v = ringBounds(rings[0]); t.parks.push({ park: p.index, flags: inFinished(v.x, v.z) ? FINISHED : 0, rings }); });
 log('Styled by neighborhood profile:', JSON.stringify(styleStats));
+// Ground cover in finished neighborhoods. The whole neighborhood is yard (grass) by default;
+// zoning then marks business/commercial land as paved and manufacturing/transport land as
+// industrial yards; OpenStreetMap adds parking lots and alleys on top.
+{
+  const optional = (name) => existsSync(join(src, name)) ? read(name) : [];
+  const zoningIn = optional('zoning.json'), alleysIn = optional('alleys.json'), parkingIn = optional('parking.json');
+  const ZONE = { commercial: SURF_PAVED, industrial: SURF_INDUSTRIAL, transport: SURF_INDUSTRIAL };
+  const counts = { yard: 0, zoned: 0, parking: 0, alleys: 0, derivedAlleys: 0 };
+  // Without OpenStreetMap alleys for a neighborhood, derive them: Chicago's residential blocks
+  // almost all have a 16 ft alley down the middle, along the long side. Blocks are the
+  // neighborhood minus its streets; rectangular residential ones get a midline alley.
+  const residential = zoningIn.filter((z) => z.kind === 'residential' || z.kind === 'business').map((z) => ({ v: ringBounds(z.rings[0]), test: polygonTester([z.rings]) }));
+  const isResidential = (x, z) => residential.some((r) => x >= r.v.x0 && x <= r.v.x1 && z >= r.v.z0 && z <= r.v.z1 && r.test(x, z));
+  function deriveAlleys(n, hood) {
+    const [hx0, hx1, hz0, hz1] = n.bbox, quads = [];
+    for (const s of streetsIn) {
+      if (!(s.class >= 1 && s.class <= 4) || !s.points.some(([x, z]) => x > hx0 - 50 && x < hx1 + 50 && z > hz0 - 50 && z < hz1 + 50)) continue;
+      const hw = ({ 1: 22, 2: 13, 3: 11, 4: 8.5 }[s.class] + 6) / 2;
+      for (let i = 1; i < s.points.length; i++) {
+        const [ax, az] = s.points[i - 1], [bx, bz] = s.points[i], len = Math.hypot(bx - ax, bz - az); if (len < 0.5) continue;
+        const dx = (bx - ax) / len * hw, dz = (bz - az) / len * hw;
+        quads.push([[[ax - dx - dz, az - dz + dx], [ax - dx + dz, az - dz - dx], [bx + dx + dz, bz + dz - dx], [bx + dx - dz, bz + dz + dx], [ax - dx - dz, az - dz + dx]]]);
+      }
+    }
+    let blocks; try { blocks = clip.difference(hood, ...quads); } catch { return []; }
+    const out = [];
+    for (const b of blocks) {
+      const ring = b[0].slice(0, -1), o = orientedBox(b[0]), area = ringArea(b[0]);
+      const long = Math.max(o.w, o.d), short = Math.min(o.w, o.d);
+      if (long < 90 || short < 40 || short > 140 || area < 0.8 * o.w * o.d || !isResidential(o.x, o.z)) continue;
+      // Midline along the long axis, stopping at the block edges.
+      const c = Math.cos(o.angle), s = Math.sin(o.angle), [lx, lz] = o.w >= o.d ? [c, s] : [-s, c], half = long / 2 + 1;
+      out.push([[o.x - lx * half, o.z - lz * half], [o.x + lx * half, o.z + lz * half]]);
+    }
+    return out;
+  }
+  for (const n of finished) {
+    const hood = n.polygons.map((p) => p.map(closed)), [hx0, hx1, hz0, hz1] = n.bbox;
+    const overlaps = (rings) => { const v = ringBounds(rings[0]); return v.x1 > hx0 && v.x0 < hx1 && v.z1 > hz0 && v.z0 < hz1; };
+    clipToTiles(n.polygons, (t, rings) => { t.surfaces.push({ kind: SURF_YARD, rings }); counts.yard++; });
+    for (const z of zoningIn) {
+      if (!ZONE[z.kind] || !overlaps(z.rings)) continue;
+      let parts; try { parts = clip.intersection([z.rings.map(closed)], hood); } catch { continue; }
+      clipToTiles(parts, (t, rings) => { t.surfaces.push({ kind: ZONE[z.kind], rings }); counts.zoned++; });
+    }
+    for (const rings of parkingIn) {
+      const v = ringBounds(rings[0]);
+      if (!overlaps(rings) || !n.inside(v.x, v.z)) continue;
+      clipToTiles([rings], (t, r) => { t.surfaces.push({ kind: SURF_PARKING, rings: r }); counts.parking++; });
+    }
+    const osmHere = alleysIn.filter((points) => { const m = points[Math.floor(points.length / 2)]; return m[0] >= hx0 && m[0] <= hx1 && m[1] >= hz0 && m[1] <= hz1 && n.inside(m[0], m[1]); });
+    if (!osmHere.length) for (const points of deriveAlleys(n, hood)) { const m = [(points[0][0] + points[1][0]) / 2, (points[0][1] + points[1][1]) / 2]; tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).paths.push({ kind: PATH_ALLEY, points }); counts.derivedAlleys++; }
+    for (const points of osmHere) {
+      const m = points[Math.floor(points.length / 2)];
+      if (m[0] < hx0 || m[0] > hx1 || m[1] < hz0 || m[1] > hz1 || !n.inside(m[0], m[1])) continue;
+      tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).paths.push({ kind: PATH_ALLEY, points }); counts.alleys++;
+    }
+  }
+  log('Ground cover in finished neighborhoods:', JSON.stringify(counts));
+}
 log('Tiles:', tiles.size, 'streets', streetCount, 'water polygons', rivers.length, 'parks', parkList.length);
 
 // ---------- Write ----------
@@ -196,13 +256,13 @@ let total = 0, largest = 0;
 const ground = new Map(), ratio = SKY / TILE;
 for (const t of tiles.values()) {
   const sx = Math.floor(t.tx / ratio), sz = Math.floor(t.tz / ratio), k = tileKey(sx, sz);
-  if (!ground.has(k)) ground.set(k, { tx: sx * ratio, tz: sz * ratio, sx, sz, buildings: [], streets: [], water: [], parks: [], rails: [] });
-  const g = ground.get(k); g.streets.push(...t.streets); g.water.push(...t.water); g.parks.push(...t.parks); g.rails.push(...t.rails);
-  t.streets = []; t.water = []; t.parks = []; t.rails = [];
+  if (!ground.has(k)) ground.set(k, { tx: sx * ratio, tz: sz * ratio, sx, sz, buildings: [], streets: [], water: [], parks: [], rails: [], surfaces: [], paths: [] });
+  const g = ground.get(k); g.streets.push(...t.streets); g.water.push(...t.water); g.parks.push(...t.parks); g.rails.push(...t.rails); g.surfaces.push(...t.surfaces); g.paths.push(...t.paths);
+  t.streets = []; t.water = []; t.parks = []; t.rails = []; t.surfaces = []; t.paths = [];
 }
 let groundTotal = 0;
 for (const g of [...ground.values()].sort((a, b) => a.sx - b.sx || a.sz - b.sz)) {
-  if (!g.streets.length && !g.water.length && !g.parks.length && !g.rails.length) continue;
+  if (!g.streets.length && !g.water.length && !g.parks.length && !g.rails.length && !g.surfaces.length && !g.paths.length) continue;
   const { bytes, hash } = write('g', tileKey(g.sx, g.sz), encodeDetail(g));
   index.ground.push([g.sx, g.sz, hash, bytes, g.streets.length]); groundTotal += bytes; largest = Math.max(largest, bytes);
 }

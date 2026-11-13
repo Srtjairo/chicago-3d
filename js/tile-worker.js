@@ -1,7 +1,7 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FINISHED, RAIL_BRIDGE, RAIL_RAISED, TILE } from './tile-format.js';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, PATH_ALLEY, TILE } from './tile-format.js';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
 // Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
@@ -207,12 +207,13 @@ function decorate(tile, ground) {
     // Driving lanes (right-hand traffic, respecting one-way streets) and both sidewalks.
     if (s.dir !== 'T') line(lanes, shift(s.points, w / 4));
     if (s.dir !== 'F') line(lanes, shift([...s.points].reverse(), w / 4));
-    line(walks, shift(s.points, w / 2 + 1.8)); line(walks, shift(s.points, -(w / 2 + 1.8)));
+    const sw = s.class >= 3 ? w / 2 + 3.5 : w / 2 + 1.8; // beyond the parkway on residential streets
+    line(walks, shift(s.points, sw)); line(walks, shift(s.points, -sw));
     // Parkway trees on both sides of collectors and local streets; arterials get fewer.
     for (const side of [-1, 1]) along(s.points, s.class === 2 ? 16 : 10, 12, 0.2, rand, (x, z, dx, dz) => {
       // Fewer on busy streets, where storefronts meet the sidewalk.
       if ((s.class === 2 && rand() < 0.65) || (s.class === 3 && rand() < 0.4)) return;
-      const px = x - dz * side * (w / 2 + 1.6), pz = z + dx * side * (w / 2 + 1.6);
+      const px = x - dz * side * (w / 2 + 1.3), pz = z + dx * side * (w / 2 + 1.3);
       if (!blocked(px, pz)) trees.push(px, pz, 0.7 + rand() * 0.55, Math.floor(rand() * 1000));
     });
     // Lamps: staggered on both sides of arterials and collectors, one side of local streets.
@@ -276,8 +277,18 @@ const ROAD_WIDTH = { 1: 22, 2: 13, 3: 11, 4: 8.5 };
 function ground(tile) {
   const roads = new Soup(), walks = new Soup(), parks = new Soup(), water = new Soup(), lines = new Soup(), fill = new Soup(), steel = new Soup(), track = new Soup(), wall = new Soup();
   for (const r of tile.rails) if (r.flags & FINISHED) railway(r, fill, steel, track, wall);
+  // Ground cover in finished neighborhoods: yards (grass), paved and industrial land, parking
+  // lots and alleys, all below the sidewalks.
+  const yard = new Soup(), paved = new Soup(), industrial = new Soup(), parking = new Soup(), alley = new Soup(), parkway = new Soup();
+  const cover = { [SURF_YARD]: [yard, 0.03], [SURF_PAVED]: [paved, 0.04], [SURF_INDUSTRIAL]: [industrial, 0.045], [SURF_PARKING]: [parking, 0.085] };
+  for (const s of tile.surfaces) { const [soup, y] = cover[s.kind] || []; if (soup) soup.flat(s.rings.map(open), y); }
+  for (const p of tile.paths) if (p.kind === PATH_ALLEY) alley.ribbon(p.points, 4.6, 0.085);
   for (const s of tile.streets) {
-    const w = ROAD_WIDTH[s.class] || 8.5; roads.ribbon(s.points, w, 0.16); if (s.class > 1) walks.ribbon(s.points, w + 6, 0.1);
+    const w = ROAD_WIDTH[s.class] || 8.5; roads.ribbon(s.points, w, 0.16);
+    // Residential streets in finished neighborhoods: a grass parkway (with the street trees)
+    // between the curb and a sidewalk, Chicago-style. Elsewhere a plain sidewalk band.
+    if (s.flags & FINISHED && s.class >= 3) { walks.ribbon(s.points, w + 9, 0.1); parkway.ribbon(s.points, w + 5, 0.11); }
+    else if (s.class > 1) walks.ribbon(s.points, w + 6, 0.1);
     // Yellow centre line on finished arterials and collectors.
     if (s.flags & FINISHED && (s.class === 2 || s.class === 3)) lines.ribbon(s.points, 0.35, 0.2);
   }
@@ -285,7 +296,8 @@ function ground(tile) {
   for (const p of tile.parks) parks.flat(p.rings.map(open), 0.06);
   for (const p of tile.water) water.flat(p.rings.map(open), 0.12);
   const pick = ({ position, normal }) => ({ position, normal });
-  return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()), lines: pick(lines.arrays()), fill: pick(fill.arrays()), steel: pick(steel.arrays()), track: pick(track.arrays()), wall: pick(wall.arrays()) };
+  return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()), lines: pick(lines.arrays()), fill: pick(fill.arrays()), steel: pick(steel.arrays()), track: pick(track.arrays()), wall: pick(wall.arrays()),
+    yard: pick(yard.arrays()), paved: pick(paved.arrays()), industrial: pick(industrial.arrays()), parking: pick(parking.arrays()), alley: pick(alley.arrays()), parkway: pick(parkway.arrays()) };
 }
 
 const buffers = (o) => { const out = []; const walk = (v) => { if (ArrayBuffer.isView(v)) out.push(v.buffer); else if (v && typeof v === 'object') Object.values(v).forEach(walk); }; walk(o); return out; };

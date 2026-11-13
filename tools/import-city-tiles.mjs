@@ -7,7 +7,7 @@
 //
 // Downtown keeps owning everything whose bounding-box centre is inside COVERAGE_RECTS
 // (exactly the rule buildMeasuredCity uses), so those buildings are left out here.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { project, unproject, inCoverage, DETAIL_RADIUS } from '../js/coverage.js';
 import { root, createLock, cachedJson, soda, simplify, ringArea, ringBounds, polygonTester, polygonsOf } from './geo-source.mjs';
@@ -131,6 +131,41 @@ log('Parks:', parks.length, 'over 25 acres:', parks.filter((p) => p.acres > 25).
   for (const r of ways) r.raised = r.bridge || (!r.tunnel && length(r.points) < 450 && meets(r.points[0], r.name) && meets(r.points.at(-1), r.name));
   write('rail.json', ways);
   log('Rail (OSM main lines):', ways.length, 'ways,', ways.filter((r) => r.bridge).length, 'viaducts,', ways.filter((r) => r.raised && !r.bridge).length, 'embankments');
+}
+// What fills the land between buildings, for finished neighborhoods:
+//  - zoning districts (City of Chicago): residential and neighborhood-business land reads as yards
+//    (storefront strips have rear yards), commercial (C) as paved lots, manufacturing and transportation as industrial yards;
+//  - alleys and parking lots (OpenStreetMap, ODbL).
+{
+  const zoneRows = await cachedJson(lock, 'city/src-zoning', soda('dj47-wfun', { $select: 'the_geom,zone_class', $limit: '50000' }));
+  const kindOf = (z) => /^R[STM]/.test(z) ? 'residential' : /^B\d/.test(z) ? 'business' : /^C\d/.test(z) ? 'commercial' : /^(M|PMD)/.test(z) ? 'industrial' : z === 'T' ? 'transport' : /^D/.test(z) ? 'downtown' : /^POS/.test(z) ? 'open' : 'planned';
+  const zoning = zoneRows.flatMap((r) => polygonsOf(r.the_geom).map((p) => ({ zone: r.zone_class, kind: kindOf(r.zone_class || ''), rings: projectRings(p, 1.5) })))
+    .filter((z) => z.rings.length && z.rings[0].some(([x, zz]) => Math.hypot(x, zz) < DETAIL_RADIUS));
+  write('zoning.json', zoning);
+  log('Zoning districts in the circle:', zoning.length);
+
+  // Alleys and parking lots are fetched per finished neighborhood (assets/neighborhoods.json),
+  // which keeps each Overpass request small; mirrors are tried in turn.
+  const overpass = async (key, q) => {
+    let last;
+    for (const url of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']) {
+      try { return await cachedJson(lock, key, url, { body: { data: q }, tries: 3 }); } catch (err) { last = err; }
+    }
+    throw last;
+  };
+  const registry = JSON.parse(readFileSync(join(root, 'assets', 'neighborhoods.json'), 'utf8'));
+  const alleys = [], parking = [];
+  for (const h of registry.neighborhoods.filter((x) => (x.status === 'pilot' || x.status === 'done') && x.bbox)) {
+    const [x0, x1, z0, z1] = h.bbox, [w, s0] = unproject([x0 - 100, z1 + 100]), [e, n] = unproject([x1 + 100, z0 - 100]);
+    const bbox = `${s0.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)}`;
+    const ar = await overpass(`city/src-osm-alleys-${h.id}`, `[out:json][timeout:120];way["highway"="service"]["service"="alley"](${bbox});out geom;`);
+    alleys.push(...ar.elements.filter((x) => x.geometry?.length >= 2).map((x) => x.geometry.map((g) => project([g.lon, g.lat]))));
+    const pr = await overpass(`city/src-osm-parking-${h.id}`, `[out:json][timeout:120];way["amenity"="parking"]["parking"!~"underground|multi-storey|rooftop"](${bbox});out geom;`);
+    parking.push(...pr.elements.filter((x) => x.geometry?.length >= 4).map((x) => [simplify(x.geometry.map((g) => project([g.lon, g.lat])), 0.5)]));
+  }
+  write('alleys.json', alleys);
+  write('parking.json', parking);
+  log('OSM alleys:', alleys.length, 'parking lots:', parking.length);
 }
 lock.save();
 log('Done.');

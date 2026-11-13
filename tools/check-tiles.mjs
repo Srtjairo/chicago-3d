@@ -51,7 +51,7 @@ for (const [tx, tz, hash, bytes, count, maxH] of index.tiles) {
     m = Math.max(m, b.h);
   }
   assert.equal(Math.round(m), maxH);
-  assert.equal(t.streets.length + t.water.length + t.parks.length + t.rails.length, 0, 'ground features belong in ground tiles');
+  assert.equal(t.streets.length + t.water.length + t.parks.length + t.rails.length + t.surfaces.length + t.paths.length, 0, 'ground features belong in ground tiles');
   buildings += t.buildings.length;
 }
 // Ground tiles: streets, water and parks only, none of them inside downtown.

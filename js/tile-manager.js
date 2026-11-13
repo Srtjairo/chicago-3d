@@ -10,7 +10,7 @@
 // Ground tiles (streets, parks, rivers) are loaded once for the whole circle. Beyond the circle a
 // static backdrop (one instanced draw of the taller buildings out to the city limits) is always shown.
 import * as THREE from 'three';
-import { facadeMaterial } from './textures.js';
+import { facadeMaterial, grassTexture } from './textures.js';
 import { FAMILIES, polygonGeometry } from './city-data.js';
 import { tileKey, VERSION } from './tile-format.js';
 import { fadeBeyondCity } from './terrain.js';
@@ -51,6 +51,13 @@ export class TileManager {
       lines: new THREE.MeshStandardMaterial({ color: 0xd2b14c, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
       fill: new THREE.MeshStandardMaterial({ color: 0x77705f, roughness: 1, side: THREE.DoubleSide }),
       steel: new THREE.MeshStandardMaterial({ color: 0x4d4943, roughness: 0.7, metalness: 0.2, side: THREE.DoubleSide }),
+      // Ground cover in finished neighborhoods (yards and parkways use a grass texture in world metres).
+      yard: new THREE.MeshStandardMaterial({ color: 0xc9d4b4, map: grassTexture(), roughness: 1 }),
+      parkway: new THREE.MeshStandardMaterial({ color: 0xdde6c6, map: grassTexture(), roughness: 1, polygonOffset: true, polygonOffsetFactor: -2.5, polygonOffsetUnits: -2.5 }),
+      paved: new THREE.MeshStandardMaterial({ color: 0x8e8b84, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5 }),
+      industrial: new THREE.MeshStandardMaterial({ color: 0x7b766c, roughness: 1, polygonOffset: true, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5 }),
+      parking: new THREE.MeshStandardMaterial({ color: 0x4b4f52, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 }),
+      alley: new THREE.MeshStandardMaterial({ color: 0x9b978c, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 }),
       wall: new THREE.MeshStandardMaterial({ color: 0x8f897d, roughness: 0.95, side: THREE.DoubleSide }),
       track: new THREE.MeshStandardMaterial({ color: 0x3b3632, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     };
@@ -240,13 +247,15 @@ export class TileManager {
   // Streets, parks and rivers for one ground tile.
   makeGround(parts, name) {
     const group = new THREE.Group(); group.name = name; group.visible = false;
-    for (const key of ['water', 'parks', 'walks', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
+    for (const key of ['yard', 'paved', 'industrial', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
       const { position, normal } = parts[key];
       if (!position.length) continue;
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
       geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
-      if (key === 'water') { const uv = new Float32Array(position.length / 3 * 2); for (let i = 0, j = 0; i < position.length; i += 3, j += 2) { uv[j] = position[i]; uv[j + 1] = position[i + 2]; } geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
+      // World-space UVs: metres for the river normals, 12 m per grass tile.
+      const uvScale = key === 'water' ? 1 : key === 'yard' || key === 'parkway' ? 1 / 12 : 0;
+      if (uvScale) { const uv = new Float32Array(position.length / 3 * 2); for (let i = 0, j = 0; i < position.length; i += 3, j += 2) { uv[j] = position[i] * uvScale; uv[j + 1] = position[i + 2] * uvScale; } geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
       geometry.computeBoundingSphere();
       const m = new THREE.Mesh(geometry, this.groundMaterials[key]);
       m.receiveShadow = true; m.layers.set(1); m.name = name + ':' + key;
