@@ -1614,6 +1614,160 @@
         }
       ],
       "minNamed": 1
+    },
+    "Gold Coast": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "named": [
+        {
+          "id": "796099-0",
+          "name": "Three Arts Club",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "783094-0",
+          "name": "Madlener House",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "801736-0",
+          "name": "Fisher Studio Houses",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "790140-0",
+          "name": "Charnley-Persky House",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "777425-0",
+          "name": "Latin School of Chicago",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "780445-0",
+          "name": "International Museum of Surgical Science",
+          "kind": "museum",
+          "family": 2
+        },
+        {
+          "id": "799639-0",
+          "name": "Claridge House",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "812249-0",
+          "name": "Bryan Lathrop House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ],
+      "label": [
+        250,
+        -2300
+      ]
+    },
+    "Rush & Division": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "named": [
+        {
+          "id": "837546-0",
+          "name": "Holy Name Cathedral",
+          "kind": "church",
+          "family": 2
+        },
+        {
+          "id": "819079-0",
+          "name": "Newberry Library",
+          "kind": "library",
+          "family": 9
+        },
+        {
+          "id": "821651-0",
+          "name": "Waldorf Astoria Chicago",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "833935-0",
+          "name": "Lawson House YMCA",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "833957-0",
+          "name": "Former Cosmopolitan State Bank",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "833755-0",
+          "name": "Hotel St. Benedict Flats",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "River North": {
+      "profile": "loft-district",
+      "status": "done",
+      "named": [
+        {
+          "id": "847912-0",
+          "name": "Medinah Temple",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "824161-0",
+          "name": "Montgomery Ward Catalog House",
+          "kind": "landmark",
+          "family": 5
+        },
+        {
+          "id": "862781-0",
+          "name": "Reid, Murdoch & Co. Building",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "857279-0",
+          "name": "Courthouse Place",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "848001-0",
+          "name": "Tree Studios",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "843538-0",
+          "name": "Nickerson House",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "861033-0",
+          "name": "AMA Plaza (former IBM Building)",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "833594-0",
+          "name": "Bush Temple of Music",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
     }
   },
   "profiles": {
