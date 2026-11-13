@@ -51,7 +51,8 @@ for (const n of done) {
   assert(n.profile && cfg.profiles[n.profile], `${n.name}: profile`);
   assert(inPolys(n.label[0], n.label[1], n.polygons), `${n.name}: label point outside its own area`);
   // Neighborhoods mostly inside the circle need named buildings; small slivers may have none.
-  assert(n.named.length >= (n.km2 * n.share >= 1 ? 3 : 0), `${n.name}: needs named buildings`);
+  const minNamed = cfg.neighborhoods[n.name]?.minNamed ?? (n.km2 * n.share >= 1 ? 3 : 0); // partly-downtown ones are labelled with downtown
+  assert(n.named.length >= minNamed, `${n.name}: needs ${minNamed} named buildings`);
   assert(Array.isArray(n.water), `${n.name}: water for Mini Fellow`);
   for (const b of n.named) {
     assert(/^\d+-\d+$/.test(b.id) && b.name && b.family >= 0 && b.family < 32, `${n.name}: named ${JSON.stringify(b)}`);

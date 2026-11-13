@@ -133,11 +133,136 @@
     "Douglas": {
       "aka": [
         "Bronzeville"
+      ],
+      "profile": "greystone-flats",
+      "status": "done",
+      "raisedRails": [
+        "Joliet Sub District"
+      ],
+      "named": [
+        {
+          "id": "1041965-0",
+          "name": "S.R. Crown Hall (IIT)",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "1040824-0",
+          "name": "IIT Main Building",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "1036695-0",
+          "name": "IIT Machinery Hall",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "1067096-0",
+          "name": "Wendell Phillips Academy",
+          "kind": "school",
+          "family": 20
+        },
+        {
+          "id": "1011966-0",
+          "name": "Dunbar Vocational Career Academy",
+          "kind": "school",
+          "family": 20
+        },
+        {
+          "id": "1025313-0",
+          "name": "Olivet Baptist Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1056125-0",
+          "name": "Ida B. Wells-Barnett House",
+          "kind": "landmark",
+          "family": 15
+        },
+        {
+          "id": "1070105-0",
+          "name": "South Side Community Art Center",
+          "kind": "museum",
+          "family": 15
+        },
+        {
+          "id": "1015826-0",
+          "name": "Sidney A. Kent House",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "1032650-0",
+          "name": "Roloson Houses (Frank Lloyd Wright)",
+          "kind": "landmark",
+          "family": 21
+        }
       ]
     },
     "Grand Boulevard": {
       "aka": [
         "Bronzeville"
+      ],
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "1083851-0",
+          "name": "Metropolitan Apostolic Community Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "1076903-0",
+          "name": "Monumental Baptist Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "1112230-0",
+          "name": "Mt. Pisgah Missionary Baptist Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1097379-0",
+          "name": "Eighth Church of Christ, Scientist",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1076957-0",
+          "name": "Blackwell-Israel Samuel A.M.E. Zion Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1105096-0",
+          "name": "Ebenezer Missionary Baptist Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "1094796-0",
+          "name": "First Church of Deliverance",
+          "kind": "church",
+          "family": 8
+        },
+        {
+          "id": "1080901-0",
+          "name": "Roberts Temple Church of God in Christ",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1112604-0",
+          "name": "Rosenwald Court Apartments",
+          "kind": "landmark",
+          "family": 6
+        }
       ]
     },
     "Little Italy, UIC": {
@@ -326,12 +451,205 @@
           "kind": "venue",
           "family": 8
         }
+      ],
+      "raisedRails": [
+        "Joliet Sub District"
       ]
     },
     "Brighton Park": {
       "profile": "worker-cottage",
       "status": "done",
       "named": []
+    },
+    "Chinatown": {
+      "profile": "chinatown",
+      "status": "done",
+      "raisedRails": [
+        "Joliet Sub District"
+      ],
+      "named": [
+        {
+          "id": "974723-0",
+          "name": "Pui Tak Center (On Leong Building)",
+          "kind": "landmark",
+          "family": 22
+        },
+        {
+          "id": "979390-0",
+          "name": "Chinese American Museum of Chicago",
+          "kind": "museum",
+          "family": 22
+        },
+        {
+          "id": "980282-0",
+          "name": "St. Therese Chinese Catholic School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "969286-0",
+          "name": "Chinatown Branch Library",
+          "kind": "library",
+          "family": 25
+        }
+      ]
+    },
+    "Armour Square": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "raisedRails": [
+        "Joliet Sub District"
+      ],
+      "named": [
+        {
+          "id": "1049814-0",
+          "name": "Guaranteed Rate Field",
+          "kind": "stadium",
+          "family": 24
+        },
+        {
+          "id": "1010903-0",
+          "name": "St. Jerome Croatian Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1005431-0",
+          "name": "James Ward School",
+          "kind": "school",
+          "family": 6
+        }
+      ]
+    },
+    "Near South Side": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "raisedRails": [
+        "St. Charles Air Line"
+      ],
+      "named": [
+        {
+          "id": "961886-0",
+          "name": "Second Presbyterian Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "985034-0",
+          "name": "Quinn Chapel",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "954473-0",
+          "name": "Glessner House",
+          "kind": "landmark",
+          "family": 15
+        },
+        {
+          "id": "956913-0",
+          "name": "Clarke House",
+          "kind": "landmark",
+          "family": 16
+        },
+        {
+          "id": "964863-0",
+          "name": "Wheeler-Kohn House",
+          "kind": "landmark",
+          "family": 21
+        },
+        {
+          "id": "970438-0",
+          "name": "Chess Records",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "967835-0",
+          "name": "R.R. Donnelley Calumet Plant",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "933704-0",
+          "name": "Wholesale Furniture Exposition Building",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "933817-0",
+          "name": "Coca-Cola Building",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "991468-0",
+          "name": "Mercy Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "962191-0",
+          "name": "McCormick Place",
+          "kind": "venue",
+          "family": 5
+        }
+      ]
+    },
+    "Museum Campus": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "named": [
+        {
+          "id": "937968-0",
+          "name": "Soldier Field",
+          "kind": "stadium",
+          "family": 2
+        }
+      ],
+      "minNamed": 1
+    },
+    "Oakland": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "1048516-0",
+          "name": "Soldiers' Home",
+          "kind": "landmark",
+          "family": 15
+        },
+        {
+          "id": "1080960-0",
+          "name": "First Church of Christ, Scientist",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1085588-0",
+          "name": "Mathilde Eliel House",
+          "kind": "landmark",
+          "family": 15
+        }
+      ]
+    },
+    "Kenwood": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "1098107-0",
+          "name": "King College Prep",
+          "kind": "school",
+          "family": 24
+        },
+        {
+          "id": "1094359-0",
+          "name": "Muddy Waters House",
+          "kind": "landmark",
+          "family": 15
+        }
+      ]
     }
   },
   "profiles": {
@@ -814,5 +1132,6 @@
   "_profiles": "Each profile is a list of rules; a building takes the first rule it matches (minArea/maxArea in m2, maxH in m). families maps FAMILIES indices (js/city-data.js) to weights; roof is flat, gable (small near-rectangular houses: ridge at the measured height) or cornice (parapet trim).",
   "_named": "named: real Cook County footprints (id = objectId-part) located from OpenStreetMap (osm, ODbL) and given a facade family; kind picks the label icon. Churches rise to their nave with a pitched roof, and their tower(s) (twin: true) stand at the front (N/E/S/W, visually estimated) reaching the measured height.",
   "_raisedRails": "raisedRails: OSM line names that run on an embankment here (OSM rarely tags embankments); streets pass under them through viaducts.",
-  "_families": "FAMILIES (js/city-data.js): 0-5 downtown mix (0 beige stone, 1 brown brick, 2 pale stone, 3 blue glass, 4 dark glass, 5 concrete); 6 red brick; 7 brown brick; 8 cream brick; 9 greystone; 10 church stone; 11 siding; 12 siding blue-grey; 13 siding sand; 14 greystone light; 15 greystone dark; 16 frame white; 17 frame mint; 18 frame blue; 19 frame yellow; 20 yellow brick; 21 brownstone; 22 Chinatown brick; 23 loft brick; 24 modernist concrete; 25 lakefront glass; 26 greenhouse glass."
+  "_families": "FAMILIES (js/city-data.js): 0-5 downtown mix (0 beige stone, 1 brown brick, 2 pale stone, 3 blue glass, 4 dark glass, 5 concrete); 6 red brick; 7 brown brick; 8 cream brick; 9 greystone; 10 church stone; 11 siding; 12 siding blue-grey; 13 siding sand; 14 greystone light; 15 greystone dark; 16 frame white; 17 frame mint; 18 frame blue; 19 frame yellow; 20 yellow brick; 21 brownstone; 22 Chinatown brick; 23 loft brick; 24 modernist concrete; 25 lakefront glass; 26 greenhouse glass.",
+  "_downtownNamed": "Downtown buildings (assets/downtown.json) get their labels in the downtown touch-up: Field Museum 928203-0, Adler Planetarium 928439-0, NEMA 927184-0, One Museum Park West 927054-0."
 }

@@ -13,22 +13,22 @@ Inside the circle: 26 community areas and 45 neighborhoods.
 | 28 | Near West Side | all | Greektown · all · ⬜ to do<br>Little Italy & UIC (Little Italy, UIC) · all · ⬜ to do<br>United Center · all · ⬜ to do<br>West Loop · all · ⬜ to do |
 | 31 | Lower West Side | all | Pilsen (Lower West Side) · all · ✅ finished |
 | 32 | Loop | all | Grant Park · all · ✅ downtown<br>Loop · all · ✅ downtown<br>Millennium Park (Millenium Park) · all · ✅ downtown<br>Printers Row · all · ✅ downtown |
-| 33 | Near South Side | all | Museum Campus · all · ⬜ to do<br>Near South Side · all · ⬜ to do |
-| 34 | Armour Square | all | Armour Square · all · ⬜ to do<br>Chinatown · all · ⬜ to do |
-| 35 | Douglas | all | Douglas · all · ⬜ to do |
-| 36 | Oakland | all | Oakland · all · ⬜ to do |
+| 33 | Near South Side | all | Museum Campus · all · ✅ finished<br>Near South Side · all · ✅ finished |
+| 34 | Armour Square | all | Armour Square · all · ✅ finished<br>Chinatown · all · ✅ finished |
+| 35 | Douglas | all | Douglas · all · ✅ finished |
+| 36 | Oakland | all | Oakland · all · ✅ finished |
 | 60 | Bridgeport | all | Bridgeport · all · ✅ finished |
 | 59 | Mckinley Park | all | McKinley Park (Mckinley Park) · all · ✅ finished |
 | 6 | Lake View | 77% | Boystown · all · ⬜ to do<br>Lake View · 79% · ⬜ to do<br>Wrigleyville · 47% · ⬜ to do |
 | 22 | Logan Square | 64% | Bucktown · all · ⬜ to do<br>Logan Square · 49% · ⬜ to do |
-| 38 | Grand Boulevard | 62% | Grand Boulevard · 62% · ⬜ to do |
+| 38 | Grand Boulevard | 62% | Grand Boulevard · 62% · ✅ finished |
 | 29 | North Lawndale | 52% | North Lawndale · 52% · ⬜ to do |
 | 37 | Fuller Park | 48% | Fuller Park · 48% · ✅ finished |
 | 23 | Humboldt Park | 48% | Humboldt Park · 58% · ⬜ to do |
 | 30 | South Lawndale | 36% | Little Village · 36% · ✅ finished |
 | 61 | New City | 30% | New City · 30% · ✅ finished |
 | 5 | North Center | 24% | North Center · 24% · ⬜ to do |
-| 39 | Kenwood | 20% | Kenwood · 20% · ⬜ to do |
+| 39 | Kenwood | 20% | Kenwood · 20% · ✅ finished |
 | 26 | West Garfield Park | 17% | — |
 | 58 | Brighton Park | 7% | Brighton Park · 7% · ✅ finished |
 | 21 | Avondale | 5% | Avondale · 5% · ⬜ to do |
