@@ -66,11 +66,9 @@ async function init() {
   const ctx = { quality, beacons: [], glows: [], updaters: [] };
 
   status('Loading Chicago’s real building footprints');
-  ctx.data = await loadCityData();
-  ctx.lakeShoreData=await loadLakeShore();
-  ctx.waterfront=await loadWaterfront();
-  ctx.sites=await loadSites();
-  ctx.transitData=await loadTransit();
+  // Fetch the five data files together instead of one after another.
+  [ctx.data, ctx.lakeShoreData, ctx.waterfront, ctx.sites, ctx.transitData] =
+    await Promise.all([loadCityData(), loadLakeShore(), loadWaterfront(), loadSites(), loadTransit()]);
   configureShore(ctx.data);
   prepareWorld(ctx);
 

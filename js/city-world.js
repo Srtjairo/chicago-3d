@@ -1,3 +1,4 @@
+import {boxesAt} from './spatial.js';
 import {siteAt} from './site-data.js';
 import {transitAt} from './transit-data.js';
 import {landscapeAt,waterfrontAt,waterfrontLand} from './waterfront-data.js';
@@ -12,7 +13,8 @@ import {buildLakeShore} from './lake-shore.js';
 export function prepareWorld(ctx) {
   const water = ctx.data.water.filter((w) => !w.name.includes('LAKE')).map((w) => ({ ...w, bounds: boundsOf(w.rings[0]) }));
   ctx.waterLevel=(x,z)=>ctx.waterfront.riverSurfaces.some(rings=>inPolygon(x,z,rings))?.2:-.6;
-  ctx.isRiver = (x, z) => water.some((w) => x >= w.bounds.x0 && x <= w.bounds.x1 && z >= w.bounds.z0 && z <= w.bounds.z1 && inPolygon(x,z,w.rings));
+  const waterBoxes = water.map((w) => ({ ...w.bounds, w }));
+  ctx.isRiver = (x, z) => boxesAt(waterBoxes, x, z).some(({ w }) => x >= w.bounds.x0 && x <= w.bounds.x1 && z >= w.bounds.z0 && z <= w.bounds.z1 && inPolygon(x,z,w.rings));
   ctx.lakeShore=prepareLakeShore(ctx.lakeShoreData,ctx.isRiver);
   ctx.roads = ctx.data.streets.filter((s) => s.class >= 1 && s.class <= 4 && !/LOWER|RAMP|EXPY/.test(s.road) && s.level.every((h) => h >= 0))
     .filter(s=>!ctx.lakeShore.sourceIds.has(s.id))
@@ -80,12 +82,12 @@ export function buildStreets(scene,ctx) {
       const x=p[0]-dz/len*off,z=p[2]+dx/len*off;
       if(siteAt(ctx,x,z)||transitAt(ctx,x,z)||ctx.isRiver(x,z)||landscapeAt(x,z)||waterfrontAt(x,z)&&!waterfrontLand(x,z))continue;
       // Reject positions inside the measured footprints, including overhanging podiums.
-      if(ctx.measuredBuildings.some(b=>x>b.x0-1&&x<b.x1+1&&z>b.z0-1&&z<b.z1+1&&inPolygon(x,z,b.rings)))continue;
+      if(boxesAt(ctx.measuredBuildings,x,z,1).some(b=>x>b.x0-1&&x<b.x1+1&&z>b.z0-1&&z<b.z1+1&&inPolygon(x,z,b.rings)))continue;
       posts.push([x,3.6,z,0.16,7,0.16]);lamps.push([x,7.2,z,1.3,0.18,0.7]);
       if(rand()<0.65){
         // Move along the sidewalk, never five metres inward into the traffic lane.
         const tx=x+dx/len*5,tz=z+dz/len*5;
-        if(!siteAt(ctx,tx,tz)&&!transitAt(ctx,tx,tz)&&!ctx.measuredBuildings.some(b=>tx>b.x0-1&&tx<b.x1+1&&tz>b.z0-1&&tz<b.z1+1&&inPolygon(tx,tz,b.rings)))trees.push([tx,tz,0.6+rand()*0.16]);
+        if(!siteAt(ctx,tx,tz)&&!transitAt(ctx,tx,tz)&&!boxesAt(ctx.measuredBuildings,tx,tz,1).some(b=>tx>b.x0-1&&tx<b.x1+1&&tz>b.z0-1&&tz<b.z1+1&&inPolygon(tx,tz,b.rings)))trees.push([tx,tz,0.6+rand()*0.16]);
       }
       if(rand()<0.2) furniture.push([x,0.9,z,1.6,0.45,0.55,Math.atan2(dx,dz)]);
     }

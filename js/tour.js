@@ -1,3 +1,4 @@
+import { boxesIn } from './spatial.js';
 import * as THREE from 'three';
 import { LANDMARKS } from './geo.js';
 import { FEATURED_IDS } from './featured.js';
@@ -43,7 +44,7 @@ export class Flyer {
       // center ray alone can leave a wide landmark hidden behind a foreground roof.
       for(const [side,height]of [[0,.5],[0,.22],[0,.85],[-.65,.5],[.65,.5]]){
         const tx=target.x+Math.cos(az)*(v.width??L.r)*side,tz=target.z-Math.sin(az)*(v.width??L.r)*side,ty=SLAB_TOP+L.roof*height;
-        for(const b of this.ctx.collisionBuildings||[]){if(b.id===L.id)continue;
+        const m0=v.clearance??5;for(const b of boxesIn(this.ctx.collisionBuildings||[],Math.min(tx,pos.x)-m0,Math.min(tz,pos.z)-m0,Math.max(tx,pos.x)+m0,Math.max(tz,pos.z)+m0)){if(b.id===L.id)continue;
           let hit=false;
           for(let t=.1;t<=1;t+=.05){const x=tx+(pos.x-tx)*t,y=ty+(pos.y-ty)*t,z=tz+(pos.z-tz)*t;
             const margin=v.clearance??5;
@@ -63,7 +64,7 @@ export class Flyer {
     const dist = p0.distanceTo(pos);
     if (this.reducedMotion) { this.camera.position.copy(pos); this.controls.target.copy(target); this.anim=null; return; }
     let clearance=Math.max(p0.y,pos.y)+Math.min(dist*0.18,500);
-    for(const b of this.ctx.collisionBuildings || []) {
+    for(const b of boxesIn(this.ctx.collisionBuildings || [],Math.min(p0.x,pos.x)-25,Math.min(p0.z,pos.z)-25,Math.max(p0.x,pos.x)+25,Math.max(p0.z,pos.z)+25)) {
       // Test the whole projected route against expanded building bounds.
       for(let t=0;t<=1;t+=0.04){const x=p0.x+(pos.x-p0.x)*t,z=p0.z+(pos.z-p0.z)*t;if(x>b.x0-25&&x<b.x1+25&&z>b.z0-25&&z<b.z1+25)clearance=Math.max(clearance,b.h+70);}
     }
