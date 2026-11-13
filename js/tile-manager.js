@@ -265,7 +265,7 @@ export class TileManager {
       if (next.entry.mode && heavy++) break;
       const { entry, result } = this.uploads.shift();
       if (entry.state !== 'loading') continue; // evicted meanwhile
-      if (entry.mode === 'real') { entry.mesh = this.makeReal(result.meshes, 'real-' + entry.path); if (result.decor) this.addDecor(entry.mesh, result.decor); }
+      if (entry.mode === 'real') { entry.mesh = this.makeReal(result.meshes, 'real-' + entry.path); if (result.decor) { this.addDecor(entry.mesh, result.decor); this.onReal?.(entry, result.decor); } }
       else if (entry.mode === 'ground') entry.mesh = this.makeGround(result.ground, 'ground-' + entry.path);
       else entry.mesh = result.count ? this.makeMesh(result.count, result.data, 'tile-' + entry.path) : null;
       if (entry.mesh) this.group.add(entry.mesh);
@@ -277,6 +277,7 @@ export class TileManager {
   }
 
   dispose(entry) {
+    if (entry.mode === 'real' && entry.state !== 'idle') this.onRealGone?.(entry);
     if (entry.mesh) {
       this.group.remove(entry.mesh);
       entry.mesh.traverse((o) => { if (o.isMesh) { if (!o.geometry.userData.shared) o.geometry.dispose(); o.dispose?.(); } });

@@ -19,7 +19,8 @@ import { buildOfficeArchitecture } from './offices.js';
 import { buildCityLife } from './city-life.js';
 import { setupExplorer } from './explorer.js';
 import { setupMinimap } from './minimap.js';
-import { loadNeighborhoods, setupNeighborhoods } from './neighborhoods.js';
+import { loadNeighborhoods, setupNeighborhoods, neighborhoodWalk } from './neighborhoods.js';
+import { setupNeighborhoodLife } from './neighborhood-life.js';
 import { loadTransit } from './transit-data.js';
 import { buildTransit } from './transit.js';
 import { setupMiniFellow } from './mini-fellow.js';
@@ -106,7 +107,15 @@ async function init() {
   buildOfficeArchitecture(scene, ctx);
   buildCity(scene, ctx);
   // Streamed tiles live on layer 1, which the main camera sees and the lake's mirror camera doesn't.
-  if (ctx.cityTiles) { ctx.tiles = new TileManager(scene, ctx, ctx.cityTiles); camera.layers.enable(1); }
+  if (ctx.cityTiles) {
+    ctx.tiles = new TileManager(scene, ctx, ctx.cityTiles); camera.layers.enable(1);
+    // Cars and people on the lanes of nearby finished neighborhood tiles.
+    ctx.hoodLife = setupNeighborhoodLife(scene, ctx, camera);
+    // Mini Fellow can walk finished neighborhoods; their nearby real footprints are solid.
+    ctx.hoodWalk = neighborhoodWalk(ctx.neighborhoods);
+    ctx.tiles.onReal = (entry, decor) => { ctx.hoodLife.add(entry.path, decor); ctx.hoodWalk.add(entry.path, decor); };
+    ctx.tiles.onRealGone = (entry) => { ctx.hoodLife.remove(entry.path); ctx.hoodWalk.remove(entry.path); };
+  }
   buildStreets(scene, ctx);
   buildSites(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
@@ -222,6 +231,7 @@ async function init() {
     explorer.update(dt);
     ui.minimap.update(dt);
     ctx.hoods.update(dt);
+    ctx.hoodLife?.update(dt);
     // keep the camera above the ground and the target inside the city
     if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
     containCamera(camera, controls, dt);
@@ -234,7 +244,8 @@ async function init() {
     // Near plane follows altitude: fine detail at street level, no z-fighting from 10 km up.
     const near = THREE.MathUtils.clamp(camera.position.y * 0.01, 3, 40);
     if (Math.abs(near - camera.near) > 0.5) { camera.near = near; camera.updateProjectionMatrix(); }
-    ctx.tiles?.update(dt, controls.target, perf.level);
+    // Stream around Mini Fellow while he explores, otherwise around the orbit target.
+    ctx.tiles?.update(dt, miniFellow.active ? camera.position : controls.target, perf.level);
     const night = lighting.state.night;
     for (const fn of ctx.updaters) fn(ctx.life.time, night);
     if (ctx.water) ctx.water.material.uniforms.time.value += dt * 0.35;

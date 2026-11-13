@@ -14,6 +14,7 @@ import { root, ringArea, ringBounds, simplify } from './geo-source.mjs';
 
 const read = (p) => JSON.parse(readFileSync(join(root, p), 'utf8'));
 const areas = read('.cache/city/areas.json'), hoods = read('.cache/city/neighborhoods.json');
+const water = read('.cache/city/water.json').filter((w) => !/LAKE MICHIGAN/i.test(w.name)).map((w) => w.rings.map((r) => { const a = r[0], b = r.at(-1); return a[0] === b[0] && a[1] === b[1] ? r : [...r, a]; }));
 const config = read('tools/neighborhood-profiles.json');
 
 const closed = (r) => { const a = r[0], b = r.at(-1); return a[0] === b[0] && a[1] === b[1] ? r : [...r, a]; };
@@ -59,6 +60,8 @@ for (const h of hoods) {
     id, name: h.name, display: cfg.display || h.name, aka: cfg.aka || [], area: overlaps[0]?.id, alsoIn: overlaps.slice(1).filter((o) => o.share > 0.1).map((o) => o.id),
     km2: +(total / 1e6).toFixed(2), share: +share.toFixed(3), status, profile: cfg.profile || null, named: cfg.named || [], raisedRails: cfg.raisedRails || [],
   };
+  // Finished neighborhoods carry their rivers and slips, so Mini Fellow stays out of the water.
+  if ((status === 'pilot' || status === 'done') && share >= 0.005) { const v = ringBounds(insideMp.flatMap((p) => p[0])); entry.water = round(water.filter((w) => w[0].some(([x, z]) => x > v.x0 - 500 && x < v.x1 + 500 && z > v.z0 - 500 && z < v.z1 + 500)).flatMap((w) => { try { return clip.intersection([w], insideMp); } catch { return []; } }), 2); }
   if (share >= 0.005) { entry.label = cfg.label || labelPoint(insideMp); entry.polygons = round(insideMp); const all = insideMp.flatMap((p) => p[0]); const v = ringBounds(all); entry.bbox = [Math.round(v.x0), Math.round(v.x1), Math.round(v.z0), Math.round(v.z1)]; }
   out.neighborhoods.push(entry);
   out.areas.find((a) => a.id === entry.area).neighborhoods.push(id);

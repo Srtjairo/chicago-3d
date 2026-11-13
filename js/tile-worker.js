@@ -196,11 +196,18 @@ function along(points, step, skip, jitter, rand, fn) {
 function decorate(tile, ground) {
   const x0 = tile.tx * TILE, z0 = tile.tz * TILE, inTile = (x, z) => x >= x0 && x < x0 + TILE && z >= z0 && z < z0 + TILE;
   const blocked = blockers([...tile.buildings.map((b) => b.rings.map(open)), ...ground.water.map((w) => w.rings.map(open))]);
-  const trees = [], lamps = [];
+  const trees = [], lamps = [], lanes = { pts: [], counts: [] }, walks = { pts: [], counts: [] };
+  const line = (into, pts) => { into.counts.push(pts.length); for (const [x, z] of pts) into.pts.push(x, z); };
+  // A polyline shifted sideways (positive = to the right of travel; x east, z south).
+  const shift = (pts, off) => pts.map((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [p[0] - dz / l * off, p[1] + dx / l * off]; });
   for (const s of ground.streets) {
     const m = s.points[Math.floor(s.points.length / 2)];
     if (!(s.flags & FINISHED) || !inTile(m[0], m[1]) || s.class === 1) continue;
     const w = ROAD_WIDTH[s.class] || 8.5, rand = rng(Math.round(m[0] * 31 + m[1] * 17) >>> 0);
+    // Driving lanes (right-hand traffic, respecting one-way streets) and both sidewalks.
+    if (s.dir !== 'T') line(lanes, shift(s.points, w / 4));
+    if (s.dir !== 'F') line(lanes, shift([...s.points].reverse(), w / 4));
+    line(walks, shift(s.points, w / 2 + 1.8)); line(walks, shift(s.points, -(w / 2 + 1.8)));
     // Parkway trees on both sides of collectors and local streets; arterials get fewer.
     for (const side of [-1, 1]) along(s.points, s.class === 2 ? 16 : 10, 12, 0.2, rand, (x, z, dx, dz) => {
       // Fewer on busy streets, where storefronts meet the sidewalk.
@@ -228,7 +235,11 @@ function decorate(tile, ground) {
       if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz)) trees.push(px, pz, 0.8 + rand() * 0.7, Math.floor(rand() * 1000));
     }
   }
-  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps) };
+  // Footprints for Mini Fellow's collisions (outer ring and height).
+  const solids = { pts: [], counts: [] }, heights = [];
+  for (const b of tile.buildings) { const r = open(b.rings[0]); if (r.length >= 3) { line(solids, r); heights.push(b.h + 0.6); } }
+  const pack = (l) => ({ pts: new Float32Array(l.pts), counts: new Uint16Array(l.counts) });
+  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps), lanes: pack(lanes), walks: pack(walks), solids: pack(solids), heights: new Float32Array(heights) };
 }
 
 // A main-line railway: at grade a ballast bed; raised, an earth embankment (sloped sides) or a
