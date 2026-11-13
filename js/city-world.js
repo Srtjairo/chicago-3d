@@ -37,6 +37,7 @@ export function prepareWorld(ctx) {
 
 export function buildWaterGeometry(scene, ctx) {
   const mat = new THREE.MeshStandardMaterial({ color:0x285957,roughness:0.3,metalness:0.18,normalMap:ctx.riverNormals,normalScale:new THREE.Vector2(0.12,0.12),side:THREE.DoubleSide });
+  ctx.riverMaterial = mat; // shared with the streamed neighbourhood rivers (tile-manager.js)
   const parts=[];
   for(const rings of ctx.waterfront.riverSurfaces) {
     const g=polygonGeometry(rings,0,0.2);

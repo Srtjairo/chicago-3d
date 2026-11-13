@@ -94,3 +94,11 @@ export function orientedBox(ring) {
 
 export const tileOf = (x, z, size = TILE) => [Math.floor(x / size), Math.floor(z / size)];
 export const tileKey = (tx, tz) => tx + '_' + tz;
+
+// Façade family (index into FAMILIES in city-data.js) for a neighbourhood building: brick for
+// low-rises, the downtown mix for mid-rises and the glass families for towers. Deterministic.
+export function familyFor(h, seed) {
+  if (h > 130) return seed % 3 === 0 ? 4 : 3;
+  if (h > 40) return [0, 2, 5, 3][seed % 4];
+  return [1, 1, 0, 5, 1, 2][seed % 6];
+}

@@ -6,6 +6,8 @@
 //   index.json             tile list with sizes/hashes, tall-building table, park and area registries
 //   b/{tx}_{tz}.{hash}.bin  1 km detail tiles: real footprints, streets, water, parks (gzip, CHT1 kind 0)
 //   s/{sx}_{sz}.{hash}.bin  4 km skyline tiles: oriented boxes for taller buildings (gzip, CHT1 kind 1)
+//   g/{sx}_{sz}.{hash}.bin  4 km ground tiles: streets, water and parks (CHT1 kind 0 with no buildings,
+//                           tx/tz = sx*4/sz*4); always loaded for the whole circle
 //   backdrop.{hash}.bin     the rest of Chicago beyond DETAIL_RADIUS: boxes for buildings 12 m and up
 //
 // Only the explorable circle (CITY_RADIUS, plus a margin out to DETAIL_RADIUS) gets detail and
@@ -14,7 +16,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
-import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS } from '../js/coverage.js';
+import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
 import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, encodeDetail, encodeSkyline, tileKey, orientedBox } from '../js/tile-format.js';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
@@ -73,7 +75,7 @@ let streetCount = 0;
 for (const s of streetsIn) {
   if (!(s.class >= 1 && s.class <= 4)) continue;
   const m = s.points[Math.floor(s.points.length / 2)];
-  if (!inDetail(m[0], m[1])) continue;
+  if (!inDetail(m[0], m[1]) || inCoverage(m[0], m[1])) continue; // downtown draws its own streets
   tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).streets.push(s); streetCount++;
 }
 // Water and parks are clipped to tile squares, leaving out downtown, which draws its own.
@@ -100,11 +102,27 @@ log('Tiles:', tiles.size, 'streets', streetCount, 'water polygons', rivers.lengt
 
 // ---------- Write ----------
 rmSync(out, { recursive: true, force: true });
-mkdirSync(join(out, 'b'), { recursive: true }); mkdirSync(join(out, 's'), { recursive: true });
+for (const d of ['b', 's', 'g']) mkdirSync(join(out, d), { recursive: true });
 const write = (dir, key, bytes) => { const gz = gzipSync(bytes, { level: 9 }); const hash = sha256(gz).slice(0, 10); writeFileSync(join(out, dir, `${key}.${hash}.bin`), gz); return { bytes: gz.length, hash }; };
-const index = { version: VERSION, tile: TILE, sky: SKY, origin: ORIGIN, radius: CITY_RADIUS, detailRadius: DETAIL_RADIUS, built: new Date().toISOString().slice(0, 10), bbox: boundary.bbox, tiles: [], skyline: [], tall: [], parks: [], areas: [], heights: stats };
+const index = { version: VERSION, tile: TILE, sky: SKY, origin: ORIGIN, radius: CITY_RADIUS, detailRadius: DETAIL_RADIUS, built: new Date().toISOString().slice(0, 10), bbox: boundary.bbox, tiles: [], skyline: [], ground: [], tall: [], parks: [], areas: [], heights: stats };
 let total = 0, largest = 0;
+// Ground features move from their 1 km tiles into 4 km ground tiles, loaded for the whole circle.
+const ground = new Map(), ratio = SKY / TILE;
+for (const t of tiles.values()) {
+  const sx = Math.floor(t.tx / ratio), sz = Math.floor(t.tz / ratio), k = tileKey(sx, sz);
+  if (!ground.has(k)) ground.set(k, { tx: sx * ratio, tz: sz * ratio, sx, sz, buildings: [], streets: [], water: [], parks: [] });
+  const g = ground.get(k); g.streets.push(...t.streets); g.water.push(...t.water); g.parks.push(...t.parks);
+  t.streets = []; t.water = []; t.parks = [];
+}
+let groundTotal = 0;
+for (const g of [...ground.values()].sort((a, b) => a.sx - b.sx || a.sz - b.sz)) {
+  if (!g.streets.length && !g.water.length && !g.parks.length) continue;
+  const { bytes, hash } = write('g', tileKey(g.sx, g.sz), encodeDetail(g));
+  index.ground.push([g.sx, g.sz, hash, bytes, g.streets.length]); groundTotal += bytes; largest = Math.max(largest, bytes);
+}
+log(`Ground: ${index.ground.length} tiles, ${(groundTotal / 1e6).toFixed(2)} MB`);
 for (const t of [...tiles.values()].sort((a, b) => a.tx - b.tx || a.tz - b.tz)) {
+  if (!t.buildings.length) continue;
   t.buildings.sort((a, b) => a.objectId - b.objectId || a.part - b.part);
   const { bytes, hash } = write('b', tileKey(t.tx, t.tz), encodeDetail(t));
   const maxH = t.buildings.reduce((m, b) => Math.max(m, b.h), 0);

@@ -16,9 +16,9 @@ const index = JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8'));
 assert.equal(index.version, VERSION); assert.equal(index.radius, CITY_RADIUS); assert.equal(index.detailRadius, DETAIL_RADIUS); assert.equal(index.tile, TILE); assert.equal(index.sky, SKY);
 
 // Files on disk are exactly the files the index names, and their hashes match.
-const named = new Set([...index.tiles.map(([x, z, h]) => `b/${x}_${z}.${h}.bin`), ...index.skyline.map(([x, z, h]) => `s/${x}_${z}.${h}.bin`)]);
+const named = new Set([...index.tiles.map(([x, z, h]) => `b/${x}_${z}.${h}.bin`), ...index.skyline.map(([x, z, h]) => `s/${x}_${z}.${h}.bin`), ...index.ground.map(([x, z, h]) => `g/${x}_${z}.${h}.bin`)]);
 named.add(`backdrop.${index.backdrop[0]}.bin`);
-const onDisk = new Set([...readdirSync(dir).filter((f) => f.startsWith('backdrop.')), ...readdirSync(join(dir, 'b')).map((f) => 'b/' + f), ...readdirSync(join(dir, 's')).map((f) => 's/' + f)]);
+const onDisk = new Set([...readdirSync(dir).filter((f) => f.startsWith('backdrop.')), ...readdirSync(join(dir, 'b')).map((f) => 'b/' + f), ...readdirSync(join(dir, 's')).map((f) => 's/' + f), ...readdirSync(join(dir, 'g')).map((f) => 'g/' + f)]);
 assert.deepEqual([...onDisk].sort(), [...named].sort(), 'tile files and index disagree');
 
 const boundary = existsSync(join(root, '.cache/city/boundary.json')) ? JSON.parse(readFileSync(join(root, '.cache/city/boundary.json'), 'utf8')) : null;
@@ -50,7 +50,17 @@ for (const [tx, tz, hash, bytes, count, maxH] of index.tiles) {
     m = Math.max(m, b.h);
   }
   assert.equal(Math.round(m), maxH);
-  buildings += t.buildings.length; streets += t.streets.length;
+  assert.equal(t.streets.length + t.water.length + t.parks.length, 0, 'ground features belong in ground tiles');
+  buildings += t.buildings.length;
+}
+// Ground tiles: streets, water and parks only, none of them inside downtown.
+for (const [sx, sz, hash, bytes, count] of index.ground) {
+  const gz = readFileSync(join(dir, 'g', `${sx}_${sz}.${hash}.bin`)), raw = gunzipSync(gz), t = decode(raw);
+  assert.equal(gz.length, bytes); assert.equal(t.kind, 0); assert.equal(t.tx, sx * SKY / TILE); assert.equal(t.tz, sz * SKY / TILE);
+  assert.equal(t.buildings.length, 0); assert.equal(t.streets.length, count);
+  assert.deepEqual(Buffer.from(encodeDetail(t)), raw, `ground ${sx}_${sz} does not round-trip`);
+  for (const s of t.streets) { const m = s.points[Math.floor(s.points.length / 2)]; assert(!inCoverage(m[0], m[1]), 'street drawn by both downtown and tiles'); assert(s.class >= 1 && s.class <= 4); }
+  streets += t.streets.length; total += bytes; largest = Math.max(largest, bytes);
 }
 let skyBoxes = 0;
 for (const [sx, sz, hash, bytes, count] of index.skyline) {
