@@ -65,6 +65,7 @@ export function setupNeighborhoods({ scene, camera, flyer, registry, named = [] 
     el.innerHTML = `<span>${n.display}</span><small>${areaName[n.area] && areaName[n.area] !== n.display ? areaName[n.area] : 'Chicago'}</small>`;
     el.addEventListener('click', () => flyTo(n));
     const o = new CSS2DObject(el); o.position.set(n.label[0], 70, n.label[1]); o.visible = false; scene.add(o);
+    o.userData.rank = n.km2 * n.share; // bigger neighborhoods win when names would overlap
     return o;
   });
   // Named buildings: small labels above the roof, within about 900 m and below 700 m altitude.
@@ -79,7 +80,19 @@ export function setupNeighborhoods({ scene, camera, flyer, registry, named = [] 
   function update(dt) {
     timer -= dt; if (timer > 0) return; timer = 0.15;
     const c = camera.position, high = c.y > 400;
-    for (const o of hoodLabels) o.visible = high && Math.hypot(o.position.x - c.x, o.position.z - c.z) < 7000;
+    // Names that would overlap a more important one on screen are hidden (largest areas first).
+    const taken = [], w = innerWidth, hgt = innerHeight, v = new THREE.Vector3();
+    for (const o of [...hoodLabels].sort((a, b) => b.userData.rank - a.userData.rank)) {
+      let show = high && Math.hypot(o.position.x - c.x, o.position.z - c.z) < 7000;
+      if (show) {
+        v.copy(o.position).project(camera);
+        const bw = o.element.offsetWidth || o.userData.w || 160, bh = o.element.offsetHeight || 40; o.userData.w = bw;
+        const rect = { x: (v.x + 1) * w / 2 - bw / 2 - 8, y: (1 - v.y) * hgt / 2 - bh / 2 - 4, w: bw + 16, h: bh + 8 };
+        show = v.z > -1 && v.z < 1 && !taken.some((t) => rect.x < t.x + t.w && rect.x + rect.w > t.x && rect.y < t.y + t.h && rect.y + rect.h > t.y);
+        if (show) taken.push(rect);
+      }
+      o.visible = show;
+    }
     // Nearest few named buildings, only when low.
     const near = c.y < 700 ? buildingLabels.map((o) => [o, o.position.distanceTo(c)]).filter(([, d]) => d < 900).sort((a, b) => a[1] - b[1]).slice(0, innerWidth < 720 ? 3 : 7) : [];
     const show = new Set(near.map(([o]) => o));
