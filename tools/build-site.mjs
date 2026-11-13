@@ -17,8 +17,8 @@ if (!/^https:\/\//.test(siteUrl)) {
   process.exit(1);
 }
 
-const TITLE = 'Downtown Chicago in 3D';
-const DESC = 'Explore a living 3D model of downtown Chicago, with real building footprints, signature architecture, riverboats, Loop trains and streets that come alive from midday to night.';
+const TITLE = 'Chicago in 3D';
+const DESC = 'Explore a living 3D model of Chicago, 8 km around the Loop: downtown and 40 neighborhoods built from real building footprints and city data, with signature architecture, riverboats, trains and streets that come alive from midday to night.';
 
 const src = readFileSync(join(root, 'index.html'), 'utf8');
 const scripts = readdirSync(join(root, 'js')).filter((f) => f.endsWith('.js')).sort();
