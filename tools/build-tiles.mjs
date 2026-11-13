@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, encodeDetail, encodeSkyline, tileKey, orientedBox } from '../js/tile-format.js';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, FINISHED, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
 import { renderMinimap } from './minimap.mjs';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
@@ -61,6 +61,30 @@ for (const b of items) {
 }
 log('Heights:', JSON.stringify(stats));
 
+// ---------- Styles ----------
+// Buildings in finished (or pilot) neighborhoods take facade family and roof from their profile
+// (tools/neighborhood-profiles.json); named buildings can override both. Everywhere else keeps
+// the default familyFor() with a flat roof, exactly as before.
+const registry = JSON.parse(readFileSync(join(root, 'assets', 'neighborhoods.json'), 'utf8'));
+const profiles = JSON.parse(readFileSync(join(root, 'tools', 'neighborhood-profiles.json'), 'utf8')).profiles;
+const ROOFS = { flat: ROOF_FLAT, gable: ROOF_GABLE, cornice: ROOF_CORNICE };
+const finished = registry.neighborhoods.filter((n) => (n.status === 'pilot' || n.status === 'done') && n.profile).map((n) => {
+  if (!profiles[n.profile]) throw new Error(`${n.name}: unknown profile ${n.profile}`);
+  return { ...n, inside: polygonTester(n.polygons), rules: profiles[n.profile].rules };
+});
+const namedStyle = new Map(finished.flatMap((n) => n.named.map((b) => [b.id, styleOf(b.family, ROOFS[b.roof || 'flat'])])));
+const pick = (weights, seed) => { const e = Object.entries(weights), total = e.reduce((s, [, w]) => s + w, 0); let r = ((seed * 2654435761) >>> 0) % total; for (const [f, w] of e) { if ((r -= w) < 0) return Number(f); } return Number(e[0][0]); };
+const styleStats = {};
+const inFinished = (x, z) => finished.some((n) => x >= n.bbox[0] && x <= n.bbox[1] && z >= n.bbox[2] && z <= n.bbox[3] && n.inside(x, z));
+function styleFor(b, seed) {
+  if (namedStyle.has(b.id)) return namedStyle.get(b.id);
+  const hood = finished.find((n) => b.x >= n.bbox[0] && b.x <= n.bbox[1] && b.z >= n.bbox[2] && b.z <= n.bbox[3] && n.inside(b.x, b.z));
+  if (!hood) return styleOf(familyFor(b.h, seed));
+  const rule = hood.rules.find((r) => (r.minArea == null || b.area >= r.minArea) && (r.maxArea == null || b.area <= r.maxArea) && (r.maxH == null || b.h <= r.maxH));
+  styleStats[hood.id] = (styleStats[hood.id] || 0) + 1;
+  return styleOf(pick(rule.families, seed), ROOFS[rule.roof || 'flat']);
+}
+
 // ---------- Assign to tiles ----------
 const inDetail = (x, z) => Math.hypot(x, z) < DETAIL_RADIUS;
 // A tile square that reaches inside the detail circle.
@@ -70,7 +94,7 @@ const tileFor = (tx, tz) => { const k = tileKey(tx, tz); if (!tiles.has(k)) tile
 for (const b of items) {
   if (!inDetail(b.x, b.z)) continue;
   const [objectId, part] = b.id.split('-').map(Number);
-  tileFor(Math.floor(b.x / TILE), Math.floor(b.z / TILE)).buildings.push({ objectId, part, h: b.h, flags: b.flags, rings: b.rings, id: b.id });
+  tileFor(Math.floor(b.x / TILE), Math.floor(b.z / TILE)).buildings.push({ objectId, part, h: b.h, flags: b.flags, style: styleFor(b, objectId % 10007), rings: b.rings, id: b.id });
 }
 // Streets: centrelines of classes 1-4 (expressway, arterial, collector, local), by midpoint.
 let streetCount = 0;
@@ -78,7 +102,7 @@ for (const s of streetsIn) {
   if (!(s.class >= 1 && s.class <= 4)) continue;
   const m = s.points[Math.floor(s.points.length / 2)];
   if (!inDetail(m[0], m[1]) || inCoverage(m[0], m[1])) continue; // downtown draws its own streets
-  tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).streets.push(s); streetCount++;
+  tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).streets.push({ ...s, flags: inFinished(m[0], m[1]) ? FINISHED : 0 }); streetCount++;
 }
 // Water and parks are clipped to tile squares, leaving out downtown, which draws its own.
 const downtownHoles = COVERAGE_RECTS.map((r) => [[[r.minX, r.minZ], [r.maxX, r.minZ], [r.maxX, r.maxZ], [r.minX, r.maxZ], [r.minX, r.minZ]]]);
@@ -99,7 +123,8 @@ const isLakeMichigan = (w) => /LAKE MICHIGAN/i.test(w.name);
 const rivers = waterIn.filter((w) => !isLakeMichigan(w));
 clipToTiles(rivers.map((w) => w.rings), (t, rings) => t.water.push({ rings }));
 const parkList = parksIn.map((p, i) => ({ ...p, index: i }));
-for (const p of parkList) clipToTiles(p.polygons, (t, rings) => t.parks.push({ park: p.index, rings }));
+for (const p of parkList) clipToTiles(p.polygons, (t, rings) => { const v = ringBounds(rings[0]); t.parks.push({ park: p.index, flags: inFinished(v.x, v.z) ? FINISHED : 0, rings }); });
+log('Styled by neighborhood profile:', JSON.stringify(styleStats));
 log('Tiles:', tiles.size, 'streets', streetCount, 'water polygons', rivers.length, 'parks', parkList.length);
 
 // ---------- Write ----------

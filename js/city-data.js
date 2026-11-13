@@ -71,6 +71,15 @@ export const FAMILIES = [
   { color: 0x8097a2, glass: 0x426678, style: 1, cell: [1.65, 3.6], roughness: 0.32, seed: 104 },
   { color: 0x444b50, glass: 0x283b48, style: 1, cell: [2.8, 3.8], roughness: 0.4, seed: 105 },
   { color: 0xaaa69c, glass: 0x3a454d, cell: [3.8, 4.2], winA: [0.76, 0.68], seed: 106 },
+  // Neighborhood families (tools/neighborhood-profiles.json), used by finished neighborhoods.
+  { name: 'red brick', color: 0x9b5843, glass: 0x262c30, cell: [3.1, 3.3], winA: [0.42, 0.56], seed: 107 },
+  { name: 'brown brick', color: 0x74503f, glass: 0x22282c, cell: [3.1, 3.3], winA: [0.42, 0.56], seed: 108 },
+  { name: 'cream brick', color: 0xc9b28c, glass: 0x2b3236, cell: [3.3, 3.6], winA: [0.5, 0.6], seed: 109 },
+  { name: 'greystone', color: 0xa8a294, glass: 0x283036, cell: [3.0, 3.6], winA: [0.4, 0.6], seed: 110 },
+  { name: 'church stone', color: 0xbcae92, glass: 0x2a2f3a, cell: [4.6, 7.5], winA: [0.26, 0.62], seed: 111 },
+  { name: 'siding', color: 0xc9c3b6, glass: 0x2a3034, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 112 },
+  { name: 'siding blue-grey', color: 0x8d9aa0, glass: 0x262d31, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 113 },
+  { name: 'siding sand', color: 0xd3bf96, glass: 0x2b3033, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 114 },
 ];
 export function buildMeasuredCity(scene, ctx) {
   const group = new THREE.Group(); group.name = 'measured-city';

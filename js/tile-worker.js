@@ -1,11 +1,11 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor } from './tile-format.js';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, ROOF_GABLE, ROOF_CORNICE, FINISHED, TILE } from './tile-format.js';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
-// Box instances, stride 7: x, z, width, depth, height, angle (atan2 dz,dx), seed.
-export const BOX_STRIDE = 7;
+// Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
+export const BOX_STRIDE = 8;
 const BASE = 0.6; // buildings stand on the same 0.6 m slab top as downtown's
 
 async function load(url) {
@@ -26,7 +26,8 @@ function boxes(tile) {
     const b = tile.kind === 1 ? item : item.b, o = tile.kind === 1 ? item : item.o;
     // Skyline tiles carry no ids; a position hash keeps each box's window pattern stable.
     const seed = tile.kind === 1 ? Math.abs(Math.round(b.x * 7 + b.z * 13)) % 10007 : b.objectId % 10007;
-    out.set([o.x, o.z, Math.max(o.w, 1), Math.max(o.d, 1), b.h, o.angle, seed], i * BOX_STRIDE);
+    const family = tile.kind === 1 ? familyFor(b.h, seed) : familyOfStyle(b.style);
+    out.set([o.x, o.z, Math.max(o.w, 1), Math.max(o.d, 1), b.h, o.angle, seed, family], i * BOX_STRIDE);
   });
   return { count: list.length, data: out };
 }
@@ -68,48 +69,160 @@ class Soup {
 const open = (ring) => { const a = ring[0], b = ring.at(-1); return a[0] === b[0] && a[1] === b[1] ? ring.slice(0, -1) : ring; };
 const signedArea = (r) => { let a = 0; for (let i = 0; i < r.length; i++) { const p = r[i], q = r[(i + 1) % r.length]; a += p[0] * q[1] - q[0] * p[1]; } return a / 2; };
 
-// Real footprints, extruded: walls with outward normals plus a roof, one soup per façade family.
+// Walls of one ring from y0 to y1. Outer ring: (dz, -dx) points out when the signed area is
+// positive; holes face inward. `each` sees every edge with its outward normal (for trims).
+function walls(s, r, outer, y0, y1, seed, each) {
+  const sign = (signedArea(r) > 0 ? 1 : -1) * (outer ? 1 : -1);
+  for (let i = 0; i < r.length; i++) {
+    const [ax, az] = r[i], [bx, bz] = r[(i + 1) % r.length], len = Math.hypot(bx - ax, bz - az);
+    if (len < 0.01) continue;
+    const nx = (bz - az) / len * sign, nz = -(bx - ax) / len * sign;
+    s.tri([ax, y0, az], [bx, y0, bz], [bx, y1, bz], nx, 0, nz, seed); s.tri([ax, y0, az], [bx, y1, bz], [ax, y1, az], nx, 0, nz, seed);
+    each?.(ax, az, bx, bz, nx, nz);
+  }
+}
+
+// A cottage: the footprint's rectangle with walls to the eaves, two sloped roof planes and
+// gable-end triangles; the ridge (at the measured height) runs along the long side. Returns
+// false for footprints that aren't close to a rectangle, which then get a flat roof.
+function gable(walls_, roofSoup, ring, h, seed) {
+  const o = orientedBox(ring);
+  if (Math.abs(signedArea(ring)) < 0.85 * o.w * o.d || o.w < 3 || o.d < 3) return false;
+  const c = Math.cos(o.angle), s = Math.sin(o.angle);
+  // Long axis (ridge direction) L and across axis A, with half-lengths.
+  let [Lx, Lz, hl, Ax, Az, ha] = o.w >= o.d ? [c, s, o.w / 2, -s, c, o.d / 2] : [-s, c, o.d / 2, c, s, o.w / 2];
+  const top = BASE + h, rise = Math.min(Math.max(ha * 0.75, 1.2), h * 0.45), eave = top - rise;
+  const P = (l, a, y) => [o.x + Lx * l + Ax * a, y, o.z + Lz * l + Az * a];
+  const box = [[-hl, -ha], [hl, -ha], [hl, ha], [-hl, ha]].map(([l, a]) => { const p = P(l, a, 0); return [p[0], p[2]]; });
+  walls(walls_, box, true, BASE, eave, seed);
+  // Gable ends (facade material) at both ends of the ridge.
+  for (const l of [-hl, hl]) walls_.tri(P(l, -ha, eave), P(l, ha, eave), P(l, 0, top), Lx * Math.sign(l), 0, Lz * Math.sign(l), seed);
+  // Roof planes, sloping down to each long side.
+  const n = Math.hypot(rise, ha);
+  for (const side of [-1, 1]) {
+    const nx = Ax * side * rise / n, ny = ha / n, nz = Az * side * rise / n;
+    const r0 = P(-hl, 0, top), r1 = P(hl, 0, top), e0 = P(-hl, side * ha, eave), e1 = P(hl, side * ha, eave);
+    roofSoup.tri(r0, r1, e1, nx, ny, nz); roofSoup.tri(r0, e1, e0, nx, ny, nz);
+  }
+  return true;
+}
+
+// A parapet cornice around a flat roof: an outward band and its top cap.
+function cornice(trim, ax, az, bx, bz, nx, nz, top) {
+  const o = 0.3, y0 = top - 0.8, y1 = top + 0.35, ox = nx * o, oz = nz * o;
+  const a = [ax + ox, y0, az + oz], b = [bx + ox, y0, bz + oz], a1 = [ax + ox, y1, az + oz], b1 = [bx + ox, y1, bz + oz];
+  trim.tri(a, b, b1, nx, 0, nz); trim.tri(a, b1, a1, nx, 0, nz);
+  trim.tri([ax, y1, az], a1, b1, 0, 1, 0); trim.tri([ax, y1, az], b1, [bx, y1, bz], 0, 1, 0);
+}
+
+// Real footprints, extruded: walls plus a roof (flat, flat with a cornice, or a cottage gable),
+// one soup per facade family, plus shared 'roof' (shingles) and 'trim' (cornices) soups.
 function extrude(tile) {
-  const soups = new Map();
+  const soups = new Map(), get = (k) => { if (!soups.has(k)) soups.set(k, new Soup()); return soups.get(k); };
   for (const b of tile.buildings) {
     const rings = b.rings.map(open).filter((r) => r.length >= 3);
     if (!rings.length || Math.abs(signedArea(rings[0])) < 6) continue;
-    const seed = b.objectId % 10007, f = familyFor(b.h, seed), top = BASE + b.h;
-    if (!soups.has(f)) soups.set(f, new Soup());
-    const s = soups.get(f);
-    rings.forEach((r, k) => {
-      // Outer ring: (dz, -dx) points out when the signed area is positive; holes face inward.
-      const sign = (signedArea(r) > 0 ? 1 : -1) * (k === 0 ? 1 : -1);
-      for (let i = 0; i < r.length; i++) {
-        const [ax, az] = r[i], [bx, bz] = r[(i + 1) % r.length], len = Math.hypot(bx - ax, bz - az);
-        if (len < 0.01) continue;
-        const nx = (bz - az) / len * sign, nz = -(bx - ax) / len * sign;
-        const a0 = [ax, BASE, az], b0 = [bx, BASE, bz], a1 = [ax, top, az], b1 = [bx, top, bz];
-        s.tri(a0, b0, b1, nx, 0, nz, seed); s.tri(a0, b1, a1, nx, 0, nz, seed);
-      }
-    });
+    const seed = b.objectId % 10007, roof = roofOfStyle(b.style), top = BASE + b.h, s = get(familyOfStyle(b.style));
+    if (roof === ROOF_GABLE && rings.length === 1 && gable(s, get('roof'), rings[0], b.h, seed)) continue;
+    const trim = roof === ROOF_CORNICE ? get('trim') : null;
+    rings.forEach((r, k) => walls(s, r, k === 0, BASE, top, seed, trim && k === 0 ? (ax, az, bx, bz, nx, nz) => cornice(trim, ax, az, bx, bz, nx, nz, top) : null));
     s.flat(rings, top, seed);
   }
   return [...soups].map(([family, s]) => ({ family, ...s.arrays() }));
 }
 
+// ---------- Street trees, lamps and park trees (finished neighborhoods only) ----------
+// Made with a tile's real footprints (so they come and go with the near ring), from the streets
+// and parks of the ground tile that contains it. Deterministic: the same tile always gets the
+// same trees.
+const groundCache = new Map();
+function groundTile(url) {
+  if (!groundCache.has(url)) { groundCache.set(url, load(url)); if (groundCache.size > 4) groundCache.delete(groundCache.keys().next().value); }
+  return groundCache.get(url);
+}
+const rng = (seed) => () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+const inRing = (x, z, r) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const a = r[i], b = r[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+// Footprints (and water) as a 25 m grid of bounding boxes, to keep trees out of buildings.
+function blockers(polys) {
+  const grid = new Map(), key = (i, j) => i * 100003 + j;
+  for (const rings of polys) {
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const [x, z] of rings[0]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    const item = { rings, x0: x0 - 1.5, x1: x1 + 1.5, z0: z0 - 1.5, z1: z1 + 1.5 };
+    for (let i = Math.floor(item.x0 / 25); i <= Math.floor(item.x1 / 25); i++) for (let j = Math.floor(item.z0 / 25); j <= Math.floor(item.z1 / 25); j++) { const k = key(i, j); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(item); }
+  }
+  return (x, z) => (grid.get(key(Math.floor(x / 25), Math.floor(z / 25))) || []).some((b) => x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1 && inRing(x, z, b.rings[0]));
+}
+// Points every `step` metres along a polyline, `skip` metres clear of both ends (intersections).
+function along(points, step, skip, jitter, rand, fn) {
+  const segs = []; let total = 0;
+  for (let i = 1; i < points.length; i++) { const [ax, az] = points[i - 1], [bx, bz] = points[i], l = Math.hypot(bx - ax, bz - az); if (l > 0.01) { segs.push([ax, az, bx, bz, l, total]); total += l; } }
+  for (let d = skip + rand() * step * 0.5; d < total - skip; d += step * (1 - jitter + rand() * 2 * jitter)) {
+    const s = segs.find((g) => d <= g[5] + g[4]); if (!s) break;
+    const t = (d - s[5]) / s[4], dx = (s[2] - s[0]) / s[4], dz = (s[3] - s[1]) / s[4];
+    fn(s[0] + (s[2] - s[0]) * t, s[1] + (s[3] - s[1]) * t, dx, dz);
+  }
+}
+function decorate(tile, ground) {
+  const x0 = tile.tx * TILE, z0 = tile.tz * TILE, inTile = (x, z) => x >= x0 && x < x0 + TILE && z >= z0 && z < z0 + TILE;
+  const blocked = blockers([...tile.buildings.map((b) => b.rings.map(open)), ...ground.water.map((w) => w.rings.map(open))]);
+  const trees = [], lamps = [];
+  for (const s of ground.streets) {
+    const m = s.points[Math.floor(s.points.length / 2)];
+    if (!(s.flags & FINISHED) || !inTile(m[0], m[1]) || s.class === 1) continue;
+    const w = ROAD_WIDTH[s.class] || 8.5, rand = rng(Math.round(m[0] * 31 + m[1] * 17) >>> 0);
+    // Parkway trees on both sides of collectors and local streets; arterials get fewer.
+    for (const side of [-1, 1]) along(s.points, s.class === 2 ? 16 : 10, 12, 0.2, rand, (x, z, dx, dz) => {
+      // Fewer on busy streets, where storefronts meet the sidewalk.
+      if ((s.class === 2 && rand() < 0.65) || (s.class === 3 && rand() < 0.4)) return;
+      const px = x - dz * side * (w / 2 + 1.6), pz = z + dx * side * (w / 2 + 1.6);
+      if (!blocked(px, pz)) trees.push(px, pz, 0.7 + rand() * 0.55, Math.floor(rand() * 1000));
+    });
+    // Lamps: staggered on both sides of arterials and collectors, one side of local streets.
+    for (const side of s.class === 4 ? [1] : [-1, 1]) along(s.points, s.class === 4 ? 42 : 34, side > 0 ? 6 : 23, 0.05, rand, (x, z, dx, dz) => {
+      const px = x - dz * side * (w / 2 + 0.6), pz = z + dx * side * (w / 2 + 0.6);
+      if (!blocked(px, pz)) lamps.push(px, pz, Math.atan2(dx * side, dz * side));
+    });
+  }
+  // Park trees: a jittered 13 m grid, about half kept, clear of paths' worth of open lawn.
+  for (const p of ground.parks) {
+    if (!(p.flags & FINISHED)) continue;
+    const r = p.rings.map(open), o = r[0];
+    let ax = Infinity, bx = -Infinity, az = Infinity, bz = -Infinity;
+    for (const [x, z] of o) { ax = Math.min(ax, x); bx = Math.max(bx, x); az = Math.min(az, z); bz = Math.max(bz, z); }
+    if (!inTile((ax + bx) / 2, (az + bz) / 2)) continue;
+    const rand = rng(Math.round(ax * 13 + az * 7) >>> 0);
+    for (let x = ax + 6; x < bx; x += 13) for (let z = az + 6; z < bz; z += 13) {
+      if (rand() < 0.48) continue;
+      const px = x + (rand() - 0.5) * 9, pz = z + (rand() - 0.5) * 9;
+      if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz)) trees.push(px, pz, 0.8 + rand() * 0.7, Math.floor(rand() * 1000));
+    }
+  }
+  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps) };
+}
+
 // Streets (sidewalk band under a carriageway), parks and water for a ground tile.
 const ROAD_WIDTH = { 1: 22, 2: 13, 3: 11, 4: 8.5 };
 function ground(tile) {
-  const roads = new Soup(), walks = new Soup(), parks = new Soup(), water = new Soup();
-  for (const s of tile.streets) { const w = ROAD_WIDTH[s.class] || 8.5; roads.ribbon(s.points, w, 0.16); if (s.class > 1) walks.ribbon(s.points, w + 6, 0.1); }
-  for (const p of tile.parks) parks.flat(p.rings.map(open), 0.07);
-  for (const p of tile.water) water.flat(p.rings.map(open), 0.04);
+  const roads = new Soup(), walks = new Soup(), parks = new Soup(), water = new Soup(), lines = new Soup();
+  for (const s of tile.streets) {
+    const w = ROAD_WIDTH[s.class] || 8.5; roads.ribbon(s.points, w, 0.16); if (s.class > 1) walks.ribbon(s.points, w + 6, 0.1);
+    // Yellow centre line on finished arterials and collectors.
+    if (s.flags & FINISHED && (s.class === 2 || s.class === 3)) lines.ribbon(s.points, 0.35, 0.2);
+  }
+  // Water sits above park lawns, so lagoons and ponds inside parks show.
+  for (const p of tile.parks) parks.flat(p.rings.map(open), 0.06);
+  for (const p of tile.water) water.flat(p.rings.map(open), 0.12);
   const pick = ({ position, normal }) => ({ position, normal });
-  return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()) };
+  return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()), lines: pick(lines.arrays()) };
 }
 
 const buffers = (o) => { const out = []; const walk = (v) => { if (ArrayBuffer.isView(v)) out.push(v.buffer); else if (v && typeof v === 'object') Object.values(v).forEach(walk); }; walk(o); return out; };
 
-self.onmessage = async ({ data: { id, url, mode = 'boxes' } }) => {
+self.onmessage = async ({ data: { id, url, mode = 'boxes', ground: groundUrl } }) => {
   try {
     const tile = await load(url);
-    const result = mode === 'real' ? { meshes: extrude(tile) } : mode === 'ground' ? { ground: ground(tile) } : boxes(tile);
+    const result = mode === 'real' ? { meshes: extrude(tile), decor: groundUrl ? decorate(tile, await groundTile(groundUrl)) : null } : mode === 'ground' ? { ground: ground(tile) } : boxes(tile);
     self.postMessage({ id, mode, kind: tile.kind, ...result }, buffers(result));
   } catch (e) {
     self.postMessage({ id, error: String(e?.message || e) });

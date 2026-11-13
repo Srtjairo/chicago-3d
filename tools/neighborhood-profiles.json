@@ -45,7 +45,60 @@
   },
   "profiles": {
     "pilsen-brick": {
-      "about": "Red and brown brick 2–3 flats and worker cottages, cream-brick storefronts, stone churches"
+      "about": "Red and brown brick 2-3 flats and worker cottages, cream-brick storefronts, stone churches, brick and concrete warehouses by the river",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 160,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 1,
+            "11": 3,
+            "12": 2,
+            "13": 2
+          }
+        },
+        {
+          "maxH": 16,
+          "roof": "cornice",
+          "families": {
+            "6": 5,
+            "7": 4,
+            "8": 2,
+            "9": 1
+          }
+        },
+        {
+          "maxH": 30,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "7": 2,
+            "8": 3,
+            "9": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "5": 1,
+            "8": 1
+          }
+        }
+      ]
     }
-  }
+  },
+  "_profiles": "Each profile is a list of rules; a building takes the first rule it matches (minArea/maxArea in m2, maxH in m). families maps FAMILIES indices (js/city-data.js) to weights; roof is flat, gable (small near-rectangular houses: ridge at the measured height) or cornice (parapet trim)."
 }

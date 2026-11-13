@@ -12,10 +12,10 @@
 import * as THREE from 'three';
 import { facadeMaterial } from './textures.js';
 import { FAMILIES, polygonGeometry } from './city-data.js';
-import { tileKey, familyFor } from './tile-format.js';
+import { tileKey, VERSION } from './tile-format.js';
 import { fadeBeyondCity } from './terrain.js';
 
-const STRIDE = 7; // must match BOX_STRIDE in tile-worker.js
+const STRIDE = 8; // must match BOX_STRIDE in tile-worker.js
 const version = new URL(import.meta.url).search;
 const tilesUrl = (path) => { const u = new URL('../tiles/' + path, import.meta.url); if (!/\.bin$/.test(path)) u.search = version; return u.href; };
 
@@ -24,7 +24,7 @@ export async function loadTileIndex() {
     const r = await fetch(tilesUrl('index.json'));
     if (!r.ok) return null;
     const index = await r.json();
-    return index.version === 1 ? index : null;
+    return index.version === VERSION ? index : null;
   } catch { return null; }
 }
 
@@ -35,6 +35,9 @@ export class TileManager {
     this.material = facadeMaterial({ color: 0xffffff, instanced: true, features: true, profiles: true });
     // Real footprints use downtown's own per-family facade materials.
     this.familyMaterials = FAMILIES.map((f, i) => facadeMaterial({ ...f, lightingProfile: i === 3 || i === 4 ? 'office' : 'mixed', features: true }));
+    // Cottage roofs (shingles) and cornices.
+    this.familyMaterials.roof = new THREE.MeshStandardMaterial({ color: 0x5d524c, roughness: 0.92 });
+    this.familyMaterials.trim = new THREE.MeshStandardMaterial({ color: 0x9e958a, roughness: 0.85 });
     this.detail = new Map(index.tiles.map(([tx, tz, hash, bytes, count]) => {
       const path = `b/${tx}_${tz}.${hash}.bin`;
       return [tileKey(tx, tz), { tx, tz, path, bytes, count, mesh: null, state: 'idle', lastWanted: 0, real: { path, mode: 'real', bytes: 0, mesh: null, state: 'idle', lastWanted: 0 } }];
@@ -45,7 +48,10 @@ export class TileManager {
       walks: new THREE.MeshStandardMaterial({ color: 0xa7a499, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
       parks: new THREE.MeshStandardMaterial({ color: 0x7c9a5e, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
       water: ctx.riverMaterial || new THREE.MeshStandardMaterial({ color: 0x285957, roughness: 0.3, metalness: 0.18 }),
+      lines: new THREE.MeshStandardMaterial({ color: 0xd2b14c, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
     };
+    this.groundByCell = new Map(this.ground.map((g) => [tileKey(g.sx, g.sz), g]));
+    this.buildDecor(ctx);
     this.sky = new Map(index.skyline.map(([sx, sz, hash, bytes, count]) => [tileKey(sx, sz), { sx, sz, path: `s/${sx}_${sz}.${hash}.bin`, bytes, count, mesh: null, state: 'idle', children: [] }]));
     const ratio = index.sky / index.tile;
     for (const d of this.detail.values()) {
@@ -122,7 +128,7 @@ export class TileManager {
         if (entry.state !== 'queued') continue;
         const id = this.nextId++;
         this.jobs.set(id, entry); entry.state = 'loading'; w.busy++; entry.worker = w;
-        w.postMessage({ id, url: tilesUrl(entry.path), mode: entry.mode || 'boxes' });
+        w.postMessage({ id, url: tilesUrl(entry.path), mode: entry.mode || 'boxes', ground: entry.mode === 'real' ? this.groundUrlFor(entry) : undefined });
         this.stats.requested++;
       }
     }
@@ -145,14 +151,14 @@ export class TileManager {
       cell = new Float32Array(count * 2), win = new Float32Array(count * 2), lit = new Float32Array(count), glass = new Float32Array(count * 3);
     const c = new THREE.Color(), g = new THREE.Color();
     for (let i = 0; i < count; i++) {
-      const o = i * STRIDE, x = data[o], z = data[o + 1], w = data[o + 2], d = data[o + 3], h = data[o + 4], a = data[o + 5], s = data[o + 6];
+      const o = i * STRIDE, x = data[o], z = data[o + 1], w = data[o + 2], d = data[o + 3], h = data[o + 4], a = data[o + 5], s = data[o + 6], f = data[o + 7];
       // T · Ry(-a) · S: the box's local x runs along the footprint's longest edge.
       const cos = Math.cos(a), sin = Math.sin(a), m = i * 16;
       matrices[m] = cos * w; matrices[m + 1] = 0; matrices[m + 2] = sin * w; matrices[m + 3] = 0;
       matrices[m + 4] = 0; matrices[m + 5] = h; matrices[m + 6] = 0; matrices[m + 7] = 0;
       matrices[m + 8] = -sin * d; matrices[m + 9] = 0; matrices[m + 10] = cos * d; matrices[m + 11] = 0;
       matrices[m + 12] = x; matrices[m + 13] = h / 2 + 0.6; matrices[m + 14] = z; matrices[m + 15] = 1;
-      const f = familyFor(h, s), fam = FAMILIES[f];
+      const fam = FAMILIES[f];
       c.set(fam.color).toArray(colors, i * 3); g.set(fam.glass).toArray(glass, i * 3);
       style[i] = fam.style || 0; seed[i] = s;
       cell.set(fam.cell, i * 2); win.set(fam.winA || [0.48, 0.55], i * 2); lit[i] = f === 3 || f === 4 ? 0.43 : 0.28;
@@ -165,6 +171,49 @@ export class TileManager {
     mesh.layers.set(1); // main camera only: not redrawn by the lake reflection
 
     return mesh;
+  }
+
+  // Shared geometry and materials for street trees and lamps (the downtown look: terrain.js trees,
+  // city-world.js lamps, whose glow follows the time of day through ctx.glows).
+  buildDecor(ctx) {
+    const canopy = new THREE.SphereGeometry(1, 8, 6), cp = canopy.attributes.position;
+    for (let i = 0; i < cp.count; i++) { const x = cp.getX(i), y = cp.getY(i), z = cp.getZ(i), k = 1 + 0.13 * Math.sin(x * 8 + y * 4) * Math.sin(z * 7 - y * 3); cp.setXYZ(i, x * k, y * k, z * k); }
+    canopy.computeVertexNormals();
+    const trunk = new THREE.CylinderGeometry(0.25, 0.35, 1, 5); trunk.translate(0, 0.5, 0);
+    const post = new THREE.BoxGeometry(0.16, 7, 0.16); post.translate(0, 3.5 + 0.6, 0);
+    const head = new THREE.BoxGeometry(1.3, 0.18, 0.7); head.translate(0.55, 7.2 + 0.6, 0);
+    for (const g of [canopy, trunk, post, head]) g.userData.shared = true;
+    const glow = new THREE.MeshStandardMaterial({ color: 0xe3d7bd, emissive: 0xffc982, emissiveIntensity: 0, roughness: 0.65 });
+    ctx.glows?.push({ mat: glow, day: 0, night: 0.8 });
+    this.decor = {
+      canopy, trunk, post, head, glow,
+      leaf: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 }),
+      bark: new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 }),
+      steel: new THREE.MeshStandardMaterial({ color: 0x424a4b, roughness: 0.7 }),
+    };
+  }
+
+  groundUrlFor(entry) {
+    const [tx, tz] = entry.path.slice(2).split('.')[0].split('_').map(Number), ratio = this.index.sky / this.index.tile;
+    const g = this.groundByCell.get(tileKey(Math.floor(tx / ratio), Math.floor(tz / ratio)));
+    return g ? tilesUrl(g.path) : undefined;
+  }
+
+  // Instanced street trees, park trees and lamps for one real tile.
+  addDecor(group, { trees, lamps }) {
+    if (!group) return;
+    const D = this.decor, m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
+    const nt = trees.length / 4, nl = lamps.length / 3;
+    const add = (geo, mat, n, fill) => { if (!n) return; const im = new THREE.InstancedMesh(geo, mat, n); for (let i = 0; i < n; i++) { fill(i); im.setMatrixAt(i, m); } im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.layers.set(1); im.receiveShadow = true; group.add(im); return im; };
+    const leaves = add(D.canopy, D.leaf, nt, (i) => {
+      const [x, z, k, seed] = trees.subarray(i * 4, i * 4 + 4), r = 3.4 * k;
+      e.set(0, seed * 0.37, 0); q.setFromEuler(e);
+      m.compose(v.set(x, 0.6 + 3 * k + r * 0.72, z), q, s.set(r * (0.9 + (seed % 7) * 0.03), r * (0.85 + (seed % 5) * 0.06), r));
+    });
+    if (leaves) { const col = new Float32Array(nt * 3); for (let i = 0; i < nt; i++) { const seed = trees[i * 4 + 3]; c.setHSL(0.25 + (seed % 9) * 0.009, 0.36 + (seed % 5) * 0.03, 0.2 + (seed % 7) * 0.014).toArray(col, i * 3); } leaves.instanceColor = new THREE.InstancedBufferAttribute(col, 3); }
+    add(D.trunk, D.bark, nt, (i) => { const [x, z, k] = trees.subarray(i * 4, i * 4 + 3); m.compose(v.set(x, 0.6, z), q.identity(), s.set(k, 3.2 * k, k)); });
+    add(D.post, D.steel, nl, (i) => { const [x, z] = lamps.subarray(i * 3, i * 3 + 2); m.compose(v.set(x, 0, z), q.identity(), s.set(1, 1, 1)); });
+    add(D.head, D.glow, nl, (i) => { const [x, z, a] = lamps.subarray(i * 3, i * 3 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
   }
 
   // Real footprints for one tile: a merged mesh per facade family, like downtown's near chunks.
@@ -187,7 +236,7 @@ export class TileManager {
   // Streets, parks and rivers for one ground tile.
   makeGround(parts, name) {
     const group = new THREE.Group(); group.name = name; group.visible = false;
-    for (const key of ['water', 'parks', 'walks', 'roads']) {
+    for (const key of ['water', 'parks', 'walks', 'roads', 'lines']) {
       const { position, normal } = parts[key];
       if (!position.length) continue;
       const geometry = new THREE.BufferGeometry();
@@ -212,7 +261,7 @@ export class TileManager {
       if (next.entry.mode && heavy++) break;
       const { entry, result } = this.uploads.shift();
       if (entry.state !== 'loading') continue; // evicted meanwhile
-      if (entry.mode === 'real') entry.mesh = this.makeReal(result.meshes, 'real-' + entry.path);
+      if (entry.mode === 'real') { entry.mesh = this.makeReal(result.meshes, 'real-' + entry.path); if (result.decor) this.addDecor(entry.mesh, result.decor); }
       else if (entry.mode === 'ground') entry.mesh = this.makeGround(result.ground, 'ground-' + entry.path);
       else entry.mesh = result.count ? this.makeMesh(result.count, result.data, 'tile-' + entry.path) : null;
       if (entry.mesh) this.group.add(entry.mesh);
@@ -226,7 +275,7 @@ export class TileManager {
   dispose(entry) {
     if (entry.mesh) {
       this.group.remove(entry.mesh);
-      entry.mesh.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.dispose?.(); } });
+      entry.mesh.traverse((o) => { if (o.isMesh) { if (!o.geometry.userData.shared) o.geometry.dispose(); o.dispose?.(); } });
       entry.mesh = null;
     }
     if (entry.state === 'queued') this.queue = this.queue.filter((e) => e !== entry);

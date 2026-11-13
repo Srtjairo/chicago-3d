@@ -7,15 +7,21 @@
 //
 //   magic 'CHT1', version, kind, tx, tz (zig-zag), counts...
 //   kind 0 (detail, one per 1 km tile):
-//     buildings: objectId, part, h_dm, flags, nRings, per ring: n, points
-//     streets:   class, dir(0 two-way,1 F,2 T), levelFrom+8, levelTo+8, n, points
-//     water:     nRings, rings          parks: parkIndex, nRings, rings
+//     buildings: objectId, part, h_dm, flags, style, nRings, per ring: n, points
+//       style = facade family (FAMILIES index) + 16 * roof (ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE)
+//     streets:   class, dir(0 two-way,1 F,2 T), levelFrom+8, levelTo+8, flags, n, points
+//     water:     nRings, rings          parks: parkIndex, flags, nRings, rings
+//       street/park flags: FINISHED (inside a finished neighborhood: trees, lamps, markings)
 //   kind 1 (skyline, one per 4 km tile): boxes: cx, cz, w, d (dm), h_dm, angle (0..255 → 0..255/256·π)
 
 export const MAGIC = [67, 72, 84, 49]; // 'CHT1'
-export const VERSION = 1;
+export const VERSION = 2;
 export const TILE = 1000, SKY = 4000; // metres
 export const FLAG_ESTIMATED = 1, FLAG_SPIKE = 2, FLAG_OVERRIDE = 4;
+export const FINISHED = 1;
+export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2;
+export const styleOf = (family, roof = ROOF_FLAT) => family + 16 * roof;
+export const familyOfStyle = (style) => style % 16, roofOfStyle = (style) => Math.floor(style / 16);
 const DIRS = { '': 0, B: 0, F: 1, T: 2 };
 
 export class Writer {
@@ -42,10 +48,10 @@ export function encodeDetail(tile) {
   const w = new Writer(), ox = tile.tx * TILE * 10, oz = tile.tz * TILE * 10;
   header(w, 0, tile.tx, tile.tz);
   w.u(tile.buildings.length); w.u(tile.streets.length); w.u(tile.water.length); w.u(tile.parks.length);
-  for (const b of tile.buildings) { w.u(b.objectId); w.u(b.part); w.u(Math.round(b.h * 10)); w.u(b.flags); w.u(b.rings.length); for (const r of b.rings) w.points(r, ox, oz); }
-  for (const s of tile.streets) { w.u(s.class); w.u(DIRS[s.dir] ?? 0); w.u((s.level?.[0] ?? 0) + 8); w.u((s.level?.[1] ?? 0) + 8); w.points(s.points, ox, oz); }
+  for (const b of tile.buildings) { w.u(b.objectId); w.u(b.part); w.u(Math.round(b.h * 10)); w.u(b.flags); w.u(b.style ?? 0); w.u(b.rings.length); for (const r of b.rings) w.points(r, ox, oz); }
+  for (const s of tile.streets) { w.u(s.class); w.u(DIRS[s.dir] ?? 0); w.u((s.level?.[0] ?? 0) + 8); w.u((s.level?.[1] ?? 0) + 8); w.u(s.flags ?? 0); w.points(s.points, ox, oz); }
   for (const p of tile.water) { w.u(p.rings.length); for (const r of p.rings) w.points(r, ox, oz); }
-  for (const p of tile.parks) { w.u(p.park); w.u(p.rings.length); for (const r of p.rings) w.points(r, ox, oz); }
+  for (const p of tile.parks) { w.u(p.park); w.u(p.flags ?? 0); w.u(p.rings.length); for (const r of p.rings) w.points(r, ox, oz); }
   return w.bytes();
 }
 
@@ -72,10 +78,10 @@ export function decode(bytes) {
   const nb = r.u(), ns = r.u(), nw = r.u(), np = r.u();
   const buildings = new Array(nb), streets = new Array(ns), water = new Array(nw), parks = new Array(np);
   const rings = () => { const n = r.u(), out = new Array(n); for (let k = 0; k < n; k++) out[k] = r.points(ox, oz); return out; };
-  for (let k = 0; k < nb; k++) buildings[k] = { objectId: r.u(), part: r.u(), h: r.u() / 10, flags: r.u(), rings: rings() };
-  for (let k = 0; k < ns; k++) streets[k] = { class: r.u(), dir: ['', 'F', 'T'][r.u()], level: [r.u() - 8, r.u() - 8], points: r.points(ox, oz) };
+  for (let k = 0; k < nb; k++) buildings[k] = { objectId: r.u(), part: r.u(), h: r.u() / 10, flags: r.u(), style: r.u(), rings: rings() };
+  for (let k = 0; k < ns; k++) streets[k] = { class: r.u(), dir: ['', 'F', 'T'][r.u()], level: [r.u() - 8, r.u() - 8], flags: r.u(), points: r.points(ox, oz) };
   for (let k = 0; k < nw; k++) water[k] = { rings: rings() };
-  for (let k = 0; k < np; k++) parks[k] = { park: r.u(), rings: rings() };
+  for (let k = 0; k < np; k++) parks[k] = { park: r.u(), flags: r.u(), rings: rings() };
   if (!r.done) throw new Error('Trailing bytes in tile');
   return { kind, tx, tz, buildings, streets, water, parks };
 }
@@ -95,8 +101,9 @@ export function orientedBox(ring) {
 export const tileOf = (x, z, size = TILE) => [Math.floor(x / size), Math.floor(z / size)];
 export const tileKey = (tx, tz) => tx + '_' + tz;
 
-// Façade family (index into FAMILIES in city-data.js) for a neighbourhood building: brick for
-// low-rises, the downtown mix for mid-rises and the glass families for towers. Deterministic.
+// Default facade family (index into FAMILIES in city-data.js) for a building in a neighborhood
+// that has no profile yet: brick for low-rises, the downtown mix for mid-rises and the glass
+// families for towers. Deterministic. Finished neighborhoods get their style from their profile.
 export function familyFor(h, seed) {
   if (h > 130) return seed % 3 === 0 ? 4 : 3;
   if (h > 40) return [0, 2, 5, 3][seed % 4];
