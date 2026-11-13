@@ -18,6 +18,7 @@ import { buildSignatureArchitecture } from './architecture.js';
 import { buildOfficeArchitecture } from './offices.js';
 import { buildCityLife } from './city-life.js';
 import { setupExplorer } from './explorer.js';
+import { setupMinimap } from './minimap.js';
 import { loadTransit } from './transit-data.js';
 import { buildTransit } from './transit.js';
 import { setupMiniFellow } from './mini-fellow.js';
@@ -157,6 +158,7 @@ async function init() {
     ui.showInfo(L);
   }
   ui.select = select;
+  ui.minimap = setupMinimap({ index: ctx.cityTiles, camera, controls, flyer });
   const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
   const miniFellow = setupMiniFellow({ scene, ctx, camera, controls, flyer, ui, canvas });
 
@@ -216,6 +218,7 @@ async function init() {
     ctx.transit.update(dt);
     miniFellow.update(dt);
     explorer.update(dt);
+    ui.minimap.update(dt);
     // keep the camera above the ground and the target inside the city
     if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
     containCamera(camera, controls, dt);

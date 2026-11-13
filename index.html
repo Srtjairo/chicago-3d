@@ -204,8 +204,18 @@
   .explore button { cursor:pointer; border:1px solid var(--edge); border-radius:6px; background:transparent; padding:7px; font-size:12px; }
   #life-toggle { flex:1; }
   #life-toggle[aria-pressed="true"] { color:var(--flag-blue); background:#243842; }
-  #mini-map { width:100%; height:auto; display:block; border-radius:5px; margin-top:10px; }
-  #orientation p { font-size:10px; color:var(--muted); margin:4px 0; }
+  /* Bird's-eye map of the explorable circle (js/minimap.js), above the landmark panel */
+  .minimap { position:fixed; z-index:4; width:216px; padding:10px;
+    top:calc(var(--pad) + env(safe-area-inset-top, 0px)); right:calc(var(--pad) + env(safe-area-inset-right, 0px)); }
+  .minimap.big { width:min(560px, calc(100vw - 2 * var(--pad)), calc(100vh - 200px)); }
+  body:has(.minimap.big) #panel { visibility:hidden; }
+  .minimap-disc { position:relative; width:100%; aspect-ratio:1; border-radius:50%; overflow:hidden; cursor:crosshair;
+    background:#2d5a6b; box-shadow:0 0 0 1px rgba(255,255,255,.28), 0 0 0 3px rgba(0,0,0,.25); }
+  .minimap-disc img, .minimap-disc canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .minimap-n { position:absolute; top:5px; left:50%; transform:translateX(-50%); font:700 10px var(--font-mono); color:#fff; text-shadow:0 0 3px #000; pointer-events:none; }
+  .minimap-cap { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:8px; font:500 10.5px/1.3 var(--font-body); color:var(--muted); }
+  .minimap-size { cursor:pointer; border:1px solid var(--edge); border-radius:6px; background:transparent; color:var(--ink); padding:2px 7px; font-size:13px; line-height:1.2; }
+  @media (min-width:721px) { body:has(#minimap:not([hidden])) #panel { width:216px; top:calc(var(--pad) + 270px + env(safe-area-inset-top, 0px)); max-height:calc(100% - 470px); } }
   #sources-open { display:block; border:0; padding:6px 0 0; color:var(--muted); font-size:10px; }
   #model-about { color:var(--ink); background:#15212c; border:1px solid var(--edge); border-radius:14px; width:min(520px,90vw); padding:26px; max-height:80vh; }
   #model-about::backdrop { background:#061018bb; }
@@ -222,6 +232,10 @@
     #sources-open { font-size:9px; padding-top:4px; }
     body:has(#info:not([hidden])) .explore { display:none; }
     body:has(#panel.open) .explore { display:none; }
+    .minimap { width:128px; padding:6px; }
+    .minimap.big { width:calc(100vw - 2 * var(--pad)); }
+    .minimap-cap span { display:none; }
+    .minimap-cap { justify-content:flex-end; margin-top:5px; }
   }
 
   @media (prefers-reduced-motion: reduce) {

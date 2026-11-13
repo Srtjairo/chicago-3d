@@ -18,7 +18,8 @@ assert.equal(index.version, VERSION); assert.equal(index.radius, CITY_RADIUS); a
 // Files on disk are exactly the files the index names, and their hashes match.
 const named = new Set([...index.tiles.map(([x, z, h]) => `b/${x}_${z}.${h}.bin`), ...index.skyline.map(([x, z, h]) => `s/${x}_${z}.${h}.bin`), ...index.ground.map(([x, z, h]) => `g/${x}_${z}.${h}.bin`)]);
 named.add(`backdrop.${index.backdrop[0]}.bin`);
-const onDisk = new Set([...readdirSync(dir).filter((f) => f.startsWith('backdrop.')), ...readdirSync(join(dir, 'b')).map((f) => 'b/' + f), ...readdirSync(join(dir, 's')).map((f) => 's/' + f), ...readdirSync(join(dir, 'g')).map((f) => 'g/' + f)]);
+named.add(`minimap.${index.minimap[0]}.png`);
+const onDisk = new Set([...readdirSync(dir).filter((f) => /^(backdrop|minimap)./.test(f)), ...readdirSync(join(dir, 'b')).map((f) => 'b/' + f), ...readdirSync(join(dir, 's')).map((f) => 's/' + f), ...readdirSync(join(dir, 'g')).map((f) => 'g/' + f)]);
 assert.deepEqual([...onDisk].sort(), [...named].sort(), 'tile files and index disagree');
 
 const boundary = existsSync(join(root, '.cache/city/boundary.json')) ? JSON.parse(readFileSync(join(root, '.cache/city/boundary.json'), 'utf8')) : null;

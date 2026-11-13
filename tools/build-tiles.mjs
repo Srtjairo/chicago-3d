@@ -8,6 +8,7 @@
 //   s/{sx}_{sz}.{hash}.bin  4 km skyline tiles: oriented boxes for taller buildings (gzip, CHT1 kind 1)
 //   g/{sx}_{sz}.{hash}.bin  4 km ground tiles: streets, water and parks (CHT1 kind 0 with no buildings,
 //                           tx/tz = sx*4/sz*4); always loaded for the whole circle
+//   minimap.{hash}.png      bird's-eye map of the circle for the page's corner map (tools/minimap.mjs)
 //   backdrop.{hash}.bin     the rest of Chicago beyond DETAIL_RADIUS: boxes for buildings 12 m and up
 //
 // Only the explorable circle (CITY_RADIUS, plus a margin out to DETAIL_RADIUS) gets detail and
@@ -18,6 +19,7 @@ import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
 import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, encodeDetail, encodeSkyline, tileKey, orientedBox } from '../js/tile-format.js';
+import { renderMinimap } from './minimap.mjs';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
 const src = join(root, '.cache', 'city'), out = join(root, 'tiles');
@@ -150,6 +152,17 @@ for (const t of [...sky.values()].sort((a, b) => a.sx - b.sx || a.sz - b.sz)) {
   const gz = gzipSync(encodeSkyline(backdrop), { level: 9 }), hash = sha256(gz).slice(0, 10);
   writeFileSync(join(out, `backdrop.${hash}.bin`), gz);
   index.backdrop = [hash, gz.length, backdrop.boxes.length]; skyTotal += gz.length;
+}
+// Downtown footprints live in assets/downtown.json (the citywide import leaves them out); the map shows them too.
+function downtownForMap() {
+  return JSON.parse(readFileSync(join(root, 'assets', 'downtown.json'), 'utf8')).buildings.map((b) => { const v = ringBounds(b.rings[0]); return { id: b.id, h: b.h, rings: b.rings, x: v.x, z: v.z }; });
+}
+{
+  const img = renderMinimap({ radius: CITY_RADIUS, boundary, buildings: [...items, ...downtownForMap()].map((b) => ({ rings: b.rings, h: b.h, x: b.x, z: b.z, seed: parseInt(b.id, 10) })), streets: streetsIn, water: waterIn, parks: parksIn });
+  const hash = sha256(img).slice(0, 10);
+  writeFileSync(join(out, `minimap.${hash}.png`), img);
+  index.minimap = [hash, img.length, 1024];
+  log(`Minimap: ${(img.length / 1e3).toFixed(0)} KB`);
 }
 // Registries for labels and the neighbourhood menu. Label point = interior point nearest the
 // polygon's bounding-box centre (sampled), so U-shaped areas still get a label inside them.
