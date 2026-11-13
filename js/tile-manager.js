@@ -6,10 +6,13 @@
 //    instanced draw with a box for every building, once every one of them has arrived.
 // A near cell keeps its skyline until all its detail tiles are ready, so there are never holes
 // or doubled buildings. Downtown (COVERAGE_RECTS) is not in the tiles; it builds itself.
+// Tiles only cover the explorable circle; beyond it a static backdrop (one instanced draw of the
+// taller buildings out to the city limits) is loaded once and always shown.
 import * as THREE from 'three';
 import { facadeMaterial } from './textures.js';
 import { FAMILIES, polygonGeometry } from './city-data.js';
 import { tileKey } from './tile-format.js';
+import { fadeBeyondCity } from './terrain.js';
 
 const STRIDE = 7; // must match BOX_STRIDE in tile-worker.js
 const version = new URL(import.meta.url).search;
@@ -56,6 +59,7 @@ export class TileManager {
     this.timer = 0; this.clock = 0;
     this.stats = { requested: 0, loaded: 0, bytes: 0, failed: 0, evicted: 0 };
     this.buildLand(scene);
+    if (index.backdrop) { const [hash, bytes] = index.backdrop; this.backdrop = { path: `backdrop.${hash}.bin`, bytes, mesh: null, state: 'idle' }; this.request(this.backdrop, -1); }
   }
 
   // Ground for the city and suburbs beyond downtown's surveyed terrain (which stays authoritative).
@@ -93,7 +97,7 @@ export class TileManager {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geometry.computeVertexNormals();
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x8c8e87, roughness: 0.95 }));
+    const mesh = new THREE.Mesh(geometry, fadeBeyondCity(new THREE.MeshStandardMaterial({ color: 0x8c8e87, roughness: 0.95 })));
     mesh.position.y = -0.05; mesh.receiveShadow = true; mesh.name = 'city-land';
     scene.add(mesh); this.land = mesh;
   }
@@ -164,6 +168,7 @@ export class TileManager {
       if (entry.state !== 'loading') continue; // evicted meanwhile
       entry.mesh = count ? this.makeMesh(count, data, 'tile-' + entry.path) : null;
       if (entry.mesh) this.group.add(entry.mesh);
+      if (entry === this.backdrop && entry.mesh) { entry.mesh.name = 'city-backdrop'; entry.mesh.visible = true; }
       entry.state = 'ready'; this.stats.loaded++; this.stats.bytes += entry.bytes || 0;
       this.dirty = true;
     }

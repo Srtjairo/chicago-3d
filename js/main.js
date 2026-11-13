@@ -25,6 +25,7 @@ import { buildTerrain, SLAB_TOP } from './terrain.js';
 import { buildLandmarks } from './landmarks.js';
 import { buildCity } from './city.js';
 import { loadTileIndex, TileManager } from './tile-manager.js';
+import { CITY_RADIUS } from './coverage.js';
 import { buildParks } from './parks.js';
 import { buildNavyPier } from './navypier.js';
 import { Lighting, PRESETS } from './lighting.js';
@@ -38,6 +39,21 @@ const mobile = matchMedia('(max-width: 720px), (pointer: coarse)').matches;
 const quality = mobile
   ? { pixelRatio: Math.min(devicePixelRatio, 1.25), shadow: 1024, water: 256, samples: 2 }
   : { pixelRatio: Math.min(devicePixelRatio, 1.5), shadow: 2048, water: 512, samples: 2 };
+
+// The invisible wall. The orbit target stays inside the city circle: past the edge it is eased
+// back (a soft cushion) and it can never get more than `give` metres beyond it. The camera itself
+// may hang a little outside, looking in, but no farther than `camera`. A height ceiling keeps the
+// whole circle in view while the backdrop beyond it stays at backdrop distance.
+const WALL = { radius: CITY_RADIUS, give: 250, camera: CITY_RADIUS + 1800, ceiling: 2600, maxDistance: 6500 };
+function containCamera(camera, controls, dt) {
+  const t = controls.target, c = camera.position;
+  const shift = (x, z, by) => { const r = Math.hypot(x, z); if (by <= 0 || !r) return; const kx = -x / r * by, kz = -z / r * by; t.x += kx; t.z += kz; c.x += kx; c.z += kz; };
+  const over = Math.hypot(t.x, t.z) - WALL.radius;
+  if (over > 0) shift(t.x, t.z, Math.max(over * (1 - Math.exp(-dt * 6)), over - WALL.give));
+  shift(c.x, c.z, Math.hypot(c.x, c.z) - WALL.camera);
+  // Zooming out stops at the ceiling: the farthest allowed distance depends on the tilt.
+  controls.maxDistance = Math.min(WALL.maxDistance, WALL.ceiling / Math.max(Math.cos(controls.getPolarAngle()), 0.05));
+}
 
 async function init() {
   const canvas = $('scene');
@@ -60,7 +76,7 @@ async function init() {
   controls.dampingFactor = 0.06;
   controls.maxPolarAngle = Math.PI * 0.485;
   controls.minDistance = 25;
-  controls.maxDistance = 30000;
+  controls.maxDistance = WALL.maxDistance;
   controls.zoomSpeed = 1.2;
   controls.screenSpacePanning = false;
 
@@ -70,9 +86,9 @@ async function init() {
   // Fetch the five data files together instead of one after another.
   [ctx.data, ctx.lakeShoreData, ctx.waterfront, ctx.sites, ctx.transitData, ctx.cityTiles] =
     await Promise.all([loadCityData(), loadLakeShore(), loadWaterfront(), loadSites(), loadTransit(), loadTileIndex()]);
-  // The orbit target may roam the whole city when the streamed tiles are available.
   ctx.cityTileKeys = ctx.cityTiles && new Set(ctx.cityTiles.tiles.map(([x, z]) => x + '_' + z));
-  const b = ctx.cityTiles?.bbox, CITY_BOUNDS = { x0: Math.min(-5000, b?.x0 ?? 0), x1: Math.max(4500, b?.x1 ?? 0), z0: Math.min(-5000, b?.z0 ?? 0), z1: Math.max(5000, b?.z1 ?? 0) };
+  // Without the streamed tiles the explorable area falls back to downtown's old 5 km box.
+  if (!ctx.cityTiles) WALL.radius = 5000;
   configureShore(ctx.data);
   prepareWorld(ctx);
 
@@ -202,13 +218,12 @@ async function init() {
     explorer.update(dt);
     // keep the camera above the ground and the target inside the city
     if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
-    controls.target.x = THREE.MathUtils.clamp(controls.target.x, CITY_BOUNDS.x0, CITY_BOUNDS.x1);
-    controls.target.z = THREE.MathUtils.clamp(controls.target.z, CITY_BOUNDS.z0, CITY_BOUNDS.z1);
+    containCamera(camera, controls, dt);
     controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 600);
 
     lighting.update(dt, controls.target);
     // Thinner haze from higher up, so the overview reaches across the whole city.
-    scene.fog.density = lighting.state.fogD * THREE.MathUtils.lerp(1, 0.32, THREE.MathUtils.smoothstep(camera.position.y, 1200, 6000));
+    scene.fog.density = lighting.state.fogD * THREE.MathUtils.lerp(1, 0.6, THREE.MathUtils.smoothstep(camera.position.y, 900, WALL.ceiling));
     lighting.sky.position.set(camera.position.x, 0, camera.position.z);
     // Near plane follows altitude: fine detail at street level, no z-fighting from 10 km up.
     const near = THREE.MathUtils.clamp(camera.position.y * 0.01, 3, 40);

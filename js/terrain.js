@@ -7,12 +7,26 @@ import {
 import { waterNormals, grassTexture } from './textures.js';
 import { inCoverage, polygonGeometry } from './city-data.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { CITY_RADIUS } from './coverage.js';
+
+// Ground beyond the explorable circle is a backdrop: it darkens gradually past the wall so the
+// detailed city reads as the bright centre of a larger, hazier Chicago.
+export function fadeBeyondCity(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vCityXZ;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCityXZ = (modelMatrix * vec4(transformed, 1.0)).xz;');
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vCityXZ;')
+      .replace('#include <color_fragment>', `#include <color_fragment>\ndiffuseColor.rgb *= mix(1.0, 0.74, smoothstep(${(CITY_RADIUS + 300).toFixed(1)}, ${(CITY_RADIUS + 3000).toFixed(1)}, length(vCityXZ)));`);
+  };
+  material.customProgramCacheKey = () => 'fade-beyond-city';
+  return material;
+}
 
 const SLAB_TOP = 0.6;
 
 export function buildTerrain(scene, ctx) {
   const parts=ctx.waterfront.terrain.map(rings=>polygonGeometry(rings).toNonIndexed());
-  const ground=new THREE.Mesh(mergeGeometries(parts),new THREE.MeshStandardMaterial({color:0x8c8e87,roughness:.95}));
+  const ground=new THREE.Mesh(mergeGeometries(parts),fadeBeyondCity(new THREE.MeshStandardMaterial({color:0x8c8e87,roughness:.95})));
   parts.forEach(g=>g.dispose());ground.name='geographic-land';ground.receiveShadow=true;scene.add(ground);
 
   // Lake Michigan with real reflections

@@ -6,11 +6,15 @@
 //   index.json             tile list with sizes/hashes, tall-building table, park and area registries
 //   b/{tx}_{tz}.{hash}.bin  1 km detail tiles: real footprints, streets, water, parks (gzip, CHT1 kind 0)
 //   s/{sx}_{sz}.{hash}.bin  4 km skyline tiles: oriented boxes for taller buildings (gzip, CHT1 kind 1)
+//   backdrop.{hash}.bin     the rest of Chicago beyond DETAIL_RADIUS: boxes for buildings 12 m and up
+//
+// Only the explorable circle (CITY_RADIUS, plus a margin out to DETAIL_RADIUS) gets detail and
+// skyline tiles. Everything farther out is the static backdrop, loaded once.
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
-import { COVERAGE_RECTS, ORIGIN } from '../js/coverage.js';
+import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS } from '../js/coverage.js';
 import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, encodeDetail, encodeSkyline, tileKey, orientedBox } from '../js/tile-format.js';
 import { root, sha256, ringArea, ringBounds, polygonTester, simplify } from './geo-source.mjs';
 
@@ -54,9 +58,13 @@ for (const b of items) {
 log('Heights:', JSON.stringify(stats));
 
 // ---------- Assign to tiles ----------
+const inDetail = (x, z) => Math.hypot(x, z) < DETAIL_RADIUS;
+// A tile square that reaches inside the detail circle.
+const tileInDetail = (tx, tz) => Math.hypot(Math.max(tx * TILE, 0, -(tx + 1) * TILE), Math.max(tz * TILE, 0, -(tz + 1) * TILE)) < DETAIL_RADIUS;
 const tiles = new Map();
 const tileFor = (tx, tz) => { const k = tileKey(tx, tz); if (!tiles.has(k)) tiles.set(k, { tx, tz, buildings: [], streets: [], water: [], parks: [] }); return tiles.get(k); };
 for (const b of items) {
+  if (!inDetail(b.x, b.z)) continue;
   const [objectId, part] = b.id.split('-').map(Number);
   tileFor(Math.floor(b.x / TILE), Math.floor(b.z / TILE)).buildings.push({ objectId, part, h: b.h, flags: b.flags, rings: b.rings, id: b.id });
 }
@@ -65,6 +73,7 @@ let streetCount = 0;
 for (const s of streetsIn) {
   if (!(s.class >= 1 && s.class <= 4)) continue;
   const m = s.points[Math.floor(s.points.length / 2)];
+  if (!inDetail(m[0], m[1])) continue;
   tileFor(Math.floor(m[0] / TILE), Math.floor(m[1] / TILE)).streets.push(s); streetCount++;
 }
 // Water and parks are clipped to tile squares, leaving out downtown, which draws its own.
@@ -74,6 +83,7 @@ function clipToTiles(polygons, add) {
   for (const rings of polygons) {
     const v = ringBounds(rings[0]);
     for (let tx = Math.floor(v.x0 / TILE); tx <= Math.floor(v.x1 / TILE); tx++) for (let tz = Math.floor(v.z0 / TILE); tz <= Math.floor(v.z1 / TILE); tz++) {
+      if (!tileInDetail(tx, tz)) continue;
       const sq = [[[tx * TILE, tz * TILE], [(tx + 1) * TILE, tz * TILE], [(tx + 1) * TILE, (tz + 1) * TILE], [tx * TILE, (tz + 1) * TILE], [tx * TILE, tz * TILE]]];
       let parts;
       try { parts = clip.difference(clip.intersection(rings.map(closed), sq), ...downtownHoles); } catch { continue; }
@@ -92,7 +102,7 @@ log('Tiles:', tiles.size, 'streets', streetCount, 'water polygons', rivers.lengt
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, 'b'), { recursive: true }); mkdirSync(join(out, 's'), { recursive: true });
 const write = (dir, key, bytes) => { const gz = gzipSync(bytes, { level: 9 }); const hash = sha256(gz).slice(0, 10); writeFileSync(join(out, dir, `${key}.${hash}.bin`), gz); return { bytes: gz.length, hash }; };
-const index = { version: VERSION, tile: TILE, sky: SKY, origin: ORIGIN, built: new Date().toISOString().slice(0, 10), bbox: boundary.bbox, tiles: [], skyline: [], tall: [], parks: [], areas: [], heights: stats };
+const index = { version: VERSION, tile: TILE, sky: SKY, origin: ORIGIN, radius: CITY_RADIUS, detailRadius: DETAIL_RADIUS, built: new Date().toISOString().slice(0, 10), bbox: boundary.bbox, tiles: [], skyline: [], tall: [], parks: [], areas: [], heights: stats };
 let total = 0, largest = 0;
 for (const t of [...tiles.values()].sort((a, b) => a.tx - b.tx || a.tz - b.tz)) {
   t.buildings.sort((a, b) => a.objectId - b.objectId || a.part - b.part);
@@ -101,11 +111,13 @@ for (const t of [...tiles.values()].sort((a, b) => a.tx - b.tx || a.tz - b.tz)) 
   index.tiles.push([t.tx, t.tz, hash, bytes, t.buildings.length, Math.round(maxH)]);
   total += bytes; largest = Math.max(largest, bytes);
 }
-// Skyline: one 4 km tile of oriented boxes for every building of 12 m and up.
-const sky = new Map();
+// Skyline: one 4 km tile of oriented boxes for every building of 12 m and up inside the detail
+// circle; the same boxes outside it make up the backdrop.
+const sky = new Map(), backdrop = { sx: 0, sz: 0, boxes: [] };
 for (const b of items) {
   if (b.h < 12) continue;
   const box = { ...orientedBox(b.rings[0]), h: b.h };
+  if (!inDetail(b.x, b.z)) { backdrop.boxes.push(box); continue; }
   const k = tileKey(Math.floor(b.x / SKY), Math.floor(b.z / SKY));
   if (!sky.has(k)) sky.set(k, { sx: Math.floor(b.x / SKY), sz: Math.floor(b.z / SKY), boxes: [] });
   sky.get(k).boxes.push(box);
@@ -115,6 +127,11 @@ let skyTotal = 0;
 for (const t of [...sky.values()].sort((a, b) => a.sx - b.sx || a.sz - b.sz)) {
   const { bytes, hash } = write('s', tileKey(t.sx, t.sz), encodeSkyline(t));
   index.skyline.push([t.sx, t.sz, hash, bytes, t.boxes.length]); skyTotal += bytes;
+}
+{
+  const gz = gzipSync(encodeSkyline(backdrop), { level: 9 }), hash = sha256(gz).slice(0, 10);
+  writeFileSync(join(out, `backdrop.${hash}.bin`), gz);
+  index.backdrop = [hash, gz.length, backdrop.boxes.length]; skyTotal += gz.length;
 }
 // Registries for labels and the neighbourhood menu. Label point = interior point nearest the
 // polygon's bounding-box centre (sampled), so U-shaped areas still get a label inside them.
@@ -165,6 +182,6 @@ for (const a of areasIn) {
 }
 writeFileSync(join(out, 'index.json'), JSON.stringify(index));
 const buildingCount = index.tiles.reduce((n, t) => n + t[4], 0);
-log(`Wrote ${index.tiles.length} detail tiles (${(total / 1e6).toFixed(1)} MB, largest ${(largest / 1e3).toFixed(0)} KB), ${index.skyline.length} skyline tiles (${(skyTotal / 1e6).toFixed(1)} MB), ${buildingCount} buildings, ${index.tall.length} tall, index ${(JSON.stringify(index).length / 1e3).toFixed(0)} KB`);
+log(`Wrote ${index.tiles.length} detail tiles (${(total / 1e6).toFixed(1)} MB, largest ${(largest / 1e3).toFixed(0)} KB), ${index.skyline.length} skyline tiles + backdrop of ${backdrop.boxes.length} (${(skyTotal / 1e6).toFixed(1)} MB), ${buildingCount} buildings, ${index.tall.length} tall, index ${(JSON.stringify(index).length / 1e3).toFixed(0)} KB`);
 // A list of every spike that was capped, for review.
 writeFileSync(join(src, 'height-review.json'), JSON.stringify(items.filter((b) => b.review).map((b) => ({ id: b.id, x: Math.round(b.x), z: Math.round(b.z), h: b.h, area: Math.round(b.area) })), null, 1));
