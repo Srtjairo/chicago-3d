@@ -1,0 +1,2687 @@
+{
+  "_about": "Hand-edited neighborhood settings, merged into assets/neighborhoods.json by tools/build-neighborhoods.mjs. Keys are the City's neighborhood names. status: downtown | pilot | done | todo (default) | outside (automatic). profile: a key of profiles. named: real buildings to style and label.",
+  "neighborhoods": {
+    "Loop": {
+      "status": "done",
+      "profile": "loop-masonry",
+      "named": [
+        {
+          "id": "889481-0",
+          "name": "The Rookery",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "895554-0",
+          "name": "Monadnock Building",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "887374-0",
+          "name": "Marquette Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "877597-0",
+          "name": "Reliance Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "899852-0",
+          "name": "Auditorium Building",
+          "kind": "venue",
+          "family": 9
+        },
+        {
+          "id": "881549-0",
+          "name": "Sullivan Center (Carson Pirie Scott)",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "873352-0",
+          "name": "Chicago Cultural Center",
+          "kind": "library",
+          "family": 9
+        },
+        {
+          "id": "873707-0",
+          "name": "Daley Center",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "873508-0",
+          "name": "City Hall",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "877681-0",
+          "name": "Chicago Temple",
+          "kind": "church",
+          "family": 2
+        },
+        {
+          "id": "885605-0",
+          "name": "Palmer House",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "888940-0",
+          "name": "Symphony Center",
+          "kind": "venue",
+          "family": 9
+        },
+        {
+          "id": "898670-0",
+          "name": "Fine Arts Building",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "896402-0",
+          "name": "Fisher Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "883919-0",
+          "name": "Inland Steel Building",
+          "kind": "landmark",
+          "family": 5
+        },
+        {
+          "id": "869093-0",
+          "name": "Thompson Center",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "877918-0",
+          "name": "Civic Opera House",
+          "kind": "venue",
+          "family": 9
+        },
+        {
+          "id": "887494-0",
+          "name": "Field Building",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "891571-0",
+          "name": "Kluczynski Federal Building",
+          "kind": "landmark",
+          "family": 4
+        }
+      ],
+      "label": [
+        -150,
+        120
+      ]
+    },
+    "Millenium Park": {
+      "status": "done",
+      "display": "Millennium Park",
+      "profile": "loop-masonry",
+      "named": [],
+      "minNamed": 0
+    },
+    "Grant Park": {
+      "status": "done",
+      "profile": "loop-masonry",
+      "named": [
+        {
+          "id": "885857-0",
+          "name": "Art Institute of Chicago",
+          "kind": "museum",
+          "family": 9
+        }
+      ],
+      "minNamed": 1
+    },
+    "Printers Row": {
+      "status": "done",
+      "profile": "printers-row-brick",
+      "named": [
+        {
+          "id": "913589-0",
+          "name": "Dearborn Station",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "911034-0",
+          "name": "Lakeside Press Building",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "905895-0",
+          "name": "Transportation Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "907784-0",
+          "name": "Jones College Prep",
+          "kind": "school",
+          "family": 24
+        }
+      ]
+    },
+    "Lower West Side": {
+      "status": "done",
+      "display": "Pilsen",
+      "aka": [
+        "Lower West Side",
+        "Heart of Chicago"
+      ],
+      "profile": "pilsen-brick",
+      "named": [
+        {
+          "id": "950205-0",
+          "name": "St. Adalbert Church",
+          "kind": "church",
+          "family": 10,
+          "twin": true
+        },
+        {
+          "id": "952607-0",
+          "name": "St. Procopius Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "962677-0",
+          "name": "St. Pius V Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "980312-0",
+          "name": "St. Paul Church",
+          "kind": "church",
+          "family": 6,
+          "twin": true
+        },
+        {
+          "id": "957460-0",
+          "name": "St. Vitus Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "959686-0",
+          "name": "Holy Trinity Croatian Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "968737-0",
+          "name": "St. Matthew Lutheran Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "955174-0",
+          "name": "Thalia Hall",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "960995-0",
+          "name": "National Museum of Mexican Art",
+          "kind": "museum",
+          "family": 8
+        },
+        {
+          "id": "970246-0",
+          "name": "Benito Juárez Community Academy",
+          "kind": "school",
+          "family": 8
+        },
+        {
+          "id": "977066-0",
+          "name": "Cristo Rey Jesuit High School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "953695-0",
+          "name": "Schoenhofen Brewery",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "965251-0",
+          "name": "Dvořák Park Fieldhouse",
+          "kind": "park",
+          "family": 6
+        },
+        {
+          "id": "957974-0",
+          "name": "Harrison Park Fieldhouse",
+          "kind": "park",
+          "family": 6
+        },
+        {
+          "id": "955462-0",
+          "name": "Rudy Lozano Library",
+          "kind": "library",
+          "family": 8
+        },
+        {
+          "id": "980580-0",
+          "name": "Fisk Generating Station",
+          "kind": "landmark",
+          "family": 7
+        }
+      ],
+      "label": [
+        -3150,
+        2760
+      ],
+      "raisedRails": [
+        "BNSF Chicago Subdivision"
+      ]
+    },
+    "Douglas": {
+      "aka": [
+        "Bronzeville"
+      ],
+      "profile": "greystone-flats",
+      "status": "done",
+      "raisedRails": [
+        "Joliet Sub District"
+      ],
+      "named": [
+        {
+          "id": "1041965-0",
+          "name": "S.R. Crown Hall (IIT)",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "1040824-0",
+          "name": "IIT Main Building",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "1036695-0",
+          "name": "IIT Machinery Hall",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "1067096-0",
+          "name": "Wendell Phillips Academy",
+          "kind": "school",
+          "family": 20
+        },
+        {
+          "id": "1011966-0",
+          "name": "Dunbar Vocational Career Academy",
+          "kind": "school",
+          "family": 20
+        },
+        {
+          "id": "1025313-0",
+          "name": "Olivet Baptist Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1056125-0",
+          "name": "Ida B. Wells-Barnett House",
+          "kind": "landmark",
+          "family": 15
+        },
+        {
+          "id": "1070105-0",
+          "name": "South Side Community Art Center",
+          "kind": "museum",
+          "family": 15
+        },
+        {
+          "id": "1015826-0",
+          "name": "Sidney A. Kent House",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "1032650-0",
+          "name": "Roloson Houses (Frank Lloyd Wright)",
+          "kind": "landmark",
+          "family": 21
+        }
+      ]
+    },
+    "Grand Boulevard": {
+      "aka": [
+        "Bronzeville"
+      ],
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "1083851-0",
+          "name": "Metropolitan Apostolic Community Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "1076903-0",
+          "name": "Monumental Baptist Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "1112230-0",
+          "name": "Mt. Pisgah Missionary Baptist Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1097379-0",
+          "name": "Eighth Church of Christ, Scientist",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1076957-0",
+          "name": "Blackwell-Israel Samuel A.M.E. Zion Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1105096-0",
+          "name": "Ebenezer Missionary Baptist Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "1094796-0",
+          "name": "First Church of Deliverance",
+          "kind": "church",
+          "family": 8
+        },
+        {
+          "id": "1080901-0",
+          "name": "Roberts Temple Church of God in Christ",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1112604-0",
+          "name": "Rosenwald Court Apartments",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "Little Italy, UIC": {
+      "display": "Little Italy & UIC",
+      "profile": "campus",
+      "status": "done",
+      "raisedRails": [
+        "BNSF Chicago Subdivision"
+      ],
+      "named": [
+        {
+          "id": "925849-0",
+          "name": "Holy Family Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "928613-0",
+          "name": "St. Francis of Assisi Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "924924-0",
+          "name": "St. Ignatius College Prep",
+          "kind": "school",
+          "family": 8
+        },
+        {
+          "id": "915858-0",
+          "name": "Jane Addams Hull-House Museum",
+          "kind": "museum",
+          "family": 6
+        },
+        {
+          "id": "908012-0",
+          "name": "University Hall (UIC)",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "904459-0",
+          "name": "Rush University Medical Center",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "916655-0",
+          "name": "Jesse Brown VA Medical Center",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "919940-0",
+          "name": "UI Health Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "908660-0",
+          "name": "Old Cook County Hospital",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "930822-0",
+          "name": "Vorwaerts Turner Hall",
+          "kind": "venue",
+          "family": 6
+        }
+      ]
+    },
+    "Sheffield & DePaul": {
+      "display": "Sheffield & DePaul",
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision"
+      ],
+      "named": [
+        {
+          "id": "710659-0",
+          "name": "Biograph Theater",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "705041-0",
+          "name": "Apollo Theater",
+          "kind": "venue",
+          "family": 24
+        },
+        {
+          "id": "729359-0",
+          "name": "Byrne Hall (DePaul)",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "720664-0",
+          "name": "Cortelyou Commons (DePaul)",
+          "kind": "school",
+          "family": 9
+        },
+        {
+          "id": "718265-0",
+          "name": "Sullivan Athletic Center (DePaul)",
+          "kind": "venue",
+          "family": 24
+        },
+        {
+          "id": "718364-0",
+          "name": "DePaul Art Museum",
+          "kind": "museum",
+          "family": 24
+        }
+      ]
+    },
+    "Mckinley Park": {
+      "display": "McKinley Park",
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1068090-0",
+          "name": "Sts. Peter and Paul Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1063179-0",
+          "name": "St. Andrew Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "1051942-0",
+          "name": "Grand Theatre",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "1051821-0",
+          "name": "McKinley Park Library",
+          "kind": "library",
+          "family": 8
+        },
+        {
+          "id": "1057388-0",
+          "name": "DuPont-Whitehouse House",
+          "kind": "landmark",
+          "family": 21
+        },
+        {
+          "id": "1051506-0",
+          "name": "Former Schlitz Brewery Tied House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "Little Village": {
+      "profile": "pilsen-brick",
+      "status": "done",
+      "raisedRails": [
+        "BNSF Chicago Subdivision"
+      ],
+      "named": [
+        {
+          "id": "978952-0",
+          "name": "Our Lady of Tepeyac High School",
+          "kind": "school",
+          "family": 8
+        },
+        {
+          "id": "987076-0",
+          "name": "Harrison Technical High School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "984482-0",
+          "name": "Farragut Career Academy",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "978736-0",
+          "name": "Apollo's 2000",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "1004728-0",
+          "name": "Little Village Arch",
+          "kind": "landmark",
+          "family": 22
+        }
+      ]
+    },
+    "Bridgeport": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1033670-0",
+          "name": "St. Mary of Perpetual Help Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1062560-0",
+          "name": "Nativity of Our Lord Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "1009446-0",
+          "name": "St. Barbara Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1007974-0",
+          "name": "All Saints-St. Anthony Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "1050387-0",
+          "name": "Ramova Theater",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "1027557-0",
+          "name": "Monastery of the Holy Cross",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "1049315-0",
+          "name": "Spiegel Administration Building",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "1047918-0",
+          "name": "Bridgeport Art Center",
+          "kind": "museum",
+          "family": 6
+        },
+        {
+          "id": "1044696-0",
+          "name": "Daley Branch Library",
+          "kind": "library",
+          "family": 8
+        }
+      ]
+    },
+    "New City": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1107638-0",
+          "name": "St. Gabriel Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1087338-0",
+          "name": "Former Stock Yards National Bank",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "1093501-0",
+          "name": "Canaryville Library",
+          "kind": "library",
+          "family": 8
+        }
+      ],
+      "label": [
+        -1460,
+        7240
+      ]
+    },
+    "Fuller Park": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": [
+        {
+          "id": "1097126-0",
+          "name": "Atom Theatre",
+          "kind": "venue",
+          "family": 8
+        }
+      ],
+      "raisedRails": [
+        "Joliet Sub District"
+      ]
+    },
+    "Brighton Park": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "named": []
+    },
+    "Chinatown": {
+      "profile": "chinatown",
+      "status": "done",
+      "raisedRails": [
+        "Joliet Sub District"
+      ],
+      "named": [
+        {
+          "id": "974723-0",
+          "name": "Pui Tak Center (On Leong Building)",
+          "kind": "landmark",
+          "family": 22
+        },
+        {
+          "id": "979390-0",
+          "name": "Chinese American Museum of Chicago",
+          "kind": "museum",
+          "family": 22
+        },
+        {
+          "id": "980282-0",
+          "name": "St. Therese Chinese Catholic School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "969286-0",
+          "name": "Chinatown Branch Library",
+          "kind": "library",
+          "family": 25
+        }
+      ]
+    },
+    "Armour Square": {
+      "profile": "worker-cottage",
+      "status": "done",
+      "raisedRails": [
+        "Joliet Sub District"
+      ],
+      "named": [
+        {
+          "id": "1049814-0",
+          "name": "Guaranteed Rate Field",
+          "kind": "stadium",
+          "family": 24
+        },
+        {
+          "id": "1010903-0",
+          "name": "St. Jerome Croatian Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "1005431-0",
+          "name": "James Ward School",
+          "kind": "school",
+          "family": 6
+        }
+      ]
+    },
+    "Near South Side": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "raisedRails": [
+        "St. Charles Air Line"
+      ],
+      "named": [
+        {
+          "id": "961886-0",
+          "name": "Second Presbyterian Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "985034-0",
+          "name": "Quinn Chapel",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "954473-0",
+          "name": "Glessner House",
+          "kind": "landmark",
+          "family": 15
+        },
+        {
+          "id": "956913-0",
+          "name": "Clarke House",
+          "kind": "landmark",
+          "family": 16
+        },
+        {
+          "id": "964863-0",
+          "name": "Wheeler-Kohn House",
+          "kind": "landmark",
+          "family": 21
+        },
+        {
+          "id": "970438-0",
+          "name": "Chess Records",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "967835-0",
+          "name": "R.R. Donnelley Calumet Plant",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "933704-0",
+          "name": "Wholesale Furniture Exposition Building",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "933817-0",
+          "name": "Coca-Cola Building",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "991468-0",
+          "name": "Mercy Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "962191-0",
+          "name": "McCormick Place",
+          "kind": "venue",
+          "family": 5
+        }
+      ]
+    },
+    "Museum Campus": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "named": [
+        {
+          "id": "924330-0",
+          "name": "Shedd Aquarium",
+          "kind": "museum",
+          "family": 9
+        },
+        {
+          "id": "928203-0",
+          "name": "Field Museum",
+          "kind": "museum",
+          "family": 9
+        },
+        {
+          "id": "928439-0",
+          "name": "Adler Planetarium",
+          "kind": "museum",
+          "family": 9
+        },
+        {
+          "id": "937968-0",
+          "name": "Soldier Field",
+          "kind": "stadium",
+          "family": 2,
+          "custom": true
+        },
+        {
+          "id": "946610-0",
+          "name": "Soldier Field Waldron Deck",
+          "kind": "landmark",
+          "family": 25
+        }
+      ],
+      "minNamed": 1
+    },
+    "Oakland": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "1048516-0",
+          "name": "Soldiers' Home",
+          "kind": "landmark",
+          "family": 15
+        },
+        {
+          "id": "1080960-0",
+          "name": "First Church of Christ, Scientist",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "1085588-0",
+          "name": "Mathilde Eliel House",
+          "kind": "landmark",
+          "family": 15
+        }
+      ]
+    },
+    "Kenwood": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "1098107-0",
+          "name": "King College Prep",
+          "kind": "school",
+          "family": 24
+        },
+        {
+          "id": "1094359-0",
+          "name": "Muddy Waters House",
+          "kind": "landmark",
+          "family": 15
+        }
+      ]
+    },
+    "United Center": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "raisedRails": [
+        "UP Geneva Subdivision"
+      ],
+      "named": [
+        {
+          "id": "884830-0",
+          "name": "United Center",
+          "kind": "venue",
+          "family": 7
+        },
+        {
+          "id": "896791-0",
+          "name": "Crane Medical Prep",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "878206-0",
+          "name": "First Baptist Congregational Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "879330-0",
+          "name": "Metropolitan Missionary Baptist Church",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "880165-0",
+          "name": "Greater Union Baptist Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "887978-0",
+          "name": "Fourth Presbyterian Church of the West Side",
+          "kind": "church",
+          "family": 15
+        },
+        {
+          "id": "884035-0",
+          "name": "West Town State Bank Building",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "889134-0",
+          "name": "Phoenix Military Academy",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "890349-0",
+          "name": "Chicago Bulls College Prep",
+          "kind": "school",
+          "family": 24
+        }
+      ]
+    },
+    "West Loop": {
+      "profile": "loft-district",
+      "status": "done",
+      "raisedRails": [
+        "UP Geneva Subdivision",
+        "C&M Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "887846-0",
+          "name": "West Side YMCA Complex",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "881253-0",
+          "name": "Union Park Hotel",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "883519-0",
+          "name": "Holden Block",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "877823-0",
+          "name": "Groesbeck House",
+          "kind": "landmark",
+          "family": 21
+        },
+        {
+          "id": "870807-0",
+          "name": "Former Schlitz Brewery Tied House",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "890004-0",
+          "name": "Union Station",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "898602-0",
+          "name": "Old Main Post Office",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "890174-0",
+          "name": "Old St. Patrick's Church",
+          "kind": "church",
+          "family": 9
+        }
+      ],
+      "minNamed": 3
+    },
+    "Garfield Park": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "raisedRails": [
+        "UP Geneva Subdivision"
+      ],
+      "named": [
+        {
+          "id": "865175-0",
+          "name": "Garfield Park Conservatory",
+          "kind": "greenhouse",
+          "family": 26
+        },
+        {
+          "id": "879444-0",
+          "name": "Garfield Park Gold Dome Fieldhouse",
+          "kind": "park",
+          "family": 9
+        },
+        {
+          "id": "898385-0",
+          "name": "Our Lady of Sorrows Basilica",
+          "kind": "church",
+          "family": 9,
+          "twin": true
+        },
+        {
+          "id": "890184-0",
+          "name": "Marshall Metropolitan High School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "918176-0",
+          "name": "Manley Career Academy",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "917989-0",
+          "name": "Former Anshe Sholom Synagogue",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "885386-0",
+          "name": "Midwest Athletic Club",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "887689-0",
+          "name": "Kedzie Telephone Exchange",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "870235-0",
+          "name": "Waller Apartments (Frank Lloyd Wright)",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "North Lawndale": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "named": [
+        {
+          "id": "921031-0",
+          "name": "Sears, Roebuck Administration Building",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "939876-0",
+          "name": "Stone Temple Baptist Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "939492-0",
+          "name": "Jewish People's Institute",
+          "kind": "school",
+          "family": 20
+        },
+        {
+          "id": "944113-0",
+          "name": "Mount Sinai Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "952257-0",
+          "name": "North Lawndale College Prep",
+          "kind": "school",
+          "family": 6
+        }
+      ]
+    },
+    "West Town": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "raisedRails": [
+        "C&M Subdivision",
+        "UP Harvard Subdivision",
+        "UP Kenosha Subdivision",
+        "UP Geneva Subdivision"
+      ],
+      "named": [
+        {
+          "id": "834780-0",
+          "name": "St. John Cantius Church",
+          "kind": "church",
+          "family": 7
+        },
+        {
+          "id": "797009-0",
+          "name": "St. Stanislaus Kostka Church",
+          "kind": "church",
+          "family": 6,
+          "twin": true
+        },
+        {
+          "id": "811427-0",
+          "name": "Holy Trinity Polish Mission",
+          "kind": "church",
+          "family": 9,
+          "twin": true
+        },
+        {
+          "id": "840815-0",
+          "name": "Holy Innocents Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "828498-0",
+          "name": "St. Boniface Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "839425-0",
+          "name": "Goldblatt Bros. Building",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "793890-0",
+          "name": "Pulaski Park Fieldhouse",
+          "kind": "park",
+          "family": 6
+        },
+        {
+          "id": "823133-0",
+          "name": "Polish Museum of America",
+          "kind": "museum",
+          "family": 9
+        },
+        {
+          "id": "842064-0",
+          "name": "Ukrainian National Museum",
+          "kind": "museum",
+          "family": 6
+        },
+        {
+          "id": "793586-0",
+          "name": "The Salt Shed (Morton Salt Warehouse)",
+          "kind": "venue",
+          "family": 23
+        },
+        {
+          "id": "840157-0",
+          "name": "Motley School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "819153-0",
+          "name": "Northwestern University Settlement House",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "808566-0",
+          "name": "Holy Trinity High School",
+          "kind": "school",
+          "family": 6
+        }
+      ]
+    },
+    "Wicker Park": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "raisedRails": [
+        "C&M Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "779917-0",
+          "name": "Northwest Tower (Robey)",
+          "kind": "landmark",
+          "family": 20
+        },
+        {
+          "id": "806742-0",
+          "name": "Home Bank & Trust Building",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "807235-0",
+          "name": "Division Street Russian Baths",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "788532-0",
+          "name": "Wicker Park Lutheran Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "781517-0",
+          "name": "Double Door",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "777598-0",
+          "name": "Former Engine Company 35",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "785883-0",
+          "name": "Josephinum Academy",
+          "kind": "school",
+          "family": 6
+        }
+      ]
+    },
+    "Ukrainian Village": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "named": [
+        {
+          "id": "813342-0",
+          "name": "Holy Trinity Orthodox Cathedral (Louis Sullivan)",
+          "kind": "church",
+          "family": 8
+        },
+        {
+          "id": "835120-0",
+          "name": "St. Nicholas Ukrainian Catholic Cathedral",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "818981-0",
+          "name": "St. Volodymyr Ukrainian Orthodox Cathedral",
+          "kind": "church",
+          "family": 8
+        },
+        {
+          "id": "825621-0",
+          "name": "St. Helen Church",
+          "kind": "church",
+          "family": 24
+        },
+        {
+          "id": "839362-0",
+          "name": "Ukrainian Institute of Modern Art",
+          "kind": "museum",
+          "family": 16
+        },
+        {
+          "id": "807574-0",
+          "name": "St. Mary of Nazareth Hospital",
+          "kind": "landmark",
+          "family": 24
+        }
+      ]
+    },
+    "East Village": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "named": [
+        {
+          "id": "823838-0",
+          "name": "Wells Community Academy",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "829103-0",
+          "name": "St. George Orthodox Cathedral",
+          "kind": "church",
+          "family": 8
+        },
+        {
+          "id": "809258-0",
+          "name": "Former Schlitz Brewery Tied House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "Bucktown": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "raisedRails": [
+        "C&M Subdivision",
+        "UP Harvard Subdivision",
+        "UP Kenosha Subdivision"
+      ],
+      "named": [
+        {
+          "id": "733392-0",
+          "name": "St. Hedwig Church",
+          "kind": "church",
+          "family": 7,
+          "twin": true
+        },
+        {
+          "id": "742825-0",
+          "name": "All Saints Cathedral",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "760377-0",
+          "name": "St. Mary of the Angels",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "759930-0",
+          "name": "Drummond School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "758643-0",
+          "name": "Richard Nickel Studio",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "711187-0",
+          "name": "Midtown Athletic Club",
+          "kind": "landmark",
+          "family": 24
+        }
+      ],
+      "label": [
+        -4300,
+        -3956
+      ]
+    },
+    "Humboldt Park": {
+      "profile": "greystone-flats",
+      "status": "done",
+      "raisedRails": [
+        "C&M Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "799119-0",
+          "name": "Humboldt Park Boathouse",
+          "kind": "park",
+          "family": 9
+        },
+        {
+          "id": "812011-0",
+          "name": "Humboldt Park Receptory and Stable",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "818297-0",
+          "name": "Humboldt Park Health",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "860374-0",
+          "name": "Westinghouse College Prep",
+          "kind": "school",
+          "family": 24
+        },
+        {
+          "id": "815185-0",
+          "name": "Association House High School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "810994-0",
+          "name": "Dr. Pedro Albizu Campos High School",
+          "kind": "school",
+          "family": 6
+        }
+      ]
+    },
+    "Logan Square": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "raisedRails": [
+        "C&M Subdivision"
+      ],
+      "named": [
+        {
+          "id": "739429-0",
+          "name": "Congress Theater",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "687854-0",
+          "name": "Vassar Swiss Underwear Building",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "701401-0",
+          "name": "Church of the Advent",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "705979-0",
+          "name": "John Rath House",
+          "kind": "landmark",
+          "family": 21
+        },
+        {
+          "id": "705826-0",
+          "name": "St. John Berchmans Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "701298-0",
+          "name": "Eleventh Church of Christ, Scientist",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "748155-0",
+          "name": "Concord Music Hall",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "690461-0",
+          "name": "Brentano Academy",
+          "kind": "school",
+          "family": 6
+        }
+      ]
+    },
+    "Avondale": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "raisedRails": [
+        "C&M Subdivision"
+      ],
+      "named": []
+    },
+    "Lincoln Park": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision"
+      ],
+      "named": [
+        {
+          "id": "719303-0",
+          "name": "Lincoln Park Conservatory",
+          "kind": "greenhouse",
+          "family": 26
+        },
+        {
+          "id": "771452-0",
+          "name": "Chicago History Museum",
+          "kind": "museum",
+          "family": 6
+        },
+        {
+          "id": "707819-0",
+          "name": "Peggy Notebaert Nature Museum",
+          "kind": "museum",
+          "family": 24
+        },
+        {
+          "id": "733794-0",
+          "name": "Lion House, Lincoln Park Zoo",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "744218-0",
+          "name": "Café Brauer (South Pond Refectory)",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "683508-0",
+          "name": "Elks National Veterans Memorial",
+          "kind": "landmark",
+          "family": 2
+        },
+        {
+          "id": "719129-0",
+          "name": "Reebie Storage Warehouse",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "723564-0",
+          "name": "Kaufmann Store and Flats (Adler & Sullivan)",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "724782-0",
+          "name": "St. Josaphat Church",
+          "kind": "church",
+          "family": 7
+        },
+        {
+          "id": "769735-0",
+          "name": "Steppenwolf Theatre",
+          "kind": "venue",
+          "family": 24
+        },
+        {
+          "id": "695832-0",
+          "name": "Former North Chicago Hospital",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "Old Town": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "named": [
+        {
+          "id": "770210-0",
+          "name": "Moody Church",
+          "kind": "church",
+          "family": 6
+        },
+        {
+          "id": "774330-0",
+          "name": "The Second City",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "777375-0",
+          "name": "Village Theatre",
+          "kind": "venue",
+          "family": 8
+        },
+        {
+          "id": "778954-0",
+          "name": "Germania Club Building",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "776476-0",
+          "name": "Yondorf Block and Hall",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "802835-0",
+          "name": "LaSalle Towers",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "766427-0",
+          "name": "Carl Street Studios",
+          "kind": "landmark",
+          "family": 16
+        }
+      ]
+    },
+    "Lake View": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "679511-0",
+          "name": "Brewster Apartments",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "666812-0",
+          "name": "St. Alphonsus Church",
+          "kind": "church",
+          "family": 10
+        },
+        {
+          "id": "594501-0",
+          "name": "Anshe Emet Synagogue",
+          "kind": "church",
+          "family": 24
+        },
+        {
+          "id": "656963-0",
+          "name": "Advocate Illinois Masonic",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "674701-0",
+          "name": "Saint Joseph Hospital",
+          "kind": "landmark",
+          "family": 24
+        },
+        {
+          "id": "648873-0",
+          "name": "Belmont-Sheffield Trust & Savings Bank",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "648018-0",
+          "name": "St. Peter's Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "610321-0",
+          "name": "Town Hall Police Station",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "653496-0",
+          "name": "Best Brewing Company Building",
+          "kind": "landmark",
+          "family": 23
+        },
+        {
+          "id": "649380-0",
+          "name": "Theatre Building Chicago",
+          "kind": "venue",
+          "family": 6
+        }
+      ]
+    },
+    "Boystown": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "named": [
+        {
+          "id": "645076-0",
+          "name": "Our Lady of Mount Carmel Church",
+          "kind": "church",
+          "family": 9
+        },
+        {
+          "id": "638873-0",
+          "name": "Nettelhorst School",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "611684-0",
+          "name": "Lake View Presbyterian Church",
+          "kind": "church",
+          "family": 13
+        },
+        {
+          "id": "645439-0",
+          "name": "John Merlo Library",
+          "kind": "library",
+          "family": 8
+        }
+      ]
+    },
+    "Wrigleyville": {
+      "profile": "lincoln-brownstone",
+      "status": "done",
+      "named": [
+        {
+          "id": "606338-0",
+          "name": "Wrigley Field",
+          "kind": "stadium",
+          "family": 7
+        },
+        {
+          "id": "600654-0",
+          "name": "Metro",
+          "kind": "venue",
+          "family": 6
+        },
+        {
+          "id": "604841-0",
+          "name": "Engine Company 78",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "609961-0",
+          "name": "Hotel Zachary",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "612715-0",
+          "name": "Trinity Lutheran Church",
+          "kind": "church",
+          "family": 6
+        }
+      ]
+    },
+    "North Center": {
+      "profile": "brick-two-flat",
+      "status": "done",
+      "raisedRails": [
+        "UP Kenosha Subdivision",
+        "UP Harvard Subdivision"
+      ],
+      "named": [
+        {
+          "id": "651374-0",
+          "name": "Former Schlitz Brewery Tied House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ],
+      "minNamed": 1
+    },
+    "Gold Coast": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "named": [
+        {
+          "id": "796099-0",
+          "name": "Three Arts Club",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "783094-0",
+          "name": "Madlener House",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "801736-0",
+          "name": "Fisher Studio Houses",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "790140-0",
+          "name": "Charnley-Persky House",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "777425-0",
+          "name": "Latin School of Chicago",
+          "kind": "school",
+          "family": 6
+        },
+        {
+          "id": "780445-0",
+          "name": "International Museum of Surgical Science",
+          "kind": "museum",
+          "family": 2
+        },
+        {
+          "id": "799639-0",
+          "name": "Claridge House",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "812249-0",
+          "name": "Bryan Lathrop House",
+          "kind": "landmark",
+          "family": 6
+        }
+      ],
+      "label": [
+        250,
+        -2300
+      ]
+    },
+    "Rush & Division": {
+      "profile": "lakefront-highrise",
+      "status": "done",
+      "named": [
+        {
+          "id": "837546-0",
+          "name": "Holy Name Cathedral",
+          "kind": "church",
+          "family": 2
+        },
+        {
+          "id": "819079-0",
+          "name": "Newberry Library",
+          "kind": "library",
+          "family": 9
+        },
+        {
+          "id": "821651-0",
+          "name": "Waldorf Astoria Chicago",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "833935-0",
+          "name": "Lawson House YMCA",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "833957-0",
+          "name": "Former Cosmopolitan State Bank",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "833755-0",
+          "name": "Hotel St. Benedict Flats",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "River North": {
+      "profile": "loft-district",
+      "status": "done",
+      "named": [
+        {
+          "id": "847912-0",
+          "name": "Medinah Temple",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "824161-0",
+          "name": "Montgomery Ward Catalog House",
+          "kind": "landmark",
+          "family": 5
+        },
+        {
+          "id": "862781-0",
+          "name": "Reid, Murdoch & Co. Building",
+          "kind": "landmark",
+          "family": 6
+        },
+        {
+          "id": "857279-0",
+          "name": "Courthouse Place",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "848001-0",
+          "name": "Tree Studios",
+          "kind": "landmark",
+          "family": 8
+        },
+        {
+          "id": "843538-0",
+          "name": "Nickerson House",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "861033-0",
+          "name": "AMA Plaza (former IBM Building)",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "833594-0",
+          "name": "Bush Temple of Music",
+          "kind": "landmark",
+          "family": 6
+        }
+      ]
+    },
+    "Streeterville": {
+      "profile": "streeterville-glass",
+      "status": "done",
+      "named": [
+        {
+          "id": "855557-0",
+          "name": "Tribune Tower",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "821196-0",
+          "name": "Palmolive Building",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "824449-0",
+          "name": "860–880 Lake Shore Drive (Mies)",
+          "kind": "landmark",
+          "family": 4
+        },
+        {
+          "id": "840567-0",
+          "name": "Allerton Hotel",
+          "kind": "landmark",
+          "family": 7
+        },
+        {
+          "id": "828186-0",
+          "name": "Water Tower Place",
+          "kind": "landmark",
+          "family": 2
+        },
+        {
+          "id": "856925-0",
+          "name": "NBC Tower",
+          "kind": "landmark",
+          "family": 2
+        },
+        {
+          "id": "835610-0",
+          "name": "Lurie Children's Hospital",
+          "kind": "landmark",
+          "family": 25
+        },
+        {
+          "id": "846046-0",
+          "name": "Woman's Athletic Club",
+          "kind": "landmark",
+          "family": 9
+        },
+        {
+          "id": "824993-0",
+          "name": "Fourth Presbyterian Church",
+          "kind": "church",
+          "family": 9
+        }
+      ]
+    },
+    "Magnificent Mile": {
+      "profile": "streeterville-glass",
+      "status": "done",
+      "named": [
+        {
+          "id": "833197-0",
+          "name": "Chicago Water Tower",
+          "kind": "landmark",
+          "family": 9
+        }
+      ],
+      "minNamed": 1
+    },
+    "Greektown": {
+      "profile": "loft-district",
+      "status": "done",
+      "named": [
+        {
+          "id": "897035-0",
+          "name": "National Hellenic Museum",
+          "kind": "museum",
+          "family": 24
+        }
+      ],
+      "minNamed": 1
+    }
+  },
+  "profiles": {
+    "pilsen-brick": {
+      "about": "Red and brown brick 2-3 flats and worker cottages, cream-brick storefronts, stone churches, brick and concrete warehouses by the river",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 160,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 1,
+            "11": 3,
+            "12": 2,
+            "13": 2
+          }
+        },
+        {
+          "maxH": 16,
+          "roof": "cornice",
+          "families": {
+            "6": 5,
+            "7": 4,
+            "8": 2,
+            "9": 1
+          }
+        },
+        {
+          "maxH": 30,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "7": 2,
+            "8": 3,
+            "9": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "5": 1,
+            "8": 1
+          }
+        }
+      ]
+    },
+    "worker-cottage": {
+      "about": "Frame and brick worker cottages with pitched roofs, painted siding, brick two-flats, corner taverns and churches; industry along the river",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1,
+            "23": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 170,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "11": 2,
+            "12": 2,
+            "13": 1,
+            "16": 3,
+            "17": 1,
+            "18": 2,
+            "19": 1
+          }
+        },
+        {
+          "maxH": 16,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "7": 3,
+            "8": 1,
+            "20": 2
+          }
+        },
+        {
+          "maxH": 30,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "9": 1,
+            "20": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "5": 1,
+            "24": 1
+          }
+        }
+      ]
+    },
+    "greystone-flats": {
+      "about": "Greystone and brick two- and three-flats, brick apartment courts, mansions on the boulevards",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1,
+            "23": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 2,
+            "12": 1
+          }
+        },
+        {
+          "maxH": 18,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "9": 3,
+            "14": 4,
+            "15": 2,
+            "21": 1
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "6": 1,
+            "9": 2,
+            "14": 2,
+            "20": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "5": 1,
+            "24": 2
+          }
+        }
+      ]
+    },
+    "chinatown": {
+      "about": "Painted and red brick storefronts and walk-ups, newer mid-rises",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 2,
+            "7": 1,
+            "23": 1
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 1,
+            "11": 2
+          }
+        },
+        {
+          "maxH": 20,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "8": 2,
+            "20": 1,
+            "22": 4
+          }
+        },
+        {
+          "maxH": 45,
+          "roof": "flat",
+          "families": {
+            "8": 1,
+            "22": 2,
+            "24": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "24": 2,
+            "25": 1
+          }
+        }
+      ]
+    },
+    "brick-two-flat": {
+      "about": "Brick two- and three-flats, frame cottages, corner storefronts, converted lofts",
+      "rules": [
+        {
+          "minArea": 2500,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 1,
+            "23": 3
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 160,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 2,
+            "12": 2,
+            "13": 1
+          }
+        },
+        {
+          "maxH": 16,
+          "roof": "cornice",
+          "families": {
+            "6": 4,
+            "7": 3,
+            "8": 1,
+            "9": 1,
+            "20": 1
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "8": 1,
+            "23": 2,
+            "24": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "24": 1,
+            "25": 2
+          }
+        }
+      ]
+    },
+    "lincoln-brownstone": {
+      "about": "Greystones, brownstones and brick three-flats, frame cottages, courtyard buildings, lakefront high-rises",
+      "rules": [
+        {
+          "minArea": 3000,
+          "maxH": 25,
+          "roof": "flat",
+          "families": {
+            "1": 2,
+            "5": 1,
+            "23": 2
+          }
+        },
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "11": 2,
+            "12": 1,
+            "16": 1,
+            "21": 1
+          }
+        },
+        {
+          "maxH": 17,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "9": 2,
+            "14": 3,
+            "20": 1,
+            "21": 3
+          }
+        },
+        {
+          "maxH": 45,
+          "roof": "cornice",
+          "families": {
+            "6": 1,
+            "8": 1,
+            "14": 2,
+            "20": 2,
+            "24": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "2": 1,
+            "25": 3
+          }
+        }
+      ]
+    },
+    "loft-district": {
+      "about": "Brick warehouse lofts, newer glass and concrete mid- and high-rises",
+      "ground": {
+        "business": "plaza"
+      },
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 1
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "1": 2,
+            "6": 2,
+            "7": 2,
+            "23": 5
+          }
+        },
+        {
+          "maxH": 80,
+          "roof": "flat",
+          "families": {
+            "5": 1,
+            "23": 1,
+            "24": 2,
+            "25": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "3": 2,
+            "4": 1,
+            "25": 3
+          }
+        }
+      ]
+    },
+    "campus": {
+      "about": "University campus: modernist concrete and brick halls, older brick houses around it",
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 2,
+            "7": 2,
+            "11": 1
+          }
+        },
+        {
+          "maxH": 16,
+          "maxArea": 600,
+          "roof": "cornice",
+          "families": {
+            "6": 3,
+            "7": 2,
+            "8": 1
+          }
+        },
+        {
+          "minArea": 2000,
+          "roof": "flat",
+          "families": {
+            "5": 2,
+            "6": 1,
+            "24": 4
+          }
+        },
+        {
+          "maxH": 40,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "8": 2,
+            "24": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "24": 3,
+            "25": 1
+          }
+        }
+      ]
+    },
+    "lakefront-highrise": {
+      "about": "Greystone and brownstone row houses and mansions among lakefront apartment towers",
+      "ground": {
+        "business": "plaza",
+        "residential": "auto"
+      },
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "14": 2,
+            "21": 2
+          }
+        },
+        {
+          "maxH": 20,
+          "roof": "cornice",
+          "families": {
+            "6": 1,
+            "9": 2,
+            "14": 3,
+            "21": 3
+          }
+        },
+        {
+          "maxH": 60,
+          "roof": "cornice",
+          "families": {
+            "2": 1,
+            "9": 1,
+            "14": 2,
+            "20": 2
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "2": 2,
+            "3": 1,
+            "25": 4
+          }
+        }
+      ]
+    },
+    "loop-masonry": {
+      "about": "The Loop: terracotta, limestone and brick Chicago School office blocks, Art Deco towers, modern glass skyscrapers",
+      "ground": {
+        "business": "plaza"
+      },
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "7": 1
+          }
+        },
+        {
+          "maxH": 30,
+          "roof": "cornice",
+          "families": {
+            "1": 2,
+            "6": 2,
+            "7": 1,
+            "8": 2,
+            "9": 1,
+            "20": 2
+          }
+        },
+        {
+          "maxH": 130,
+          "roof": "cornice",
+          "families": {
+            "0": 3,
+            "2": 3,
+            "5": 2,
+            "9": 2,
+            "14": 2,
+            "20": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "0": 1,
+            "2": 1,
+            "3": 3,
+            "4": 2,
+            "25": 2
+          }
+        }
+      ]
+    },
+    "streeterville-glass": {
+      "about": "Streeterville and the Magnificent Mile: limestone and greystone pre-war towers, lakefront glass and concrete high-rises",
+      "ground": {
+        "business": "plaza",
+        "residential": "auto"
+      },
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "14": 1,
+            "21": 1
+          }
+        },
+        {
+          "maxH": 25,
+          "roof": "cornice",
+          "families": {
+            "6": 2,
+            "9": 1,
+            "14": 3,
+            "21": 2
+          }
+        },
+        {
+          "maxH": 100,
+          "roof": "cornice",
+          "families": {
+            "0": 2,
+            "2": 3,
+            "5": 1,
+            "14": 2,
+            "25": 1
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "2": 2,
+            "3": 2,
+            "4": 1,
+            "25": 3
+          }
+        }
+      ]
+    },
+    "printers-row-brick": {
+      "about": "Printers Row: brick and terracotta printing lofts",
+      "ground": {
+        "business": "plaza"
+      },
+      "rules": [
+        {
+          "maxH": 11.5,
+          "maxArea": 150,
+          "roof": "gable",
+          "families": {
+            "6": 1,
+            "7": 1
+          }
+        },
+        {
+          "maxH": 80,
+          "roof": "cornice",
+          "families": {
+            "1": 2,
+            "6": 2,
+            "7": 2,
+            "20": 1,
+            "23": 4
+          }
+        },
+        {
+          "roof": "flat",
+          "families": {
+            "2": 2,
+            "5": 1,
+            "25": 2
+          }
+        }
+      ]
+    }
+  },
+  "_profiles": "Each profile is a list of rules; a building takes the first rule it matches (minArea/maxArea in m2, maxH in m). families maps FAMILIES indices (js/city-data.js) to weights; roof is flat, gable (small near-rectangular houses: ridge at the measured height) or cornice (parapet trim).",
+  "_named": "named: real Cook County footprints (id = objectId-part) located from OpenStreetMap (osm, ODbL) and given a facade family; kind picks the label icon. Churches rise to their nave with a pitched roof, and their tower(s) (twin: true) stand at the front (N/E/S/W, visually estimated) reaching the measured height.",
+  "_raisedRails": "raisedRails: OSM line names that run on an embankment here (OSM rarely tags embankments); streets pass under them through viaducts.",
+  "_families": "FAMILIES (js/city-data.js): 0-5 downtown mix (0 beige stone, 1 brown brick, 2 pale stone, 3 blue glass, 4 dark glass, 5 concrete); 6 red brick; 7 brown brick; 8 cream brick; 9 greystone; 10 church stone; 11 siding; 12 siding blue-grey; 13 siding sand; 14 greystone light; 15 greystone dark; 16 frame white; 17 frame mint; 18 frame blue; 19 frame yellow; 20 yellow brick; 21 brownstone; 22 Chinatown brick; 23 loft brick; 24 modernist concrete; 25 lakefront glass; 26 greenhouse glass.",
+  "_downtownNamed": "Downtown buildings (assets/downtown.json) get their labels in the downtown touch-up: Field Museum 928203-0, Adler Planetarium 928439-0, NEMA 927184-0, One Museum Park West 927054-0."
+}

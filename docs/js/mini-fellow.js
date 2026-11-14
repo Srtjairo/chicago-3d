@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import {createMiniWorld,EYE_HEIGHT} from './mini-fellow-world.js?v=636eff9cbfa6f76b';
-import {closedTransitRoad} from './transit-data.js?v=636eff9cbfa6f76b';
-import {toAddress} from './geo.js?v=636eff9cbfa6f76b';
+import {createMiniWorld,EYE_HEIGHT} from './mini-fellow-world.js?v=3564eb1790f1e487';
+import {closedTransitRoad} from './transit-data.js?v=3564eb1790f1e487';
+import {toAddress} from './geo.js?v=3564eb1790f1e487';
 
 export function setupMiniFellow({scene,ctx,camera,controls,flyer,ui,canvas}){
   const aerialLabel=canvas.getAttribute('aria-label');
-  const world=createMiniWorld({buildings:ctx.collisionBuildings,roads:ctx.roads.map(r=>({...r,closed:closedTransitRoad(r)})),terrain:ctx.waterfront.terrain,land:ctx.waterfront.land,surfaces:ctx.waterfront.features,walkways:[{path:ctx.riverwalkPath,width:6,walkway:true}]});
+  const world=createMiniWorld({buildings:ctx.collisionBuildings,roads:ctx.roads.map(r=>({...r,closed:closedTransitRoad(r)})),terrain:ctx.waterfront.terrain,land:ctx.waterfront.land,surfaces:ctx.waterfront.features,walkways:[{path:ctx.riverwalkPath,width:6,walkway:true}],extra:ctx.hoodWalk});
   const launch=document.createElement('button');launch.id='mini-fellow-open';launch.type='button';launch.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4" r="2.5"/><path d="M8 8h8l1 7h-3v7h-4v-7H7z"/></svg><span>Mini Fellow</span><small>Drop in & explore</small>';document.querySelector('.explore').append(launch);
   const panel=document.createElement('section');panel.id='mini-fellow-panel';panel.className='glass';panel.hidden=true;panel.setAttribute('aria-label','Mini Fellow');
   panel.innerHTML='<header><div><strong>Mini Fellow</strong><span data-location>Choose your starting point</span></div><button type="button" data-exit>Exit</button></header><div data-picker><p>Click a street, sidewalk or open space to drop in.</p><div class="fellow-actions"><button type="button" data-enter>Enter here</button><button type="button" data-cancel>Cancel</button></div></div><div data-roaming hidden><div class="fellow-actions"><label>Explore<select aria-label="Mini Fellow travel mode"><option value="walk">Walk</option><option value="fly">Fly freely</option></select></label><button type="button" data-place>New spot</button><button type="button" data-lock>Mouse look</button><button type="button" data-fast aria-pressed="false">Faster</button></div><p class="fellow-help">WASD to move · drag to look · arrows to look · Shift for speed · Esc to exit<span data-flight-help hidden> · E / Q to rise / descend</span></p></div><p data-status role="status">Use Enter here to start near your current view.</p>';

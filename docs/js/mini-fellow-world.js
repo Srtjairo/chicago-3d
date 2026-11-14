@@ -1,5 +1,5 @@
-import {inPoly} from './waterfront-data.js?v=636eff9cbfa6f76b';
-import {COVERAGE_RECTS} from './coverage.js?v=636eff9cbfa6f76b';
+import {inPoly} from './waterfront-data.js?v=3564eb1790f1e487';
+import {COVERAGE_RECTS,CITY_RADIUS} from './coverage.js?v=3564eb1790f1e487';
 
 export const EYE_HEIGHT=1.7,PERSON_RADIUS=.45;
 const boundsOf=rings=>{const p=rings[0];return {x0:Math.min(...p.map(p=>p[0])),x1:Math.max(...p.map(p=>p[0])),z0:Math.min(...p.map(p=>p[1])),z1:Math.max(...p.map(p=>p[1]))};};
@@ -21,14 +21,15 @@ function bodyTouches(b,x,z){
 }
 
 // Geometry-only navigation: no physics dependency or per-frame scene raycasts.
-export function createMiniWorld({buildings=[],roads=[],terrain=[],land=[],surfaces=[],walkways=[],bounds=COVERAGE_RECTS}={}){
+// `extra` (optional) adds finished neighborhoods: within(x,z), wet(x,z) and obstaclesAt(x,z).
+export function createMiniWorld({buildings=[],roads=[],terrain=[],land=[],surfaces=[],walkways=[],bounds=COVERAGE_RECTS,extra=null}={}){
   const obstacles=index(buildings.map(b=>{const box=b.rings?boundsOf(b.rings):b;return {...b,x0:box.x0-PERSON_RADIUS,x1:box.x1+PERSON_RADIUS,z0:box.z0-PERSON_RADIUS,z1:box.z1+PERSON_RADIUS};}));
   const ground=shapes(terrain),extension=shapes(land),surfaceShapes=surfaces.flatMap(s=>(s.polygons||[]).map(rings=>({rings,...boundsOf(rings),y:s.y??.6,wet:s.kind==='pool'})));
   const groundIndex=index(ground),landIndex=index(extension),surfacesIndex=index(surfaceShapes),segments=[];
   for(const r of [...roads,...walkways])for(let i=1;i<r.path.length;i++){const a=r.path[i-1],b=r.path[i],width=r.width/2+(r.bridge?2:3.5);segments.push({a,b,width,bridge:r.bridge,closed:r.closed,path:r.walkway,name:r.road||'Walkway',x0:Math.min(a[0],b[0])-width,x1:Math.max(a[0],b[0])+width,z0:Math.min(a[2],b[2])-width,z1:Math.max(a[2],b[2])+width});}
   const roadIndex=index(segments);
   const contains=(items,x,z)=>items.some(s=>bounded(s,x,z)&&inPoly(x,z,s.rings));
-  const within=(x,z)=>bounds.some(r=>x>r.minX&&x<r.maxX&&z>r.minZ&&z<r.maxZ)||contains(landIndex.at(x,z),x,z);
+  const within=(x,z)=>bounds.some(r=>x>r.minX&&x<r.maxX&&z>r.minZ&&z<r.maxZ)||contains(landIndex.at(x,z),x,z)||!!extra?.within(x,z);
   function surface(x,z){
     if(!within(x,z))return null;
     const close=roadIndex.at(x,z).filter(s=>bounded(s,x,z)).map(s=>({s,p:near({x,z},s.a,s.b)})).filter(v=>v.p.d<v.s.width);
@@ -36,11 +37,12 @@ export function createMiniWorld({buildings=[],roads=[],terrain=[],land=[],surfac
     const elevated=close.filter(v=>v.s.bridge||v.s.path).sort((a,b)=>a.p.d-b.p.d||b.p.y-a.p.y)[0];
     if(elevated)return Math.max(.6,elevated.p.y+(elevated.s.path?0:.15));
     if(!contains(groundIndex.at(x,z),x,z))return null;
+    if(extra?.wet(x,z))return null;
     let y=.6;for(const s of surfacesIndex.at(x,z)){if(!bounded(s,x,z)||!inPoly(x,z,s.rings))continue;if(s.wet)return null;y=Math.max(y,s.y+.04);}return y;
   }
-  function blocked(p){return obstacles.at(p.x,p.z).some(b=>p.y+.2>(b.y0??0)&&p.y-EYE_HEIGHT<(b.h??Infinity)&&bodyTouches(b,p.x,p.z));}
+  function blocked(p){return [...obstacles.at(p.x,p.z),...(extra?.obstaclesAt(p.x,p.z)||[])].some(b=>p.y+.2>(b.y0??0)&&p.y-EYE_HEIGHT<(b.h??Infinity)&&bodyTouches(b,p.x,p.z));}
   function valid(p,mode='walk'){
-    if(![p.x,p.y,p.z].every(Number.isFinite)||p.y<.6+EYE_HEIGHT-.01||p.y>1800||Math.abs(p.x)>6500||Math.abs(p.z)>6500)return false;
+    if(![p.x,p.y,p.z].every(Number.isFinite)||p.y<.6+EYE_HEIGHT-.01||p.y>1800||Math.hypot(p.x,p.z)>CITY_RADIUS)return false;
     if(mode==='walk'&&surface(p.x,p.z)===null)return false;
     return !blocked(p);
   }

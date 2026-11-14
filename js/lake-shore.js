@@ -3,7 +3,7 @@ import {highwayOffset,highwayFade} from './lake-shore-data.js';
 
 // All pavement and paint are joined static ribbons, batched by material.
 export function buildLakeShore(scene,ctx){
-  const batches={shoulders:[],pavement:[],white:[],yellow:[],barriers:[],structure:[]};
+  const batches={median:[],shoulders:[],pavement:[],white:[],yellow:[],barriers:[],structure:[]};
   const addQuad=(name,points,fades)=>{const list=batches[name];for(const i of [0,1,2,2,1,3])list.push(...points[i],fades[i]);};
   const ribbon=(name,route,left,right,lift,from=0,to=route.path.length-1)=>{
     for(let i=from+1;i<=to;i++){
@@ -45,8 +45,35 @@ export function buildLakeShore(scene,ctx){
       }
     }
   }
+  // A planted median where the two carriageways run 20 to 60 m apart (each side fills to the
+  // middle line), and light poles along both outer edges every 45 m, lit at night.
+  const [west,east]=ctx.lakeShore.chains,G=20,grids=new Map(),posts=[];
+  for(const route of [west,east]){const g=new Map();route.path.forEach((p,i)=>{const k=Math.floor(p[0]/G)+','+Math.floor(p[2]/G);if(!g.has(k))g.set(k,[]);g.get(k).push(i);});grids.set(route,g);}
+  const gapTo=(p,other)=>{const g=grids.get(other),cx=Math.floor(p[0]/G),cz=Math.floor(p[2]/G);let best=Infinity;for(let i=-3;i<=3;i++)for(let j=-3;j<=3;j++)for(const k of g.get((cx+i)+','+(cz+j))||[]){const q=other.path[k];best=Math.min(best,Math.hypot(q[0]-p[0],q[2]-p[2]));}return best;};
+  for(const route of [west,east]){
+    const other=route===west?east:west,inside=route.id==='west'?-1:1,gap=route.path.map(p=>gapTo(p,other));
+    const wide=(i)=>gap[i]>20&&gap[i]<60&&route.path[i][1]<1;
+    for(let i=1;i<route.path.length;i++)if(wide(i-1)&&wide(i))ribbon('median',route,k=>inside*(route.halfWidths[k]+.05),k=>inside*gap[k]/2,.125,i-1,i);
+    for(let d=25;d<route.length-25;d+=45){
+      let i=0;while(i<route.distances.length-1&&route.distances[i]<d)i++;
+      if(highwayFade(route,i)<1)continue;
+      const p=highwayOffset(route.path,i,-inside*(route.halfWidths[i]+.7)),c=route.path[i],ux=c[0]-p[0],uz=c[2]-p[2];
+      posts.push([p[0],p[1],p[2],Math.atan2(-uz,ux)]);
+    }
+  }
+  if(posts.length){
+    const post=new THREE.BoxGeometry(.22,10,.22).translate(0,5,0),arm=new THREE.BoxGeometry(2.4,.22,.55).translate(1.1,10,0);
+    const steel=new THREE.MeshStandardMaterial({color:0x5b6163,roughness:.6,metalness:.3}),lamp=new THREE.MeshStandardMaterial({color:0xd8d2c0,emissive:0xffc77a,emissiveIntensity:0,roughness:.6});
+    ctx.glows?.push({mat:lamp,day:0,night:.85});
+    const m=new THREE.Matrix4(),q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),one=new THREE.Vector3(1,1,1);
+    for(const [geo,mat,name] of [[post,steel,'lake-shore-light-poles'],[arm,lamp,'lake-shore-lights']]){
+      const im=new THREE.InstancedMesh(geo,mat,posts.length);im.name=name;
+      posts.forEach(([x,y,z,a],i)=>{q.setFromAxisAngle(up,a);m.compose(v.set(x,y,z),q,one);im.setMatrixAt(i,m);});
+      im.computeBoundingSphere();scene.add(im);
+    }
+  }
   const group=new THREE.Group();group.name='lake-shore-drive';let order=1;
-  for(const [name,color]of [['shoulders',0x42484a],['pavement',0x343a3d],['white',0xddd9c7],['yellow',0xd1b35d],['barriers',0x898d86],['structure',0x5d6262]]){
+  for(const [name,color]of [['median',0x6d8a4e],['shoulders',0x42484a],['pavement',0x343a3d],['white',0xddd9c7],['yellow',0xd1b35d],['barriers',0x898d86],['structure',0x5d6262]]){
     const values=batches[name],positions=[],fade=[];
     for(let i=0;i<values.length;i+=4){positions.push(values[i],values[i+1],values[i+2]);fade.push(values[i+3]);}
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('highwayFade',new THREE.Float32BufferAttribute(fade,1));geometry.computeVertexNormals();

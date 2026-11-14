@@ -1,3 +1,4 @@
+import {boxesIn} from './spatial.js';
 import * as THREE from 'three';
 import {atDistance} from './movement.js';
 import {inCoverage} from './coverage.js';
@@ -63,7 +64,7 @@ export function setupTransitExplorer({ctx,camera,controls,flyer,ui,canvas:sceneC
   sceneCanvas.addEventListener('pointerdown',e=>{pointer=[e.clientX,e.clientY];stop();});sceneCanvas.addEventListener('pointerup',e=>{if(!pointer||Math.hypot(e.clientX-pointer[0],e.clientY-pointer[1])>4)return;const r=sceneCanvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2);ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(api.pickable.filter(m=>m.visible))[0];if(hit){choose(hit.object.userData.stationId);compact.hidden=false;}});
   return {update(dt){if(!api.following)return;if(flyer.anim||flyer.tour){stop();return;}const t=api.sim.trains.find(t=>t.id===api.following.id),p=atDistance(t.route,t.previous+(t.d-t.previous)*api.sim.alpha);pose.set(p.x,p.y+2,p.z);desired.set(p.x-Math.sin(p.angle)*85+Math.cos(p.angle)*35,p.y+55,p.z-Math.cos(p.angle)*85-Math.sin(p.angle)*35);
       // Raise the camera over any measured obstacle along its next movement.
-      let height=desired.y;for(const b of ctx.collisionBuildings){const x0=Math.min(camera.position.x,desired.x)-8,x1=Math.max(camera.position.x,desired.x)+8,z0=Math.min(camera.position.z,desired.z)-8,z1=Math.max(camera.position.z,desired.z)+8;if(b.x1>x0&&b.x0<x1&&b.z1>z0&&b.z0<z1)height=Math.max(height,b.h+18);}desired.y=height;if(camera.position.y<height)camera.position.y=height;
+      let height=desired.y;{const x0=Math.min(camera.position.x,desired.x)-8,x1=Math.max(camera.position.x,desired.x)+8,z0=Math.min(camera.position.z,desired.z)-8,z1=Math.max(camera.position.z,desired.z)+8;for(const b of boxesIn(ctx.collisionBuildings,x0,z0,x1,z1))if(b.x1>x0&&b.x0<x1&&b.z1>z0&&b.z0<z1)height=Math.max(height,b.h+18);}desired.y=height;if(camera.position.y<height)camera.position.y=height;
       const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,f=reduced?1:1-Math.exp(-dt*3);camera.position.lerp(desired,f);controls.target.lerp(pose,f);controls.update();followTimer-=dt;if(followTimer<=0){followTimer=.5;compact.querySelector('small').textContent=`${data.lines.find(l=>l.id===t.line).name} · toward ${t.route.destination} · ${ctx.life.paused?'paused':'illustrative service'}`;}
     }};
 }

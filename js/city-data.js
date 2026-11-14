@@ -64,15 +64,40 @@ export function segmentBox(items, a, b, width, y, thickness = 0.08) {
 // Each footprint is replaced individually, not by clearing an entire city block.
 export const REPLACED = new Set(['889662-0','824823-0','859995-0','858242-0','864656-0','869193-0','869122-0','863296-0','862723-0','866027-0','855557-0','866163-0','861246-0','893691-0','869294-0']);
 for(const l of LANDMARKS)for(const id of l.footprintIds||[])REPLACED.add(id);
-const FAMILIES = [
+export const FAMILIES = [
   { color: 0xb7aa95, glass: 0x303941, cell: [2.8, 4], winA: [0.53, 0.62], seed: 101 },
   { color: 0x987d68, glass: 0x252e33, cell: [2.9, 3.5], winA: [0.58, 0.65], seed: 102 },
   { color: 0xd1c9b8, glass: 0x3d4950, cell: [2.2, 3.7], winA: [0.5, 0.68], seed: 103 },
   { color: 0x8097a2, glass: 0x426678, style: 1, cell: [1.65, 3.6], roughness: 0.32, seed: 104 },
   { color: 0x444b50, glass: 0x283b48, style: 1, cell: [2.8, 3.8], roughness: 0.4, seed: 105 },
   { color: 0xaaa69c, glass: 0x3a454d, cell: [3.8, 4.2], winA: [0.76, 0.68], seed: 106 },
+  // Neighborhood families (tools/neighborhood-profiles.json), used by finished neighborhoods.
+  { name: 'red brick', color: 0x9b5843, glass: 0x262c30, cell: [3.1, 3.3], winA: [0.42, 0.56], seed: 107 },
+  { name: 'brown brick', color: 0x74503f, glass: 0x22282c, cell: [3.1, 3.3], winA: [0.42, 0.56], seed: 108 },
+  { name: 'cream brick', color: 0xc9b28c, glass: 0x2b3236, cell: [3.3, 3.6], winA: [0.5, 0.6], seed: 109 },
+  { name: 'greystone', color: 0xa8a294, glass: 0x283036, cell: [3.0, 3.6], winA: [0.4, 0.6], seed: 110 },
+  { name: 'church stone', color: 0xbcae92, glass: 0x2a2f3a, cell: [4.6, 7.5], winA: [0.26, 0.62], seed: 111 },
+  { name: 'siding', color: 0xc9c3b6, glass: 0x2a3034, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 112 },
+  { name: 'siding blue-grey', color: 0x8d9aa0, glass: 0x262d31, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 113 },
+  { name: 'siding sand', color: 0xd3bf96, glass: 0x2b3033, cell: [3.6, 3.0], winA: [0.36, 0.5], seed: 114 },
+  { name: 'greystone light', color: 0xc4bdab, glass: 0x283036, cell: [3.0, 3.6], winA: [0.42, 0.6], seed: 115 },
+  { name: 'greystone dark', color: 0x8d887c, glass: 0x252b30, cell: [3.0, 3.6], winA: [0.42, 0.6], seed: 116 },
+  { name: 'frame white', color: 0xe2ded3, glass: 0x2a3034, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 117 },
+  { name: 'frame mint', color: 0xa8c2ad, glass: 0x283033, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 118 },
+  { name: 'frame blue', color: 0x8ea6bb, glass: 0x262d32, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 119 },
+  { name: 'frame yellow', color: 0xd8c37f, glass: 0x2b3033, cell: [3.4, 3.0], winA: [0.38, 0.52], seed: 120 },
+  { name: 'yellow brick', color: 0xcbb07c, glass: 0x2a3034, cell: [3.1, 3.4], winA: [0.44, 0.56], seed: 121 },
+  { name: 'brownstone', color: 0x7b5747, glass: 0x24292d, cell: [3.0, 3.8], winA: [0.4, 0.62], seed: 122 },
+  { name: 'chinatown brick', color: 0xa5463b, glass: 0x2c2a2c, cell: [3.2, 3.4], winA: [0.5, 0.56], seed: 123 },
+  { name: 'loft brick', color: 0x8b5240, glass: 0x262c30, cell: [3.6, 4.2], winA: [0.62, 0.62], seed: 124 },
+  { name: 'modernist concrete', color: 0xb5b1a7, glass: 0x2f3a42, cell: [3.4, 3.8], winA: [0.7, 0.5], seed: 125 },
+  { name: 'lakefront glass', color: 0x748b98, glass: 0x3f5f72, style: 1, cell: [1.7, 3.4], roughness: 0.3, seed: 126 },
+  { name: 'greenhouse glass', color: 0xbcd3d4, glass: 0x9fc3c6, style: 1, cell: [1.4, 1.6], roughness: 0.15, seed: 127 },
 ];
+import { finishedNeighborhoods, ruleFor, pickFamily } from './neighborhood-style.js';
+const footArea = (r) => Math.abs(r.reduce((s, p, i) => s + p[0] * r[(i + 1) % r.length][1] - r[(i + 1) % r.length][0] * p[1], 0) / 2);
 export function buildMeasuredCity(scene, ctx) {
+  const districtAt = finishedNeighborhoods(ctx.neighborhoods), profiles = ctx.neighborhoods?.profiles || {};
   const group = new THREE.Group(); group.name = 'measured-city';
   const materials = FAMILIES.map((f,i) => facadeMaterial({ ...f, lightingProfile:i===3||i===4?'office':'mixed', features:true }));
   const chunks = new Map(), details = new Map(), distant = new Map(), chunkViews = new Map();
@@ -85,7 +110,10 @@ export function buildMeasuredCity(scene, ctx) {
     if ((v.x > 280 && v.x < 610 && v.z > -220 && v.z < 60)) continue;
     // One Prudential's antenna belongs above its roof, not across its whole footprint.
     const h = b.id==='870263-0' ? 183.2 : b.h; if (v.w < 2 || v.d < 2) continue;
-    const family = h > 130 ? (Number(b.id.split('-')[0]) % 3 === 0 ? 4 : 3)
+    // Facade family from the district's profile (Loop masonry, Streeterville glass, River North
+    // lofts...), the same rules the neighborhoods use; the original choice otherwise.
+    const district = districtAt(v.x, v.z), rule = district && ruleFor(profiles[district.profile].rules, h, footArea(b.rings[0]));
+    const family = rule ? pickFamily(rule.families, Number(b.id.split('-')[0]) % 10007) : h > 130 ? (Number(b.id.split('-')[0]) % 3 === 0 ? 4 : 3)
       : v.x < -550 && v.z < -650 ? (rand() < 0.7 ? 1 : 5) : Math.floor(rand() * 3);
     const cell = `${Math.floor(v.x / 600)},${Math.floor(v.z / 600)}`;
     const key = cell + ':' + family;

@@ -1,0 +1,143 @@
+// Binary tile format for the streamed city ("CHT1"). Shared by tools/build-tiles.mjs (writer),
+// js/tile-worker.js (reader) and the checks, so encoder and decoder can't drift apart.
+//
+// A tile file is gzip(stream). The stream is 4 magic bytes followed by unsigned LEB128 varints;
+// signed values are zig-zag encoded. Coordinates are decimetres. Each polyline/ring stores its
+// first point relative to the tile origin and every later point relative to the previous one.
+//
+//   magic 'CHT1', version, kind, tx, tz (zig-zag), counts...
+//   kind 0 (detail, one per 1 km tile):
+//     buildings: objectId, part, h_dm, flags, style, nRings, per ring: n, points
+//       style = facade family (FAMILIES index, < 32) + 32 * roof (ROOF_*, < 8)
+//               + 256 * church front (0 north, 1 east, 2 south, 3 west) + 1024 * twin towers
+//     streets:   class, dir(0 two-way,1 F,2 T), levelFrom+8, levelTo+8, flags, n, points
+//     water:     nRings, rings          parks: parkIndex, flags, nRings, rings
+//     rails:     flags, n, points      (main-line railways, OpenStreetMap)
+//     surfaces:  kind, nRings, rings   (ground cover in finished neighborhoods: SURF_*)
+//     paths:     kind, n, points       (PATH_*)
+//       street/park/rail flags: FINISHED (inside a finished neighborhood); rails also RAIL_BRIDGE, RAIL_RAISED
+//   kind 1 (skyline, one per 4 km tile): boxes: cx, cz, w, d (dm), h_dm, angle (0..255 → 0..255/256·π)
+
+export const MAGIC = [67, 72, 84, 49]; // 'CHT1'
+export const VERSION = 2;
+export const TILE = 1000, SKY = 4000; // metres
+export const FLAG_ESTIMATED = 1, FLAG_SPIKE = 2, FLAG_OVERRIDE = 4;
+export const FINISHED = 1, RAIL_BRIDGE = 2, RAIL_RAISED = 4;
+export const SURF_YARD = 1, SURF_PAVED = 2, SURF_INDUSTRIAL = 3, SURF_PARKING = 4, SURF_PLAZA = 5, PATH_ALLEY = 1;
+// Parks and the lakefront: mown lawn (no random trees), beach sand, tall-grass prairie, ball-field
+// infield clay, tennis courts, asphalt hard courts, playground surfacing, pools, vacant gravel lots
+// and rail ballast.
+export const SURF_LAWN = 6, SURF_SAND = 7, SURF_PRAIRIE = 8, SURF_INFIELD = 9, SURF_TENNIS = 10, SURF_HARDCOURT = 11,
+  SURF_PLAY = 12, SURF_POOL = 13, SURF_VACANT = 14, SURF_BALLAST = 15, SURF_GARDEN = 16,
+  // Lake water inside the shoreline (harbors, slips, coves), drawn with the lake's own material.
+  SURF_LAKE = 17;
+// Paths: the Lakefront Trail (asphalt), park walks (concrete), white field markings, harbor docks,
+// expressway ramps, rows of trees, and "clear" lines (streets drawn by downtown, not by the tiles:
+// never drawn, they only keep trees off the road).
+export const PATH_TRAIL = 2, PATH_WALK = 3, PATH_LINE = 4, PATH_DOCK = 5, PATH_RAMP = 6, PATH_TREES = 7, PATH_CLEAR = 8;
+// Mapped surveys (OpenStreetMap areas): service roads, single trees (each point is a tree) and the
+// box the survey covers (its four corners: no made-up park or yard trees inside it).
+export const PATH_SERVICE = 9, PATH_TREE_POINTS = 10, PATH_SURVEYED = 11, PATH_LAMP_POINTS = 12;
+// Park flag: its trees are mapped (PATH_TREE_POINTS), so no made-up trees are added in it.
+export const PARK_MAPPED_TREES = 8;
+export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3, ROOF_OPEN = 4, ROOF_GREENHOUSE = 5;
+// A building drawn by its own model (js/soldier-field.js): the tiles keep its footprint for collisions only.
+export const ROOF_CUSTOM = 6;
+export const FRONTS = { N: 0, E: 1, S: 2, W: 3 };
+export const styleOf = (family, roof = ROOF_FLAT, front = 0, twin = false) => family + 32 * roof + 256 * front + (twin ? 1024 : 0);
+export const familyOfStyle = (style) => style % 32, roofOfStyle = (style) => Math.floor(style / 32) % 8;
+export const frontOfStyle = (style) => Math.floor(style / 256) % 4, twinOfStyle = (style) => Math.floor(style / 1024) % 2 === 1;
+const DIRS = { '': 0, B: 0, F: 1, T: 2 };
+
+export class Writer {
+  constructor() { this.buf = new Uint8Array(1 << 16); this.n = 0; }
+  byte(b) { if (this.n === this.buf.length) { const g = new Uint8Array(this.buf.length * 2); g.set(this.buf); this.buf = g; } this.buf[this.n++] = b; }
+  u(v) { if (!(v >= 0) || !Number.isFinite(v)) throw new Error('bad varint ' + v); v = Math.floor(v); while (v >= 128) { this.byte((v % 128) | 128); v = Math.floor(v / 128); } this.byte(v); }
+  s(v) { v = Math.round(v); this.u(v < 0 ? -2 * v - 1 : 2 * v); }
+  points(pts, ox, oz) { this.u(pts.length); let px = ox, pz = oz; for (const [x, z] of pts) { const qx = Math.round(x * 10), qz = Math.round(z * 10); this.s(qx - px); this.s(qz - pz); px = qx; pz = qz; } }
+  bytes() { return this.buf.slice(0, this.n); }
+}
+
+export class Reader {
+  constructor(bytes) { this.b = bytes; this.i = 0; }
+  u() { let v = 0, m = 1, c; do { c = this.b[this.i++]; v += (c & 127) * m; m *= 128; } while (c & 128); return v; }
+  s() { const v = this.u(); return v % 2 ? -(v + 1) / 2 : v / 2; }
+  points(ox, oz) { const n = this.u(), out = new Array(n); let x = ox, z = oz; for (let k = 0; k < n; k++) { x += this.s(); z += this.s(); out[k] = [x / 10, z / 10]; } return out; }
+  get done() { return this.i >= this.b.length; }
+}
+
+function header(w, kind, tx, tz) { for (const b of MAGIC) w.byte(b); w.u(VERSION); w.u(kind); w.s(tx); w.s(tz); }
+
+// tile = { tx, tz, buildings:[{objectId,part,h,flags,rings}], streets:[{class,dir,level,points}], water:[{rings}], parks:[{park,rings}] }
+export function encodeDetail(tile) {
+  const w = new Writer(), ox = tile.tx * TILE * 10, oz = tile.tz * TILE * 10;
+  header(w, 0, tile.tx, tile.tz);
+  const rails = tile.rails || [], surfaces = tile.surfaces || [], paths = tile.paths || [];
+  w.u(tile.buildings.length); w.u(tile.streets.length); w.u(tile.water.length); w.u(tile.parks.length); w.u(rails.length); w.u(surfaces.length); w.u(paths.length);
+  for (const b of tile.buildings) { w.u(b.objectId); w.u(b.part); w.u(Math.round(b.h * 10)); w.u(b.flags); w.u(b.style ?? 0); w.u(b.rings.length); for (const r of b.rings) w.points(r, ox, oz); }
+  for (const s of tile.streets) { w.u(s.class); w.u(DIRS[s.dir] ?? 0); w.u((s.level?.[0] ?? 0) + 8); w.u((s.level?.[1] ?? 0) + 8); w.u(s.flags ?? 0); w.points(s.points, ox, oz); }
+  for (const p of tile.water) { w.u(p.rings.length); for (const r of p.rings) w.points(r, ox, oz); }
+  for (const p of tile.parks) { w.u(p.park); w.u(p.flags ?? 0); w.u(p.rings.length); for (const r of p.rings) w.points(r, ox, oz); }
+  for (const r of rails) { w.u(r.flags ?? 0); w.points(r.points, ox, oz); }
+  for (const s of surfaces) { w.u(s.kind); w.u(s.rings.length); for (const r of s.rings) w.points(r, ox, oz); }
+  for (const p of paths) { w.u(p.kind); w.points(p.points, ox, oz); }
+  return w.bytes();
+}
+
+// tile = { sx, sz, boxes:[{x,z,w,d,h,angle}] }
+export function encodeSkyline(tile) {
+  const w = new Writer(), ox = tile.sx * SKY * 10, oz = tile.sz * SKY * 10;
+  header(w, 1, tile.sx, tile.sz);
+  w.u(tile.boxes.length);
+  for (const b of tile.boxes) { w.s(Math.round(b.x * 10) - ox); w.s(Math.round(b.z * 10) - oz); w.u(Math.round(b.w * 10)); w.u(Math.round(b.d * 10)); w.u(Math.round(b.h * 10)); w.u(Math.round(((b.angle % Math.PI) + Math.PI) % Math.PI / Math.PI * 256) % 256); }
+  return w.bytes();
+}
+
+export function decode(bytes) {
+  for (let k = 0; k < 4; k++) if (bytes[k] !== MAGIC[k]) throw new Error('Not a CHT1 tile');
+  const r = new Reader(bytes); r.i = 4;
+  const version = r.u(); if (version !== VERSION) throw new Error('Unsupported tile version ' + version);
+  const kind = r.u(), tx = r.s(), tz = r.s();
+  if (kind === 1) {
+    const ox = tx * SKY * 10, oz = tz * SKY * 10, n = r.u(), boxes = new Array(n);
+    for (let k = 0; k < n; k++) boxes[k] = { x: (r.s() + ox) / 10, z: (r.s() + oz) / 10, w: r.u() / 10, d: r.u() / 10, h: r.u() / 10, angle: r.u() / 256 * Math.PI };
+    return { kind, sx: tx, sz: tz, boxes };
+  }
+  const ox = tx * TILE * 10, oz = tz * TILE * 10;
+  const nb = r.u(), ns = r.u(), nw = r.u(), np = r.u(), nr = r.u(), nsf = r.u(), npa = r.u();
+  const buildings = new Array(nb), streets = new Array(ns), water = new Array(nw), parks = new Array(np), rails = new Array(nr), surfaces = new Array(nsf), paths = new Array(npa);
+  const rings = () => { const n = r.u(), out = new Array(n); for (let k = 0; k < n; k++) out[k] = r.points(ox, oz); return out; };
+  for (let k = 0; k < nb; k++) buildings[k] = { objectId: r.u(), part: r.u(), h: r.u() / 10, flags: r.u(), style: r.u(), rings: rings() };
+  for (let k = 0; k < ns; k++) streets[k] = { class: r.u(), dir: ['', 'F', 'T'][r.u()], level: [r.u() - 8, r.u() - 8], flags: r.u(), points: r.points(ox, oz) };
+  for (let k = 0; k < nw; k++) water[k] = { rings: rings() };
+  for (let k = 0; k < np; k++) parks[k] = { park: r.u(), flags: r.u(), rings: rings() };
+  for (let k = 0; k < nr; k++) rails[k] = { flags: r.u(), points: r.points(ox, oz) };
+  for (let k = 0; k < nsf; k++) surfaces[k] = { kind: r.u(), rings: rings() };
+  for (let k = 0; k < npa; k++) paths[k] = { kind: r.u(), points: r.points(ox, oz) };
+  if (!r.done) throw new Error('Trailing bytes in tile');
+  return { kind, tx, tz, buildings, streets, water, parks, rails, surfaces, paths };
+}
+
+// Oriented bounding box of a footprint ring, aligned with its longest edge.
+// Returns centre, width (along that edge), depth and the edge angle atan2(dz, dx).
+export function orientedBox(ring) {
+  let best = 0, angle = 0;
+  for (let i = 0; i < ring.length - 1; i++) { const dx = ring[i + 1][0] - ring[i][0], dz = ring[i + 1][1] - ring[i][1], l = dx * dx + dz * dz; if (l > best) { best = l; angle = Math.atan2(dz, dx); } }
+  const c = Math.cos(angle), s = Math.sin(angle);
+  let u0 = Infinity, u1 = -Infinity, w0 = Infinity, w1 = -Infinity;
+  for (const [x, z] of ring) { const u = x * c + z * s, w = -x * s + z * c; if (u < u0) u0 = u; if (u > u1) u1 = u; if (w < w0) w0 = w; if (w > w1) w1 = w; }
+  const uc = (u0 + u1) / 2, wc = (w0 + w1) / 2;
+  return { x: uc * c - wc * s, z: uc * s + wc * c, w: u1 - u0, d: w1 - w0, angle };
+}
+
+export const tileOf = (x, z, size = TILE) => [Math.floor(x / size), Math.floor(z / size)];
+export const tileKey = (tx, tz) => tx + '_' + tz;
+
+// Default facade family (index into FAMILIES in city-data.js) for a building in a neighborhood
+// that has no profile yet: brick for low-rises, the downtown mix for mid-rises and the glass
+// families for towers. Deterministic. Finished neighborhoods get their style from their profile.
+export function familyFor(h, seed) {
+  if (h > 130) return seed % 3 === 0 ? 4 : 3;
+  if (h > 40) return [0, 2, 5, 3][seed % 4];
+  return [1, 1, 0, 5, 1, 2][seed % 6];
+}

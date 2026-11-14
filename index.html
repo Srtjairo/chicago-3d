@@ -1,4 +1,4 @@
-<title>Downtown Chicago 3D</title>
+<title>Chicago 3D</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -204,8 +204,27 @@
   .explore button { cursor:pointer; border:1px solid var(--edge); border-radius:6px; background:transparent; padding:7px; font-size:12px; }
   #life-toggle { flex:1; }
   #life-toggle[aria-pressed="true"] { color:var(--flag-blue); background:#243842; }
-  #mini-map { width:100%; height:auto; display:block; border-radius:5px; margin-top:10px; }
-  #orientation p { font-size:10px; color:var(--muted); margin:4px 0; }
+  /* Neighborhood names (js/neighborhoods.js) */
+  .hood-tag { pointer-events:auto; cursor:pointer; background:none; border:0; padding:0; display:flex; flex-direction:column; align-items:center; transform:translateY(-50%);
+    color:#fff6e0; font:800 22px/1 var(--font-display); letter-spacing:.16em; text-transform:uppercase; text-shadow:0 1px 3px rgba(0,0,0,.9), 0 0 14px rgba(0,0,0,.6); }
+  .hood-tag small { margin-top:4px; font:600 9.5px/1 var(--font-body); letter-spacing:.22em; color:rgba(255,255,255,.75); }
+  .hood-tag:hover span { color:#ffd48a; }
+  .bldg-tag { display:inline-flex; align-items:center; gap:5px; transform:translateY(-50%); padding:3px 8px 3px 6px; border-radius:999px; white-space:nowrap;
+    background:rgba(10,13,20,.72); border:1px solid rgba(255,255,255,.16); color:var(--ink); font:600 10.5px/1 var(--font-body); pointer-events:none; }
+  .bldg-tag i { font-style:normal; color:#ffcf7a; font-size:10px; }
+  @media(max-width:720px){ .hood-tag { font-size:16px; } }
+  /* Bird's-eye map of the explorable circle (js/minimap.js), above the landmark panel */
+  .minimap { position:fixed; z-index:4; width:216px; padding:10px;
+    top:calc(var(--pad) + env(safe-area-inset-top, 0px)); right:calc(var(--pad) + env(safe-area-inset-right, 0px)); }
+  .minimap.big { width:min(560px, calc(100vw - 2 * var(--pad)), calc(100vh - 200px)); }
+  body:has(.minimap.big) #panel { visibility:hidden; }
+  .minimap-disc { position:relative; width:100%; aspect-ratio:1; border-radius:50%; overflow:hidden; cursor:crosshair;
+    background:#2d5a6b; box-shadow:0 0 0 1px rgba(255,255,255,.28), 0 0 0 3px rgba(0,0,0,.25); }
+  .minimap-disc img, .minimap-disc canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .minimap-n { position:absolute; top:5px; left:50%; transform:translateX(-50%); font:700 10px var(--font-mono); color:#fff; text-shadow:0 0 3px #000; pointer-events:none; }
+  .minimap-cap { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:8px; font:500 10.5px/1.3 var(--font-body); color:var(--muted); }
+  .minimap-size { cursor:pointer; border:1px solid var(--edge); border-radius:6px; background:transparent; color:var(--ink); padding:2px 7px; font-size:13px; line-height:1.2; }
+  @media (min-width:721px) { body:has(#minimap:not([hidden])) #panel { width:216px; top:calc(var(--pad) + 270px + env(safe-area-inset-top, 0px)); max-height:calc(100% - 470px); } }
   #sources-open { display:block; border:0; padding:6px 0 0; color:var(--muted); font-size:10px; }
   #model-about { color:var(--ink); background:#15212c; border:1px solid var(--edge); border-radius:14px; width:min(520px,90vw); padding:26px; max-height:80vh; }
   #model-about::backdrop { background:#061018bb; }
@@ -222,6 +241,10 @@
     #sources-open { font-size:9px; padding-top:4px; }
     body:has(#info:not([hidden])) .explore { display:none; }
     body:has(#panel.open) .explore { display:none; }
+    .minimap { width:128px; padding:6px; }
+    .minimap.big { width:calc(100vw - 2 * var(--pad)); }
+    .minimap-cap span { display:none; }
+    .minimap-cap { justify-content:flex-end; margin-top:5px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -289,7 +312,7 @@
     <div class="bar"></div>
   </div>
   <h1>Chicago</h1>
-  <p>Downtown, from the West Loop to the lakefront</p>
+  <p>Chicago, 8 km around the Loop: downtown and 40 neighborhoods</p>
   <dl class="hud">
     <dt>Grid</dt><dd id="hud-addr">0 N/S &middot; 0 E/W</dd>
   </dl>

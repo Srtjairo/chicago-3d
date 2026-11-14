@@ -33,6 +33,8 @@ export function buildCity(scene, ctx) {
     for (let z = Math.floor(EXTENT.minZ / BLOCK) * BLOCK; z < EXTENT.maxZ; z += BLOCK) {
       const cx = x + BLOCK / 2, cz = z + BLOCK / 2;
       if (ctx.data && inCoverage(cx, cz, 65)) continue;
+      // Real footprints from the streamed tiles replace the procedural filler.
+      if (ctx.cityTileKeys?.has(Math.floor(cx / 1000) + '_' + Math.floor(cz / 1000))) continue;
       if (isLake(cx, cz, 70) || landscapeAt(cx,cz)) continue;
       if (inGrantPark(cx, cz)) continue;
       if (cx > NAVY_PIER.x0 - 80 && Math.abs(cz - NAVY_PIER.z) < 120) continue;

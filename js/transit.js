@@ -1,3 +1,4 @@
+import {boxesAt} from './spatial.js';
 import * as THREE from 'three';
 import {boxBatch} from './city-data.js';
 import {inCoverage} from './coverage.js';
@@ -24,7 +25,7 @@ export function buildTransit(scene,ctx,camera){
     for(let d=12;d<r.length;d+=24){const p=atDistance(r,d);if(ctx.isRiver(p.x,p.z)||data.junctions.some(j=>distance(j.position,[p.x,p.z])<35))continue;
       const nx=Math.cos(p.angle),nz=-Math.sin(p.angle);let off=trackOffset(p.x,p.z)+3;
       for(const road of ctx.roads){if(road.bridge)continue;const n=nearest(road.points,[p.x,p.z]);if(n.error<4&&Math.abs(Math.cos(n.angle-p.angle))>.95)off=Math.max(off,road.width/2+.6);}
-      for(const side of [-1,1]){const x=p.x+nx*off*side,z=p.z+nz*off*side;if(!ctx.measuredBuildings.some(b=>x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1))box(steel,x,(p.y-1)/2,z,.55,p.y-1,.55);}
+      for(const side of [-1,1]){const x=p.x+nx*off*side,z=p.z+nz*off*side;if(!boxesAt(ctx.measuredBuildings,x,z).some(b=>x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1))box(steel,x,(p.y-1)/2,z,.55,p.y-1,.55);}
       box(steel,p.x,p.y-1,p.z,off*2+.6,.55,.65,p.angle);
     }
   }
@@ -71,7 +72,7 @@ export function buildTransit(scene,ctx,camera){
         // Historical records can denote a doorway within an existing building.
         // Show that entrance sign without adding a staircase through the building.
         const lateral=(x-p.trackPosition[0])*nx+(z-p.trackPosition[1])*nz;
-        const enclosed=p.layout==='island'||s.id==='40380'||lateral<1.6||ctx.measuredBuildings.some(b=>x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1);
+        const enclosed=p.layout==='island'||s.id==='40380'||lateral<1.6||boxesAt(ctx.measuredBuildings,x,z).some(b=>x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1);
         if(!enclosed){for(let i=0;i<26;i++)box(stairs,x+ux*direction*run*i/26,.6+(h-.6)*(i+.5)/26,z+uz*direction*run*i/26,1.8,.18,run/26,p.angle);
           const top=[x+ux*direction*run,h,z+uz*direction*run],landing=[px+ux*(along+direction*run),h,pz+uz*(along+direction*run)];
           beam(platforms,top,landing,1.8,.25);for(const side of [-1,1])beam(steel,[x+nx*side,.9,z+nz*side],[top[0]+nx*side,h+1,top[2]+nz*side],.08,.08);
