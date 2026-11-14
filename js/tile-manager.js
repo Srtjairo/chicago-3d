@@ -82,6 +82,7 @@ export class TileManager {
       parkwalk: offset(new THREE.MeshStandardMaterial({ color: 0xc4bdae, roughness: 0.95 }), -1.75),
       fieldlines: offset(new THREE.MeshStandardMaterial({ color: 0xf1f1ea, roughness: 0.9 }), -2),
       dock: new THREE.MeshStandardMaterial({ color: 0x8c7d69, roughness: 0.9, side: THREE.DoubleSide }),
+      garden: offset(new THREE.MeshStandardMaterial({ color: 0x6f8a4a, roughness: 1 }), -0.8),
     };
     this.groundByCell = new Map(this.ground.map((g) => [tileKey(g.sx, g.sz), g]));
     this.buildDecor(ctx);
@@ -286,7 +287,7 @@ export class TileManager {
   // Streets, parks and rivers for one ground tile.
   makeGround(parts, name) {
     const group = new THREE.Group(); group.name = name; group.visible = false;
-    for (const key of ['yard', 'plaza', 'paved', 'industrial', 'vacant', 'ballast', 'lawn', 'prairie', 'sand', 'infield', 'tennis', 'hardcourt', 'play', 'pool', 'trail', 'parkwalk', 'fieldlines', 'dock', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
+    for (const key of ['yard', 'plaza', 'paved', 'industrial', 'vacant', 'ballast', 'lawn', 'prairie', 'sand', 'infield', 'tennis', 'hardcourt', 'play', 'pool', 'trail', 'parkwalk', 'fieldlines', 'dock', 'garden', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
       const { position, normal } = parts[key];
       if (!position.length) continue;
       const geometry = new THREE.BufferGeometry();

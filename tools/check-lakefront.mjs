@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { root } from './geo-source.mjs';
-import { decode, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_RAMP, PATH_DOCK, PATH_TRAIL } from '../js/tile-format.js';
+import { decode, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_RAMP, PATH_DOCK, PATH_TRAIL, ROOF_CUSTOM } from '../js/tile-format.js';
 import { inCoverage } from '../js/coverage.js';
 
 const dir = process.argv[2] || join(root, 'tiles');
@@ -34,11 +34,23 @@ expect('Burnham Harbor', 1350, 2500, ['water']);
 expect('Belmont Harbor', -820, -6820, ['water']);
 expect('Northerly Island pond', 1665, 2895, ['water']);
 // The traced lakefront.
-expect('Soldier Field South Lot', 1120, 2800, ['parking']);
-expect('Soldier Field plaza', 1060, 2200, ['plaza']);
-expect('North Lawn (garage roof)', 940, 1920, ['lawn']);
+// Surveyed (OpenStreetMap) around Soldier Field.
+expect('Soldier Field South Lot', 1090, 2800, ['parking']);
+expect('Adler Planetarium Lot', 1580, 1830, ['parking']);
+expect('Gold Star Families Park', 1150, 2150, ['park', 'lawn']);
+expect('12th Street Beach', 1690, 2040, ['sand']);
 expect('Northerly Island prairie', 1680, 2620, ['prairie']);
 expect('The 78 (vacant)', -400, 2000, ['vacant']);
+// Soldier Field has its own model: its parts are packaged and the tiles keep only its footprint.
+{
+  const sf = JSON.parse(readFileSync(join(root, 'assets', 'soldier-field.json'), 'utf8'));
+  assert(sf.parts.length >= 10 && sf.pitch.length >= 4, 'Soldier Field parts missing');
+  assert(sf.parts.some((p) => p.h >= 60) && sf.parts.some((p) => p.rings.length > 1), 'Soldier Field decks or seating bowl missing');
+  const t = index.tiles.find(([tx, tz]) => tx === 0 && tz === 2);
+  const tile = decode(new Uint8Array(gunzipSync(readFileSync(join(dir, 'b', `0_2.${t[2]}.bin`)))));
+  const b = tile.buildings.find((q) => q.objectId === 937968);
+  assert(b && Math.floor(b.style / 32) % 8 === ROOF_CUSTOM, 'Soldier Field footprint should be left to its own model');
+}
 // Beaches, docks, the trail and Lake Shore Drive's ramps exist.
 const all = (f) => ground.flatMap(f);
 const count = (kind) => all((g) => g.surfaces.filter((s) => s.kind === kind)).length;

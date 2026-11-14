@@ -893,7 +893,8 @@
           "id": "937968-0",
           "name": "Soldier Field",
           "kind": "stadium",
-          "family": 2
+          "family": 2,
+          "custom": true
         },
         {
           "id": "946610-0",
