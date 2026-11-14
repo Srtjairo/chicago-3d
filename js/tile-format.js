@@ -28,14 +28,18 @@ export const SURF_YARD = 1, SURF_PAVED = 2, SURF_INDUSTRIAL = 3, SURF_PARKING = 
 // infield clay, tennis courts, asphalt hard courts, playground surfacing, pools, vacant gravel lots
 // and rail ballast.
 export const SURF_LAWN = 6, SURF_SAND = 7, SURF_PRAIRIE = 8, SURF_INFIELD = 9, SURF_TENNIS = 10, SURF_HARDCOURT = 11,
-  SURF_PLAY = 12, SURF_POOL = 13, SURF_VACANT = 14, SURF_BALLAST = 15, SURF_GARDEN = 16;
+  SURF_PLAY = 12, SURF_POOL = 13, SURF_VACANT = 14, SURF_BALLAST = 15, SURF_GARDEN = 16,
+  // Lake water inside the shoreline (harbors, slips, coves), drawn with the lake's own material.
+  SURF_LAKE = 17;
 // Paths: the Lakefront Trail (asphalt), park walks (concrete), white field markings, harbor docks,
 // expressway ramps, rows of trees, and "clear" lines (streets drawn by downtown, not by the tiles:
 // never drawn, they only keep trees off the road).
 export const PATH_TRAIL = 2, PATH_WALK = 3, PATH_LINE = 4, PATH_DOCK = 5, PATH_RAMP = 6, PATH_TREES = 7, PATH_CLEAR = 8;
 // Mapped surveys (OpenStreetMap areas): service roads, single trees (each point is a tree) and the
 // box the survey covers (its four corners: no made-up park or yard trees inside it).
-export const PATH_SERVICE = 9, PATH_TREE_POINTS = 10, PATH_SURVEYED = 11;
+export const PATH_SERVICE = 9, PATH_TREE_POINTS = 10, PATH_SURVEYED = 11, PATH_LAMP_POINTS = 12;
+// Park flag: its trees are mapped (PATH_TREE_POINTS), so no made-up trees are added in it.
+export const PARK_MAPPED_TREES = 8;
 export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3, ROOF_OPEN = 4, ROOF_GREENHOUSE = 5;
 // A building drawn by its own model (js/soldier-field.js): the tiles keep its footprint for collisions only.
 export const ROOF_CUSTOM = 6;

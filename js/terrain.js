@@ -128,8 +128,9 @@ function buildRiver(scene, ctx) {
   ctx.bridges = mats;
 }
 
-export function addTrees(scene, trees, rand) {
-  const canopyGeo = new THREE.SphereGeometry(1, 10, 7);
+// light: a lower-poly canopy for large mapped groves (thousands of trees).
+export function addTrees(scene, trees, rand, { light = false } = {}) {
+  const canopyGeo = light ? new THREE.SphereGeometry(1, 7, 5) : new THREE.SphereGeometry(1, 10, 7);
   const cp = canopyGeo.attributes.position;
   for (let i = 0; i < cp.count; i++) {
     const x = cp.getX(i), y = cp.getY(i), z = cp.getZ(i);

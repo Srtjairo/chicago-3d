@@ -1,4 +1,11 @@
 {
+ "osm/area-dt-north": "567a795463a3191ebe2b6193999ddb922c5622990197fb1f04386af6218bfb34",
+ "osm/area-grant-park": "657811c603b45a2fd851d25c9cb5455fbacf7f4d1d46b8970d01bb0c8b96b820",
+ "osm/area-north-1": "4720151b905bf3589885b00281acd10d0f1eea7298eba2d2d17dff97e723e915",
+ "osm/area-north-2": "70faea924a51c11cc2ceafe1c6ae76c1f78af40d70403ef27ab6bb57f11d8318",
+ "osm/area-north-3": "82d64ac52c33dffa747e06f9a07dc2144099b9d4271091d83b38506cd2352367",
  "osm/area-soldier-field": "960e85bb3520df63f44785933875e8627fe0da07b3611b5932d019d8406bd1dc",
+ "osm/area-south-1": "98e90069072f8ff23c05383488f6ca579e6c957935e91684337bbc5502464fca",
+ "osm/area-south-2": "d5699eeedfa163fda0234ad7f892b55cc5dccbacc71452d6df806100622d7125",
  "osm/named-rush-and-division": "9958725be0c66ddc75215567e7cbeb70b84f6ce22f02d1d4fdc71ebae184dbe0"
 }

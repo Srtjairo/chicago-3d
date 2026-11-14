@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { root } from './geo-source.mjs';
-import { decode, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_RAMP, PATH_DOCK, PATH_TRAIL, ROOF_CUSTOM } from '../js/tile-format.js';
+import { decode, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_RAMP, PATH_DOCK, PATH_TRAIL, ROOF_CUSTOM, SURF_LAKE } from '../js/tile-format.js';
 import { inCoverage } from '../js/coverage.js';
 
 const dir = process.argv[2] || join(root, 'tiles');
@@ -20,7 +20,7 @@ const tileAt = (x, z) => ground.find((g) => g.sx === Math.floor(x / index.sky) &
 const ORDER = [SURF_YARD, 'park', SURF_PAVED, SURF_INDUSTRIAL, SURF_VACANT, SURF_BALLAST, SURF_PLAZA, SURF_LAWN, SURF_PRAIRIE, SURF_SAND, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_PARKING, 'water'];
 function top(x, z) {
   const t = tileAt(x, z); if (!t) return null;
-  if (t.water.some((w) => hit(x, z, w.rings))) return 'water';
+  if (t.water.some((w) => hit(x, z, w.rings)) || t.surfaces.some((s) => s.kind === SURF_LAKE && hit(x, z, s.rings))) return 'water';
   let best = null;
   for (const s of t.surfaces) if (hit(x, z, s.rings) && ORDER.indexOf(s.kind) > ORDER.indexOf(best)) best = s.kind;
   if (t.parks.some((p) => hit(x, z, p.rings)) && ORDER.indexOf('park') > ORDER.indexOf(best)) best = 'park';

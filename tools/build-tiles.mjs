@@ -18,10 +18,10 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import clip from './vendor/polygon-clipping.cjs';
 import { COVERAGE_RECTS, ORIGIN, CITY_RADIUS, DETAIL_RADIUS, inCoverage } from '../js/coverage.js';
-import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, ROOF_CUSTOM, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_TRAIL, PATH_WALK, PATH_LINE, PATH_DOCK, PATH_RAMP, PATH_TREES, PATH_CLEAR, SURF_GARDEN, PATH_SERVICE, PATH_TREE_POINTS, PATH_SURVEYED, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
+import { TILE, SKY, VERSION, FLAG_ESTIMATED, FLAG_SPIKE, FLAG_OVERRIDE, ROOF_FLAT, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, ROOF_CUSTOM, FRONTS, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_TRAIL, PATH_WALK, PATH_LINE, PATH_DOCK, PATH_RAMP, PATH_TREES, PATH_CLEAR, SURF_GARDEN, SURF_LAKE, PATH_SERVICE, PATH_TREE_POINTS, PATH_LAMP_POINTS, PARK_MAPPED_TREES, encodeDetail, encodeSkyline, tileKey, orientedBox, familyFor, styleOf } from '../js/tile-format.js';
 import { renderMinimap } from './minimap.mjs';
 import { LAKEFRONT } from './lakefront.mjs';
-import { loadOsmArea, osmAreas } from './osm-area.mjs';
+import { loadOsmArea, loadLakeShore, osmAreas } from './osm-area.mjs';
 // Surveyed areas (OpenStreetMap, cached by tools/fetch-osm-area.mjs): their mapped outlines replace
 // estimates on the lakefront.
 const OSM = osmAreas().map((name) => { const feats = loadOsmArea(name); const pts = feats.flatMap((f) => f.poly ? f.poly[0] : f.line || [f.point]); const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]); return { name, feats, box: [Math.min(...xs), Math.min(...zs), Math.max(...xs), Math.max(...zs)] }; });
@@ -262,10 +262,37 @@ landPoly[0].splice(1, 0, [shoreAt(-DETAIL_RADIUS - 500), -DETAIL_RADIUS - 600]);
 const surveyedShore = OSM.flatMap((a) => a.feats.filter((f) => f.poly && (f.tags.natural === 'beach' || f.tags.natural === 'sand' || f.tags.man_made === 'breakwater'))).map((f) => f.poly.map(closed));
 let inlets = clip.intersection(landPoly, waterIn.filter(isLakeMichigan).map((w) => w.rings.map(closed)), [circleRing]);
 if (surveyedShore.length) inlets = clip.difference(inlets, ...surveyedShore);
+// Where surveys hold Lake Michigan's mapped shoreline, everything east of it is the lake: harbors,
+// slips and coves follow the mapped shore instead of the City's coarser outline.
+// The mapped lake (east of the surveyed shoreline): it also trims parks, yards and every other
+// ground layer whose outline runs past the real shore.
+let mappedLake = [];
+{
+  const seen = new Set(), polys = [];
+  for (const name of osmAreas()) for (const c of loadLakeShore(name)) {
+    const a = c[0], b = c.at(-1), key = c.length + ':' + a + ':' + b;
+    if ((a[0] === b[0] && a[1] === b[1]) || seen.has(key)) continue; // closed loops are islands and piers
+    seen.add(key);
+    const east = Math.max(...c.map((p) => p[0])) + 3000;
+    polys.push([[...c, [east, b[1]], [east, a[1]], c[0]]]);
+  }
+  if (polys.length) {
+    let lake; try { lake = clip.union(...polys); } catch { lake = null; }
+    if (lake) {
+      mappedLake = clip.intersection(lake, [circleRing]);
+      // The City's inlets give way to the mapped lake along the stretches the shoreline covers.
+      const cover = clip.union(...polys.map((p) => { const v = ringBounds(p[0]); return rect(v.x0 - 200, v.z0, v.x1, v.z1); }));
+      const surveyedWater = clip.intersection(lake, landPoly, [circleRing]);
+      inlets = clip.union(...[clip.difference(inlets, cover), surveyedWater].filter((m) => m.length));
+      log('Mapped shoreline: lake water west of the City shoreline line', Math.round(surveyedWater.reduce((s, p) => s + ringArea(p[0]), 0) / 1000) + 'k m2');
+    }
+  }
+}
 inlets = inlets.filter((p) => ringArea(p[0]) > 600);
-rivers.push(...inlets.map((p) => ({ name: 'LAKE MICHIGAN (harbor)', rings: p.map((r) => r.slice(0, -1)) })));
+rivers.push(...inlets.map((p) => ({ name: 'LAKE MICHIGAN (harbor)', lake: true, rings: p.map((r) => r.slice(0, -1)) })));
 // Mapped ponds and lagoons in surveyed areas.
-for (const a of OSM) for (const f of a.feats) if (f.poly && (f.tags.natural === 'water' || f.tags.water) && !f.tags.tunnel) rivers.push({ name: f.tags.name || 'pond', rings: f.poly });
+// Mapped harbours are open to the lake: they take the lake's water.
+for (const a of OSM) for (const f of a.feats) if (f.poly && (f.tags.natural === 'water' || f.tags.water) && !f.tags.tunnel) rivers.push({ name: f.tags.name || 'pond', lake: f.tags.water === 'harbour' || f.tags.harbour === 'yes' || /harbor|harbour/i.test(f.tags.name || ''), rings: f.poly });
 // Ponds traced in tools/lakefront.mjs.
 rivers.push(...LAKEFRONT.filter((f) => f.kind === 'water').map((f) => ({ name: f.id, rings: [f.poly] })));
 // The same harbors and ponds for Mini Fellow's water (tools/build-neighborhoods.mjs reads them).
@@ -273,12 +300,26 @@ writeFileSync(join(src, 'harbors.json'), JSON.stringify(rivers.filter((w) => !wa
 log('Harbors and slips west of the shoreline:', inlets.length, inlets.map((p) => Math.round(ringArea(p[0]) / 1000) + 'k').join(' '));
 // Dry land near the lake: west of the shoreline, minus the harbors (lakefront features are clipped to it).
 const onLand = (polys) => { try { return clip.difference(clip.intersection(polys, landPoly), ...inlets); } catch { return []; } };
-clipToTiles(rivers.map((w) => w.rings), (t, rings) => t.water.push({ rings }));
+clipToTiles(rivers.filter((w) => !w.lake).map((w) => w.rings), (t, rings) => t.water.push({ rings }));
+clipToTiles(rivers.filter((w) => w.lake).map((w) => w.rings), (t, rings) => t.surfaces.push({ kind: SURF_LAKE, rings }));
 const parkList = parksIn.map((p, i) => ({ ...p, index: i }));
+// Where surveys apply: the lakefront strip (within 350 m of the shore) and the City's parks. Inland
+// streets keep the same look as every other neighborhood.
+const parkTests = parksIn.flatMap((p) => p.polygons.map((poly) => ({ v: ringBounds(poly[0]), test: polygonTester([poly]) })));
+const inZone = (x, z) => x > shoreAt(z) - 350 || parkTests.some((p) => x >= p.v.x0 - 30 && x <= p.v.x1 + 30 && z >= p.v.z0 - 30 && z <= p.v.z1 + 30 && (p.test(x, z) || p.test(x + 30, z) || p.test(x - 30, z) || p.test(x, z + 30) || p.test(x, z - 30)));
+const featureAt = (f) => f.point || (f.poly ? f.poly[0][Math.floor(f.poly[0].length / 2)] : f.line[Math.floor(f.line.length / 2)]);
+const mappedTrees = new Map(), MT = 50;
+for (const a of OSM) for (const f of a.feats) if (f.point && f.tags.natural === 'tree') { const k = Math.floor(f.point[0] / MT) + ',' + Math.floor(f.point[1] / MT); if (!mappedTrees.has(k)) mappedTrees.set(k, []); mappedTrees.get(k).push(f.point); }
+// A park piece counts as mapped when its surveyed trees average one per 900 m² or more.
+function wellMapped(rings) {
+  const v = ringBounds(rings[0]), test = polygonTester([rings]); let n = 0;
+  for (let i = Math.floor(v.x0 / MT); i <= Math.floor(v.x1 / MT); i++) for (let j = Math.floor(v.z0 / MT); j <= Math.floor(v.z1 / MT); j++) for (const [x, z] of mappedTrees.get(i + ',' + j) || []) if (test(x, z)) n++;
+  return n / Math.max(1, ringArea(rings[0])) >= 1 / 900;
+}
 // Park lawns stop at the water's edge (some City park outlines run over lagoons and harbors).
-const wetAll = rivers.map((w) => ({ v: ringBounds(w.rings[0]), rings: w.rings.map(closed) }));
+const wetAll = [...rivers.map((w) => ({ v: ringBounds(w.rings[0]), rings: w.rings.map(closed) })), ...mappedLake.map((p) => ({ v: ringBounds(p[0]), rings: p }))];
 const parkDry = (polys) => polys.flatMap((poly) => { const v = ringBounds(poly[0]); const wet = wetAll.filter((w) => w.v.x1 > v.x0 && w.v.x0 < v.x1 && w.v.z1 > v.z0 && w.v.z0 < v.z1).map((w) => w.rings); if (!wet.length) return [poly]; try { return clip.difference([poly.map(closed)], ...wet); } catch { return [poly]; } });
-for (const p of parkList) clipToTiles(parkDry(p.polygons), (t, rings) => { const v = ringBounds(rings[0]); t.parks.push({ park: p.index, flags: inFinished(v.x, v.z) ? FINISHED : 0, rings }); });
+for (const p of parkList) clipToTiles(parkDry(p.polygons), (t, rings) => { const v = ringBounds(rings[0]); t.parks.push({ park: p.index, flags: (inFinished(v.x, v.z) ? FINISHED : 0) | (mappedTrees.size && wellMapped(rings) ? PARK_MAPPED_TREES : 0), rings }); });
 log('Styled by neighborhood profile:', JSON.stringify(styleStats));
 // The same ground cover, unclipped, for the bird's-eye map.
 const mapCover = { yard: [], paved: [], industrial: [], parking: [] };
@@ -317,7 +358,7 @@ const mapCover = { yard: [], paved: [], industrial: [], parking: [] };
   const nearParks = (v) => parkShapes.filter((p) => p.v.x1 > v.x0 && p.v.x0 < v.x1 && p.v.z1 > v.z0 && p.v.z0 < v.z1).map((p) => p.rings);
   // Ground cover never runs under rivers, lagoons and harbors (far away, flat layers this close
   // together can't be told apart by depth, so the water would flicker or vanish).
-  const wetShapes = rivers.map((w) => ({ v: ringBounds(w.rings[0]), rings: w.rings.map(closed) }));
+  const wetShapes = wetAll;
   const dry = (parts, v) => { const wet = wetShapes.filter((w) => w.v.x1 > v.x0 && w.v.x0 < v.x1 && w.v.z1 > v.z0 && w.v.z0 < v.z1).map((w) => w.rings); if (!wet.length || !parts.length) return parts; try { return clip.difference(parts, ...wet); } catch { return parts; } };
   const counts = { yard: 0, zoned: 0, parking: 0, alleys: 0, derivedAlleys: 0 };
   // Without OpenStreetMap alleys for a neighborhood, derive them: Chicago's residential blocks
@@ -453,7 +494,7 @@ function addLakefront() {
   for (const f of facilities) {
     const [x, z] = f.at;
     if (!inFinished(x, z) || inCoverage(x, z) && !inBand(x, z)) continue;
-    if (OSM.some(({ box: [a, b, c, d] }) => x >= a && x <= c && z >= b && z <= d)) continue; // surveyed: the mapped outlines are used
+    if (f.kind === 'BEACH' && OSM.some(({ box: [a, b, c, d] }) => x >= a && x <= c && z >= b && z <= d) && inZone(x, z)) continue; // surveyed: the mapped beach outline is used
     const park = shapes.find((p) => x >= p.v.x0 && x <= p.v.x1 && z >= p.v.z0 && z <= p.v.z1 && p.test(x, z)); if (!park) continue;
     // Fields line up with the park (its longest side); diamonds face the park's middle.
     const o = orientedBox(park.rings[0].slice(0, -1)), a = o.angle, toMid = Math.atan2(park.v.z - z, park.v.x - x);
@@ -511,26 +552,23 @@ function addLakefront() {
       }
     }
   }
-  // Surveyed areas: mapped lots, lawns, gardens, prairie, beaches, plazas and playgrounds; walks,
-  // the Lakefront Trail, service roads and docks; every mapped tree. Inside a survey's box no
-  // made-up park or yard trees are added (the box goes to the tiles as PATH_SURVEYED).
+  // Surveyed areas, on the lakefront and in parks: mapped lots, lawns, gardens, prairie, beaches,
+  // plazas and playgrounds; walks, the Lakefront Trail, service roads and docks; every mapped tree
+  // and park lamp. Well-mapped park pieces get no made-up trees (PARK_MAPPED_TREES).
   for (const a of OSM) {
     const [bx0, bz0, bx1, bz1] = a.box, cx = (bx0 + bx1) / 2, cz = (bz0 + bz1) / 2;
-    for (let tx = Math.floor(bx0 / TILE); tx <= Math.floor(bx1 / TILE); tx++) for (let tz = Math.floor(bz0 / TILE); tz <= Math.floor(bz1 / TILE); tz++) {
-      if (!tileInDetail(tx, tz)) continue;
-      tileFor(tx, tz).paths.push({ kind: PATH_SURVEYED, points: [[bx0, bz0], [bx1, bz0], [bx1, bz1], [bx0, bz1]] });
-    }
-    const trees = new Map();
+    const trees = new Map(), lamps = new Map();
     // Footprints in the survey's box (mapped trees inside a building, e.g. through a deck's roof, are dropped).
     const foot = items.filter((b) => b.x > bx0 - 150 && b.x < bx1 + 150 && b.z > bz0 - 150 && b.z < bz1 + 150).map((b) => ({ v: b.v, test: polygonTester([b.rings]) }));
     const inFoot = ([x, z]) => foot.some((b) => x >= b.v.x0 && x <= b.v.x1 && z >= b.v.z0 && z <= b.v.z1 && b.test(x, z));
     for (const f of a.feats) {
-      const t = f.tags;
-      if (f.point) { if (inFoot(f.point)) continue; const k = Math.floor(f.point[0] / TILE) + ',' + Math.floor(f.point[1] / TILE); if (!trees.has(k)) trees.set(k, []); trees.get(k).push(f.point); continue; }
+      const t = f.tags, at = featureAt(f);
+      if (!inZone(at[0], at[1])) continue;
+      if (f.point) { if (inFoot(f.point)) continue; const into = t.natural === 'tree' ? trees : lamps, k = Math.floor(f.point[0] / TILE) + ',' + Math.floor(f.point[1] / TILE); if (!into.has(k)) into.set(k, []); into.get(k).push(f.point); continue; }
       if (t.building || t.tunnel === 'yes' || t.indoor || t.layer && Number(t.layer) < 0 && !f.poly) continue;
       if (f.poly) {
         const kind = t.amenity === 'parking' && !/underground|multi-storey|rooftop/.test(t.parking || '') ? SURF_PARKING
-          : t.leisure === 'pitch' ? SURF_LAWN : t.leisure === 'playground' ? SURF_PLAY
+          : t.leisure === 'pitch' ? (/tennis|pickleball/.test(t.sport || '') ? SURF_TENNIS : /basketball|handball|volleyball/.test(t.sport || '') && t.surface !== 'sand' ? SURF_HARDCOURT : t.sport === 'beachvolleyball' || t.surface === 'sand' ? SURF_SAND : SURF_LAWN) : t.leisure === 'playground' ? SURF_PLAY
           : t.natural === 'beach' || t.natural === 'sand' ? SURF_SAND
           : t.natural === 'grassland' || t.leisure === 'nature_reserve' || t.grassland ? SURF_PRAIRIE
           : t.landuse === 'grass' || t.landuse === 'meadow' ? SURF_LAWN : t.leisure === 'garden' ? SURF_GARDEN
@@ -545,7 +583,11 @@ function addLakefront() {
         else if (kind) for (const l of dryPieces(f.line)) path(l, kind, 'surveyed-paths');
       }
     }
-    for (const [k, pts] of trees) { const [tx, tz] = k.split(',').map(Number); if (!tileInDetail(tx, tz)) continue; for (let i = 0; i < pts.length; i += 250) { tileFor(tx, tz).paths.push({ kind: PATH_TREE_POINTS, points: pts.slice(i, i + 250) }); counts['surveyed-trees'] = (counts['surveyed-trees'] || 0) + Math.min(250, pts.length - i); } }
+    for (const [into, kind, tag] of [[trees, PATH_TREE_POINTS, 'surveyed-trees'], [lamps, PATH_LAMP_POINTS, 'surveyed-lamps']]) for (const [k, pts] of into) {
+      const [tx, tz] = k.split(',').map(Number); if (!tileInDetail(tx, tz)) continue;
+      const keep = pts.filter(([x, z]) => !inCoverage(x, z) || inBand(x, z));
+      for (let i = 0; i < keep.length; i += 250) { tileFor(tx, tz).paths.push({ kind, points: keep.slice(i, i + 250) }); counts[tag] = (counts[tag] || 0) + Math.min(250, keep.length - i); }
+    }
   }
   // The strip downtown leaves to the tiles: its own buildings stand on plaza footprints (no lawn or
   // trees under them) and its streets keep trees off the road.

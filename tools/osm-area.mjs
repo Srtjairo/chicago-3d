@@ -34,8 +34,8 @@ export function loadOsmArea(name) {
   const nodes = new Map(), ways = new Map(), out = [];
   for (const e of elements) if (e.type === 'node') nodes.set(e.id, project([e.lon, e.lat]).map((v) => Math.round(v * 10) / 10));
   for (const e of elements) if (e.type === 'way') ways.set(e.id, e);
-  // Single trees (natural=tree nodes) as points.
-  for (const e of elements) if (e.type === 'node' && e.tags?.natural === 'tree') out.push({ id: 'n' + e.id, tags: e.tags, point: nodes.get(e.id) });
+  // Single trees (natural=tree) and street lamps (highway=street_lamp) as points.
+  for (const e of elements) if (e.type === 'node' && (e.tags?.natural === 'tree' || e.tags?.highway === 'street_lamp')) out.push({ id: 'n' + e.id, tags: e.tags, point: nodes.get(e.id) });
   const pts = (ids) => ids.map((id) => nodes.get(id)).filter(Boolean);
   for (const w of ways.values()) {
     if (!w.tags) continue;
@@ -49,6 +49,35 @@ export function loadOsmArea(name) {
     for (const o of outer) out.push({ id: 'r' + r.id, tags: r.tags, poly: [pts(o).slice(0, -1), ...inner.map((h) => pts(h).slice(0, -1))] });
   }
   return out;
+}
+// Lake Michigan's mapped shoreline inside an area: the lake relation's outline pieces joined into
+// open chains (local metres), in the relation's direction.
+export function loadLakeShore(name) {
+  const file = join(dir, `area-${name}.json.gz`);
+  if (!existsSync(file)) return [];
+  const { elements } = JSON.parse(gunzipSync(readFileSync(file)).toString('utf8'));
+  const lake = elements.find((e) => e.type === 'relation' && e.tags?.name === 'Lake Michigan');
+  if (!lake) return [];
+  const nodes = new Map(), ways = new Map();
+  for (const e of elements) if (e.type === 'node') nodes.set(e.id, e); else if (e.type === 'way') ways.set(e.id, e);
+  const pieces = lake.members.filter((m) => m.type === 'way' && ways.has(m.ref)).map((m) => [...ways.get(m.ref).nodes]);
+  const chains = [];
+  while (pieces.length) {
+    let c = pieces.shift(), grew = true;
+    while (grew) {
+      grew = false;
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        if (p[0] === c.at(-1)) c = c.concat(p.slice(1)); else if (p.at(-1) === c[0]) c = p.concat(c.slice(1));
+        else if (p.at(-1) === c.at(-1)) c = c.concat([...p].reverse().slice(1)); else if (p[0] === c[0]) c = [...p].reverse().concat(c.slice(1));
+        else continue;
+        pieces.splice(i, 1); grew = true; break;
+      }
+    }
+    const pts = c.map((id) => nodes.get(id)).filter(Boolean).map((n) => project([n.lon, n.lat]).map((v) => Math.round(v * 10) / 10));
+    if (pts.length > 1) chains.push(pts);
+  }
+  return chains;
 }
 export const osmAreas = () => (existsSync(dir) ? readdirSync(dir).filter((f) => f.startsWith('area-')).map((f) => f.slice(5, -8)) : []);
 

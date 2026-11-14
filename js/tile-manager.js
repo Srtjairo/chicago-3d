@@ -83,6 +83,8 @@ export class TileManager {
       fieldlines: offset(new THREE.MeshStandardMaterial({ color: 0xf1f1ea, roughness: 0.9 }), -2),
       dock: new THREE.MeshStandardMaterial({ color: 0x8c7d69, roughness: 0.9, side: THREE.DoubleSide }),
       garden: offset(new THREE.MeshStandardMaterial({ color: 0x6f8a4a, roughness: 1 }), -0.8),
+      // Harbors and coves share the lake's reflective material, so they match the open lake.
+      lake: ctx.water?.material || new THREE.MeshStandardMaterial({ color: 0x5d8ea3, roughness: 0.25, metalness: 0.1 }),
     };
     this.groundByCell = new Map(this.ground.map((g) => [tileKey(g.sx, g.sz), g]));
     this.buildDecor(ctx);
@@ -287,7 +289,7 @@ export class TileManager {
   // Streets, parks and rivers for one ground tile.
   makeGround(parts, name) {
     const group = new THREE.Group(); group.name = name; group.visible = false;
-    for (const key of ['yard', 'plaza', 'paved', 'industrial', 'vacant', 'ballast', 'lawn', 'prairie', 'sand', 'infield', 'tennis', 'hardcourt', 'play', 'pool', 'trail', 'parkwalk', 'fieldlines', 'dock', 'garden', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
+    for (const key of ['yard', 'plaza', 'paved', 'industrial', 'vacant', 'ballast', 'lawn', 'prairie', 'sand', 'infield', 'tennis', 'hardcourt', 'play', 'pool', 'trail', 'parkwalk', 'fieldlines', 'dock', 'garden', 'lake', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
       const { position, normal } = parts[key];
       if (!position.length) continue;
       const geometry = new THREE.BufferGeometry();
@@ -299,6 +301,8 @@ export class TileManager {
       geometry.computeBoundingSphere();
       const m = new THREE.Mesh(geometry, this.groundMaterials[key]);
       m.receiveShadow = true; m.layers.set(1); m.name = name + ':' + key;
+      // Lake water shares the lake's reflection, set up when the lake plane draws: draw it after.
+      if (key === 'lake') m.renderOrder = 1;
       group.add(m);
     }
     return group;

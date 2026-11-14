@@ -77,7 +77,14 @@ export function buildWaterfront(scene,ctx){
  for(const dock of data.docks)for(let i=1;i<dock.points.length;i++)segmentBox(timber,dock.points[i-1],dock.points[i],dock.width,ctx.waterLevel((dock.points[i-1][0]+dock.points[i][0])/2,(dock.points[i-1][1]+dock.points[i][1])/2)+.1,.5);
  for(let x=1530;x<2240;x+=28){rails.push([x,3.65,-1000-(x-1500)*.018,.12,1.3,.12]);}
  segmentBox(rails,[1500,-1000],[2240,-1013.3],.12,4.3,.12);
- const [canopy,trunk]=addTrees(group,data.trees,rng(91));canopy.name='waterfront-trees';trunk.name='waterfront-trunks';
+ const [canopy,trunk]=addTrees(group,data.trees,rng(91),{light:data.trees.length>2000});canopy.name='waterfront-trees';trunk.name='waterfront-trunks';
+ // Park lamps where they are mapped (Grant Park, Millennium Park, the lakefront): posts with lanterns lit at night.
+ if(data.lamps?.length){
+  const post=new THREE.CylinderGeometry(.08,.11,4.4,5).translate(0,2.2+.72,0),head=new THREE.BoxGeometry(.42,.62,.42).translate(0,4.75+.72,0);
+  const lantern=new THREE.MeshStandardMaterial({color:0xe6dcc4,emissive:0xffcf8a,emissiveIntensity:0,roughness:.6});ctx.glows?.push({mat:lantern,day:0,night:.9});
+  const m=new THREE.Matrix4();
+  for(const [geo,mat,name]of [[post,new THREE.MeshStandardMaterial({color:0x2f3533,roughness:.6}),'waterfront-lamp-posts'],[head,lantern,'waterfront-lamps']]){const im=new THREE.InstancedMesh(geo,mat,data.lamps.length);data.lamps.forEach(([x,z],i)=>im.setMatrixAt(i,m.makeTranslation(x,0,z)));im.name=name;im.computeBoundingSphere();group.add(im);}
+ }
  const pools=[[seats,0x94724d,'seating'],[rails,0x526563,'rails'],[timber,0xad8b61,'timber'],[stone,0xc4bdab,'stone'],[steel,0x626d69,'steel'],[white,0xe0d7c4,'terraces'],[play,0xffffff,'play-details'],[planting,0x678951,'planting']];
  for(const [items,color,name]of pools)if(items.length){const m=boxBatch(items,color,'waterfront-'+name);(name==='seating'||name==='rails'||name==='play-details'?detail:group).add(m);}
  buildMooredBoats(group,data.boats,ctx);
