@@ -4,7 +4,7 @@
 //
 //   node tools/build-site.mjs https://<user>.github.io/chicago-3d/
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, cpSync, existsSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -27,6 +27,11 @@ const hash = createHash('sha256').update(src);
 for (const f of scripts) hash.update(f).update(readFileSync(join(root, 'js', f)));
 for (const f of assets) hash.update(f).update(readFileSync(join(root, 'assets', f)));
 if (existsSync(join(root, 'preview.png'))) hash.update(readFileSync(join(root, 'preview.png')));
+if (!existsSync(join(root, 'tiles', 'index.json'))) {
+  console.error('tiles/index.json missing: generate the city tiles before building the site');
+  process.exit(1);
+}
+hash.update(readFileSync(join(root, 'tiles', 'index.json')));
 const revision = hash.digest('hex').slice(0, 16);
 // Everything up to the first <canvas> is head material (title, meta, fonts, style, importmap).
 const split = src.indexOf('<canvas');
@@ -76,6 +81,8 @@ for (const f of scripts) {
     (_, quote, path) => `from ${quote}${path}?v=${revision}${quote}`);
   writeFileSync(join(out, 'js', f), code);
 }
+// City tiles (generated, gitignored at the root) are fetched from ../tiles/ relative to js/.
+cpSync(join(root, 'tiles'), join(out, 'tiles'), { recursive: true });
 if (existsSync(join(root, 'preview.png'))) copyFileSync(join(root, 'preview.png'), join(out, 'preview.png'));
 else console.warn('warning: preview.png missing, link previews will have no image');
 writeFileSync(join(out, '.nojekyll'), '');

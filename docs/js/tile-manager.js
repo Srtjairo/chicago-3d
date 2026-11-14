@@ -10,10 +10,10 @@
 // Ground tiles (streets, parks, rivers) are loaded once for the whole circle. Beyond the circle a
 // static backdrop (one instanced draw of the taller buildings out to the city limits) is always shown.
 import * as THREE from 'three';
-import { facadeMaterial, grassTexture } from './textures.js?v=3564eb1790f1e487';
-import { FAMILIES, polygonGeometry } from './city-data.js?v=3564eb1790f1e487';
-import { tileKey, VERSION } from './tile-format.js?v=3564eb1790f1e487';
-import { fadeBeyondCity } from './terrain.js?v=3564eb1790f1e487';
+import { facadeMaterial, grassTexture } from './textures.js?v=43b95e9bc34c6435';
+import { FAMILIES, polygonGeometry } from './city-data.js?v=43b95e9bc34c6435';
+import { tileKey, VERSION } from './tile-format.js?v=43b95e9bc34c6435';
+import { fadeBeyondCity } from './terrain.js?v=43b95e9bc34c6435';
 
 const STRIDE = 8; // must match BOX_STRIDE in tile-worker.js
 const version = new URL(import.meta.url).search;

@@ -3,4 +3,4 @@
 node_modules/
 .cache/
 .claude/ship-approved
-tiles/
+/tiles/

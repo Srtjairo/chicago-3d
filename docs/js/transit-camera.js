@@ -1,5 +1,5 @@
-import {boxesIn} from './spatial.js?v=3564eb1790f1e487';
-import {Flyer} from './tour.js?v=3564eb1790f1e487';
+import {boxesIn} from './spatial.js?v=43b95e9bc34c6435';
+import {Flyer} from './tour.js?v=43b95e9bc34c6435';
 export function stationView(station,camera,controls,ctx){
   const p=station.platforms.find(p=>p.kind==='elevated'),point=p?.center||p?.trackPosition||station.position,[x,z]=point;
   // Station views are at street height, so low neighboring buildings matter too.

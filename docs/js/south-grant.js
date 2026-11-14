@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {boxBatch,segmentBox} from './city-data.js?v=3564eb1790f1e487';
-import {rng} from './geo.js?v=3564eb1790f1e487';
+import {boxBatch,segmentBox} from './city-data.js?v=43b95e9bc34c6435';
+import {rng} from './geo.js?v=43b95e9bc34c6435';
 
 // Repeated park objects are instanced. No new lights or shadow casters.
 export function buildSouthGrant(parent,data){
