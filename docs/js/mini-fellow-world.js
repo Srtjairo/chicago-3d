@@ -1,5 +1,5 @@
-import {inPoly} from './waterfront-data.js?v=3564eb1790f1e487';
-import {COVERAGE_RECTS,CITY_RADIUS} from './coverage.js?v=3564eb1790f1e487';
+import {inPoly} from './waterfront-data.js?v=43b95e9bc34c6435';
+import {COVERAGE_RECTS,CITY_RADIUS} from './coverage.js?v=43b95e9bc34c6435';
 
 export const EYE_HEIGHT=1.7,PERSON_RADIUS=.45;
 const boundsOf=rings=>{const p=rings[0];return {x0:Math.min(...p.map(p=>p[0])),x1:Math.max(...p.map(p=>p[0])),z0:Math.min(...p.map(p=>p[1])),z1:Math.max(...p.map(p=>p[1]))};};

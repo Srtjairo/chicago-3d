@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { facadeMaterial } from './textures.js?v=3564eb1790f1e487';
-import { LANDMARKS, rng } from './geo.js?v=3564eb1790f1e487';
-import { inCoverage } from './coverage.js?v=3564eb1790f1e487';
-export { COVERAGE, inCoverage } from './coverage.js?v=3564eb1790f1e487';
+import { facadeMaterial } from './textures.js?v=43b95e9bc34c6435';
+import { LANDMARKS, rng } from './geo.js?v=43b95e9bc34c6435';
+import { inCoverage } from './coverage.js?v=43b95e9bc34c6435';
+export { COVERAGE, inCoverage } from './coverage.js?v=43b95e9bc34c6435';
 
 export async function loadCityData() {
   const url = new URL('../assets/downtown.json', import.meta.url);
@@ -94,7 +94,7 @@ export const FAMILIES = [
   { name: 'lakefront glass', color: 0x748b98, glass: 0x3f5f72, style: 1, cell: [1.7, 3.4], roughness: 0.3, seed: 126 },
   { name: 'greenhouse glass', color: 0xbcd3d4, glass: 0x9fc3c6, style: 1, cell: [1.4, 1.6], roughness: 0.15, seed: 127 },
 ];
-import { finishedNeighborhoods, ruleFor, pickFamily } from './neighborhood-style.js?v=3564eb1790f1e487';
+import { finishedNeighborhoods, ruleFor, pickFamily } from './neighborhood-style.js?v=43b95e9bc34c6435';
 const footArea = (r) => Math.abs(r.reduce((s, p, i) => s + p[0] * r[(i + 1) % r.length][1] - r[(i + 1) % r.length][0] * p[1], 0) / 2);
 export function buildMeasuredCity(scene, ctx) {
   const districtAt = finishedNeighborhoods(ctx.neighborhoods), profiles = ctx.neighborhoods?.profiles || {};

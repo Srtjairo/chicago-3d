@@ -1,8 +1,8 @@
-import {boxesAt} from './spatial.js?v=3564eb1790f1e487';
-import {closedTransitRoad} from './transit-data.js?v=3564eb1790f1e487';
+import {boxesAt} from './spatial.js?v=43b95e9bc34c6435';
+import {closedTransitRoad} from './transit-data.js?v=43b95e9bc34c6435';
 import * as THREE from 'three';
-import { rng } from './geo.js?v=3564eb1790f1e487';
-import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=3564eb1790f1e487';
+import { rng } from './geo.js?v=43b95e9bc34c6435';
+import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=43b95e9bc34c6435';
 
 const palette=[0xe8e4da,0x364655,0x8b3f36,0x293138,0xafa997,0xd5ad44,0x587475,0x6e7384];
 function pool(scene,name,geometry,material,count){const m=new THREE.InstancedMesh(geometry,material,count);m.name=name;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;scene.add(m);return m;}
