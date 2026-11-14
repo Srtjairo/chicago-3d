@@ -1,8 +1,9 @@
-import {Flyer} from './tour.js?v=636eff9cbfa6f76b';
+import {boxesIn} from './spatial.js?v=3564eb1790f1e487';
+import {Flyer} from './tour.js?v=3564eb1790f1e487';
 export function stationView(station,camera,controls,ctx){
   const p=station.platforms.find(p=>p.kind==='elevated'),point=p?.center||p?.trackPosition||station.position,[x,z]=point;
   // Station views are at street height, so low neighboring buildings matter too.
-  const buildings=[...ctx.collisionBuildings,...ctx.measuredBuildings.filter(b=>Math.hypot(b.x-x,b.z-z)<700)];
+  const buildings=[...ctx.collisionBuildings,...boxesIn(ctx.measuredBuildings,x-700,z-700,x+700,z+700).filter(b=>Math.hypot(b.x-x,b.z-z)<700)];
   const navigator=new Flyer(camera,controls,{...ctx,collisionBuildings:buildings});
   return {navigator,...navigator.viewFor({x,z,h:16,roof:16,r:12,view:{az:p?.angle||0,dist:180,el:.45,width:35,clearance:2,focus:[0,3,0]}})};
 }

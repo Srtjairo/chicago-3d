@@ -5,29 +5,36 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { toAddress, configureShore } from './geo.js?v=636eff9cbfa6f76b';
-import { FEATURED_LANDMARKS, featuredName } from './featured.js?v=636eff9cbfa6f76b';
-import {loadSites} from './site-data.js?v=636eff9cbfa6f76b';
-import {buildSites} from './sites.js?v=636eff9cbfa6f76b';
-import {loadWaterfront} from './waterfront-data.js?v=636eff9cbfa6f76b';
-import {buildWaterfront} from './waterfront.js?v=636eff9cbfa6f76b';
-import { loadCityData } from './city-data.js?v=636eff9cbfa6f76b';
-import {loadLakeShore} from './lake-shore-data.js?v=636eff9cbfa6f76b';
-import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=636eff9cbfa6f76b';
-import { buildSignatureArchitecture } from './architecture.js?v=636eff9cbfa6f76b';
-import { buildOfficeArchitecture } from './offices.js?v=636eff9cbfa6f76b';
-import { buildCityLife } from './city-life.js?v=636eff9cbfa6f76b';
-import { setupExplorer } from './explorer.js?v=636eff9cbfa6f76b';
-import { loadTransit } from './transit-data.js?v=636eff9cbfa6f76b';
-import { buildTransit } from './transit.js?v=636eff9cbfa6f76b';
-import { setupMiniFellow } from './mini-fellow.js?v=636eff9cbfa6f76b';
-import { buildTerrain, SLAB_TOP } from './terrain.js?v=636eff9cbfa6f76b';
-import { buildLandmarks } from './landmarks.js?v=636eff9cbfa6f76b';
-import { buildCity } from './city.js?v=636eff9cbfa6f76b';
-import { buildParks } from './parks.js?v=636eff9cbfa6f76b';
-import { buildNavyPier } from './navypier.js?v=636eff9cbfa6f76b';
-import { Lighting, PRESETS } from './lighting.js?v=636eff9cbfa6f76b';
-import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=636eff9cbfa6f76b';
+import { toAddress, configureShore } from './geo.js?v=3564eb1790f1e487';
+import { FEATURED_LANDMARKS, featuredName } from './featured.js?v=3564eb1790f1e487';
+import {loadSites} from './site-data.js?v=3564eb1790f1e487';
+import {buildSites} from './sites.js?v=3564eb1790f1e487';
+import {loadWaterfront} from './waterfront-data.js?v=3564eb1790f1e487';
+import {buildWaterfront} from './waterfront.js?v=3564eb1790f1e487';
+import { loadCityData } from './city-data.js?v=3564eb1790f1e487';
+import {loadLakeShore} from './lake-shore-data.js?v=3564eb1790f1e487';
+import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=3564eb1790f1e487';
+import { buildSignatureArchitecture } from './architecture.js?v=3564eb1790f1e487';
+import { buildOfficeArchitecture } from './offices.js?v=3564eb1790f1e487';
+import { buildCityLife } from './city-life.js?v=3564eb1790f1e487';
+import { setupExplorer } from './explorer.js?v=3564eb1790f1e487';
+import { setupMinimap } from './minimap.js?v=3564eb1790f1e487';
+import { loadNeighborhoods, setupNeighborhoods, neighborhoodWalk } from './neighborhoods.js?v=3564eb1790f1e487';
+import { setupNeighborhoodLife } from './neighborhood-life.js?v=3564eb1790f1e487';
+import { buildDowntownTouchup } from './downtown-touchup.js?v=3564eb1790f1e487';
+import { buildSoldierField } from './soldier-field.js?v=3564eb1790f1e487';
+import { loadTransit } from './transit-data.js?v=3564eb1790f1e487';
+import { buildTransit } from './transit.js?v=3564eb1790f1e487';
+import { setupMiniFellow } from './mini-fellow.js?v=3564eb1790f1e487';
+import { buildTerrain, SLAB_TOP } from './terrain.js?v=3564eb1790f1e487';
+import { buildLandmarks } from './landmarks.js?v=3564eb1790f1e487';
+import { buildCity } from './city.js?v=3564eb1790f1e487';
+import { loadTileIndex, TileManager } from './tile-manager.js?v=3564eb1790f1e487';
+import { CITY_RADIUS } from './coverage.js?v=3564eb1790f1e487';
+import { buildParks } from './parks.js?v=3564eb1790f1e487';
+import { buildNavyPier } from './navypier.js?v=3564eb1790f1e487';
+import { Lighting, PRESETS } from './lighting.js?v=3564eb1790f1e487';
+import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=3564eb1790f1e487';
 
 const $ = (id) => document.getElementById(id);
 const status = (msg) => { $('load-msg').textContent = msg; };
@@ -37,6 +44,21 @@ const mobile = matchMedia('(max-width: 720px), (pointer: coarse)').matches;
 const quality = mobile
   ? { pixelRatio: Math.min(devicePixelRatio, 1.25), shadow: 1024, water: 256, samples: 2 }
   : { pixelRatio: Math.min(devicePixelRatio, 1.5), shadow: 2048, water: 512, samples: 2 };
+
+// The invisible wall. The orbit target stays inside the city circle: past the edge it is eased
+// back (a soft cushion) and it can never get more than `give` metres beyond it. The camera itself
+// may hang a little outside, looking in, but no farther than `camera`. A height ceiling keeps the
+// whole circle in view while the backdrop beyond it stays at backdrop distance.
+const WALL = { radius: CITY_RADIUS, give: 250, camera: CITY_RADIUS + 1800, ceiling: 2600, maxDistance: 6500 };
+function containCamera(camera, controls, dt) {
+  const t = controls.target, c = camera.position;
+  const shift = (x, z, by) => { const r = Math.hypot(x, z); if (by <= 0 || !r) return; const kx = -x / r * by, kz = -z / r * by; t.x += kx; t.z += kz; c.x += kx; c.z += kz; };
+  const over = Math.hypot(t.x, t.z) - WALL.radius;
+  if (over > 0) shift(t.x, t.z, Math.max(over * (1 - Math.exp(-dt * 6)), over - WALL.give));
+  shift(c.x, c.z, Math.hypot(c.x, c.z) - WALL.camera);
+  // Zooming out stops at the ceiling: the farthest allowed distance depends on the tilt.
+  controls.maxDistance = Math.min(WALL.maxDistance, WALL.ceiling / Math.max(Math.cos(controls.getPolarAngle()), 0.05));
+}
 
 async function init() {
   const canvas = $('scene');
@@ -50,7 +72,7 @@ async function init() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 3, 40000);
+  const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 3, 60000);
   camera.position.copy(overviewPos(innerWidth / Math.max(1, innerHeight)));
 
   const controls = new OrbitControls(camera, canvas);
@@ -59,18 +81,19 @@ async function init() {
   controls.dampingFactor = 0.06;
   controls.maxPolarAngle = Math.PI * 0.485;
   controls.minDistance = 25;
-  controls.maxDistance = 9000;
+  controls.maxDistance = WALL.maxDistance;
   controls.zoomSpeed = 1.2;
   controls.screenSpacePanning = false;
 
   const ctx = { quality, beacons: [], glows: [], updaters: [] };
 
   status('Loading Chicago’s real building footprints');
-  ctx.data = await loadCityData();
-  ctx.lakeShoreData=await loadLakeShore();
-  ctx.waterfront=await loadWaterfront();
-  ctx.sites=await loadSites();
-  ctx.transitData=await loadTransit();
+  // Fetch the five data files together instead of one after another.
+  [ctx.data, ctx.lakeShoreData, ctx.waterfront, ctx.sites, ctx.transitData, ctx.cityTiles, ctx.neighborhoods] =
+    await Promise.all([loadCityData(), loadLakeShore(), loadWaterfront(), loadSites(), loadTransit(), loadTileIndex(), loadNeighborhoods()]);
+  ctx.cityTileKeys = ctx.cityTiles && new Set(ctx.cityTiles.tiles.map(([x, z]) => x + '_' + z));
+  // Without the streamed tiles the explorable area falls back to downtown's old 5 km box.
+  if (!ctx.cityTiles) WALL.radius = 5000;
   configureShore(ctx.data);
   prepareWorld(ctx);
 
@@ -85,7 +108,22 @@ async function init() {
   buildSignatureArchitecture(scene, ctx);
   buildOfficeArchitecture(scene, ctx);
   buildCity(scene, ctx);
+  // Streamed tiles live on layer 1, which the main camera sees and the lake's mirror camera doesn't.
+  if (ctx.cityTiles) {
+    ctx.tiles = new TileManager(scene, ctx, ctx.cityTiles); camera.layers.enable(1);
+    // Cars and people on the lanes of nearby finished neighborhood tiles.
+    ctx.hoodLife = setupNeighborhoodLife(scene, ctx, camera);
+    // Mini Fellow can walk finished neighborhoods; their nearby real footprints are solid.
+    ctx.hoodWalk = neighborhoodWalk(ctx.neighborhoods);
+    ctx.tiles.onReal = (entry, decor) => { ctx.hoodLife.add(entry.path, decor); ctx.hoodWalk.add(entry.path, decor); };
+    ctx.tiles.onRealGone = (entry) => { ctx.hoodLife.remove(entry.path); ctx.hoodWalk.remove(entry.path); };
+  }
   buildStreets(scene, ctx);
+  // Parked cars on downtown side streets and lit lobbies (no building changes).
+  ctx.downtownTouchup = buildDowntownTouchup(scene, ctx);
+  // Soldier Field's own model (the tiles leave its footprint to it).
+  // Its materials compile in the background, so the first view of the stadium doesn't stall a frame.
+  buildSoldierField(scene, ctx).then((r) => { ctx.soldierField = r; if (r) (renderer.compileAsync ? renderer.compileAsync(r.group, camera, scene) : Promise.resolve(renderer.compile(r.group, camera, scene))).catch(() => {}); }).catch((e) => console.warn('Soldier Field', e));
   buildSites(scene, ctx);
   // the city adds extra rooftop beacons; rebuild the beacon mesh to include them
   rebuildBeacons(scene, ctx);
@@ -137,6 +175,8 @@ async function init() {
     ui.showInfo(L);
   }
   ui.select = select;
+  ctx.hoods = setupNeighborhoods({ scene, camera, flyer, registry: ctx.neighborhoods, named: ctx.cityTiles?.named });
+  ui.minimap = setupMinimap({ index: ctx.cityTiles, camera, controls, flyer, hoods: ctx.hoods });
   const explorer = setupExplorer({ ctx, camera, controls, flyer, ui });
   const miniFellow = setupMiniFellow({ scene, ctx, camera, controls, flyer, ui, canvas });
 
@@ -196,13 +236,23 @@ async function init() {
     ctx.transit.update(dt);
     miniFellow.update(dt);
     explorer.update(dt);
+    ui.minimap.update(dt);
+    ctx.hoods.update(dt);
+    ctx.hoodLife?.update(dt);
     // keep the camera above the ground and the target inside the city
     if (!miniFellow.active && camera.position.y < 12) camera.position.y = 12;
-    controls.target.x = THREE.MathUtils.clamp(controls.target.x, -5000, 4500);
-    controls.target.z = THREE.MathUtils.clamp(controls.target.z, -5000, 5000);
+    containCamera(camera, controls, dt);
     controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 600);
 
     lighting.update(dt, controls.target);
+    // Thinner haze from higher up, so the overview reaches across the whole city.
+    scene.fog.density = lighting.state.fogD * THREE.MathUtils.lerp(1, 0.6, THREE.MathUtils.smoothstep(camera.position.y, 900, WALL.ceiling));
+    lighting.sky.position.set(camera.position.x, 0, camera.position.z);
+    // Near plane follows altitude: fine detail at street level, no z-fighting from 10 km up.
+    const near = THREE.MathUtils.clamp(camera.position.y * 0.01, 3, 40);
+    if (Math.abs(near - camera.near) > 0.5) { camera.near = near; camera.updateProjectionMatrix(); }
+    // Stream around Mini Fellow while he explores, otherwise around the orbit target.
+    ctx.tiles?.update(dt, miniFellow.active ? camera.position : controls.target, perf.level);
     const night = lighting.state.night;
     for (const fn of ctx.updaters) fn(ctx.life.time, night);
     if (ctx.water) ctx.water.material.uniforms.time.value += dt * 0.35;
