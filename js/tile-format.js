@@ -14,7 +14,7 @@
 //     water:     nRings, rings          parks: parkIndex, flags, nRings, rings
 //     rails:     flags, n, points      (main-line railways, OpenStreetMap)
 //     surfaces:  kind, nRings, rings   (ground cover in finished neighborhoods: SURF_*)
-//     paths:     kind, n, points       (PATH_ALLEY)
+//     paths:     kind, n, points       (PATH_*)
 //       street/park/rail flags: FINISHED (inside a finished neighborhood); rails also RAIL_BRIDGE, RAIL_RAISED
 //   kind 1 (skyline, one per 4 km tile): boxes: cx, cz, w, d (dm), h_dm, angle (0..255 → 0..255/256·π)
 
@@ -24,6 +24,15 @@ export const TILE = 1000, SKY = 4000; // metres
 export const FLAG_ESTIMATED = 1, FLAG_SPIKE = 2, FLAG_OVERRIDE = 4;
 export const FINISHED = 1, RAIL_BRIDGE = 2, RAIL_RAISED = 4;
 export const SURF_YARD = 1, SURF_PAVED = 2, SURF_INDUSTRIAL = 3, SURF_PARKING = 4, SURF_PLAZA = 5, PATH_ALLEY = 1;
+// Parks and the lakefront: mown lawn (no random trees), beach sand, tall-grass prairie, ball-field
+// infield clay, tennis courts, asphalt hard courts, playground surfacing, pools, vacant gravel lots
+// and rail ballast.
+export const SURF_LAWN = 6, SURF_SAND = 7, SURF_PRAIRIE = 8, SURF_INFIELD = 9, SURF_TENNIS = 10, SURF_HARDCOURT = 11,
+  SURF_PLAY = 12, SURF_POOL = 13, SURF_VACANT = 14, SURF_BALLAST = 15;
+// Paths: the Lakefront Trail (asphalt), park walks (concrete), white field markings, harbor docks,
+// expressway ramps, rows of trees, and "clear" lines (streets drawn by downtown, not by the tiles:
+// never drawn, they only keep trees off the road).
+export const PATH_TRAIL = 2, PATH_WALK = 3, PATH_LINE = 4, PATH_DOCK = 5, PATH_RAMP = 6, PATH_TREES = 7, PATH_CLEAR = 8;
 export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3, ROOF_OPEN = 4, ROOF_GREENHOUSE = 5;
 export const FRONTS = { N: 0, E: 1, S: 2, W: 3 };
 export const styleOf = (family, roof = ROOF_FLAT, front = 0, twin = false) => family + 32 * roof + 256 * front + (twin ? 1024 : 0);

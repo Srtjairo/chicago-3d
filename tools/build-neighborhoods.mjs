@@ -6,7 +6,7 @@
 // Writes assets/neighborhoods.json (used by the build and the page) and NEIGHBORHOODS.md (the
 // readable list). Hand-edited fields (status, profile, named buildings, aka) live in
 // tools/neighborhood-profiles.json and are merged in here, so this file can be rebuilt any time.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import clip from './vendor/polygon-clipping.cjs';
 import { CITY_RADIUS } from '../js/coverage.js';
@@ -14,7 +14,10 @@ import { root, ringArea, ringBounds, simplify } from './geo-source.mjs';
 
 const read = (p) => JSON.parse(readFileSync(join(root, p), 'utf8'));
 const areas = read('.cache/city/areas.json'), hoods = read('.cache/city/neighborhoods.json');
-const water = read('.cache/city/water.json').filter((w) => !/LAKE MICHIGAN/i.test(w.name)).map((w) => w.rings.map((r) => { const a = r[0], b = r.at(-1); return a[0] === b[0] && a[1] === b[1] ? r : [...r, a]; }));
+// Rivers, lagoons and slips, plus the harbors and lakefront ponds that tools/build-tiles.mjs adds
+// (Burnham and Belmont harbors lie inside the shoreline the land is drawn to).
+const harbors = existsSync(join(root, '.cache', 'city', 'harbors.json')) ? read('.cache/city/harbors.json') : [];
+const water = [...read('.cache/city/water.json').filter((w) => !/LAKE MICHIGAN/i.test(w.name)), ...harbors].map((w) => w.rings.map((r) => { const a = r[0], b = r.at(-1); return a[0] === b[0] && a[1] === b[1] ? r : [...r, a]; }));
 const config = read('tools/neighborhood-profiles.json');
 
 const closed = (r) => { const a = r[0], b = r.at(-1); return a[0] === b[0] && a[1] === b[1] ? r : [...r, a]; };

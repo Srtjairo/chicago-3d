@@ -1,7 +1,7 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, TILE } from './tile-format.js';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, TILE, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_TRAIL, PATH_WALK, PATH_LINE, PATH_DOCK, PATH_RAMP, PATH_TREES, PATH_CLEAR } from './tile-format.js';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
 // Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
@@ -246,7 +246,22 @@ function decorate(tile, ground) {
       if (!blocked(px, pz)) lamps.push(px, pz, Math.atan2(dx * side, dz * side));
     });
   }
-  // Park trees: a jittered 13 m grid, about half kept, clear of paths' worth of open lawn.
+  // Streets, paths and ramps (with their sidewalks) keep trees off them.
+  const roadGrid = new Map(), RG = 40, rkey = (i, j) => i * 100003 + j;
+  const addSeg = (a, b, half) => { for (let i = Math.floor((Math.min(a[0], b[0]) - half) / RG); i <= Math.floor((Math.max(a[0], b[0]) + half) / RG); i++) for (let j = Math.floor((Math.min(a[1], b[1]) - half) / RG); j <= Math.floor((Math.max(a[1], b[1]) + half) / RG); j++) { const k = rkey(i, j); if (!roadGrid.has(k)) roadGrid.set(k, []); roadGrid.get(k).push([a, b, half]); } };
+  for (const s of ground.streets) for (let i = 1; i < s.points.length; i++) addSeg(s.points[i - 1], s.points[i], (ROAD_WIDTH[s.class] || 8.5) / 2 + 5);
+  const CLEAR = { [PATH_ALLEY]: 3.5, [PATH_TRAIL]: 5, [PATH_WALK]: 4, [PATH_RAMP]: 8, [PATH_CLEAR]: 13 };
+  for (const p of ground.paths) if (CLEAR[p.kind]) for (let i = 1; i < p.points.length; i++) addSeg(p.points[i - 1], p.points[i], CLEAR[p.kind]);
+  const nearRoad = (x, z) => (roadGrid.get(rkey(Math.floor(x / RG), Math.floor(z / RG))) || []).some(([a, b, half]) => { const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1))); return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < half; });
+  // Trees grow in yards and on park lawns: never on lots, paving, plazas, sports fields, courts,
+  // beaches, prairie, rail ballast or vacant gravel.
+  const NO_TREES = new Set([SURF_PARKING, SURF_PAVED, SURF_INDUSTRIAL, SURF_PLAZA, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST]);
+  const lots = blockers(ground.surfaces.filter((s) => NO_TREES.has(s.kind)).map((s) => s.rings.map(open)));
+  // Park trees grow in groves, with open lawns between them: a jittered 11 m grid thinned by a
+  // smooth 90 m noise field (dense where it is high, a lone tree here and there where it is low).
+  const hash2 = (i, j) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+  const noise = (x, z) => { const S = 90, i = Math.floor(x / S), j = Math.floor(z / S), u = x / S - i, v = z / S - j, su = u * u * (3 - 2 * u), sv = v * v * (3 - 2 * v);
+    return (hash2(i, j) * (1 - su) + hash2(i + 1, j) * su) * (1 - sv) + (hash2(i, j + 1) * (1 - su) + hash2(i + 1, j + 1) * su) * sv; };
   for (const p of ground.parks) {
     if (!(p.flags & FINISHED)) continue;
     const r = p.rings.map(open), o = r[0];
@@ -254,21 +269,45 @@ function decorate(tile, ground) {
     for (const [x, z] of o) { ax = Math.min(ax, x); bx = Math.max(bx, x); az = Math.min(az, z); bz = Math.max(bz, z); }
     if (!inTile((ax + bx) / 2, (az + bz) / 2)) continue;
     const rand = rng(Math.round(ax * 13 + az * 7) >>> 0);
-    for (let x = ax + 6; x < bx; x += 13) for (let z = az + 6; z < bz; z += 13) {
-      if (rand() < 0.48) continue;
+    for (let x = ax + 5; x < bx; x += 11) for (let z = az + 5; z < bz; z += 11) {
+      const n = noise(x, z), keep = 0.03 + 0.8 * Math.min(1, Math.max(0, (n - 0.45) / 0.3));
+      if (rand() > keep) continue;
       const px = x + (rand() - 0.5) * 9, pz = z + (rand() - 0.5) * 9;
-      if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz)) trees.push(px, pz, 0.8 + rand() * 0.7, Math.floor(rand() * 1000));
+      if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz) && !lots(px, pz) && !nearRoad(px, pz)) trees.push(px, pz, 0.8 + rand() * 0.7, Math.floor(rand() * 1000));
+    }
+  }
+  // Savanna on the prairie: a few trees, mostly in loose clumps.
+  for (const s of ground.surfaces) {
+    if (s.kind !== SURF_PRAIRIE) continue;
+    const r = s.rings.map(open), o = r[0];
+    let ax = Infinity, bx = -Infinity, az = Infinity, bz = -Infinity;
+    for (const [x, z] of o) { ax = Math.min(ax, x); bx = Math.max(bx, x); az = Math.min(az, z); bz = Math.max(bz, z); }
+    if (!inTile((ax + bx) / 2, (az + bz) / 2)) continue;
+    const rand = rng(Math.round(ax * 11 + az * 5) >>> 0);
+    for (let x = ax + 7; x < bx; x += 14) for (let z = az + 7; z < bz; z += 14) {
+      const keep = 0.03 + 0.62 * Math.min(1, Math.max(0, (noise(x * 1.7, z * 1.7) - 0.55) / 0.25));
+      if (rand() > keep) continue;
+      const px = x + (rand() - 0.5) * 10, pz = z + (rand() - 0.5) * 10;
+      if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz) && !nearRoad(px, pz)) trees.push(px, pz, 0.7 + rand() * 0.6, Math.floor(rand() * 1000));
+    }
+  }
+  // Rows of trees (allées along lawns and walks), and boats moored at the harbor docks.
+  const boats = [];
+  for (const p of ground.paths) {
+    const m = p.points[Math.floor(p.points.length / 2)];
+    if (!inTile(m[0], m[1])) continue;
+    const rand = rng(Math.round(m[0] * 17 + m[1] * 29) >>> 0);
+    if (p.kind === PATH_TREES) along(p.points, 11, 2, 0.06, rand, (x, z) => { if (!blocked(x, z)) trees.push(x, z, 0.85 + rand() * 0.35, Math.floor(rand() * 1000)); });
+    else if (p.kind === PATH_DOCK && p.points.length === 2) {
+      const [[ax, az], [bx, bz]] = p.points, len = Math.hypot(bx - ax, bz - az);
+      if (len > 20 || rand() > 0.72) continue;
+      // A boat along the finger pier, on its downstream side.
+      const dx = (bx - ax) / len, dz = (bz - az) / len, k = 0.75 + rand() * 0.6;
+      boats.push(ax + dx * len * 0.55 + dz * 3.4, az + dz * len * 0.55 - dx * 3.4, Math.atan2(dx, dz), k);
     }
   }
   // Backyard trees: a jittered 16 m grid over the yards, about 40% kept, clear of buildings,
   // water, parking lots, alleys and streets (with their sidewalks).
-  const roadGrid = new Map(), RG = 40, rkey = (i, j) => i * 100003 + j;
-  const addSeg = (a, b, half) => { for (let i = Math.floor((Math.min(a[0], b[0]) - half) / RG); i <= Math.floor((Math.max(a[0], b[0]) + half) / RG); i++) for (let j = Math.floor((Math.min(a[1], b[1]) - half) / RG); j <= Math.floor((Math.max(a[1], b[1]) + half) / RG); j++) { const k = rkey(i, j); if (!roadGrid.has(k)) roadGrid.set(k, []); roadGrid.get(k).push([a, b, half]); } };
-  for (const s of ground.streets) for (let i = 1; i < s.points.length; i++) addSeg(s.points[i - 1], s.points[i], (ROAD_WIDTH[s.class] || 8.5) / 2 + 5);
-  for (const p of ground.paths) for (let i = 1; i < p.points.length; i++) addSeg(p.points[i - 1], p.points[i], 3.5);
-  const nearRoad = (x, z) => (roadGrid.get(rkey(Math.floor(x / RG), Math.floor(z / RG))) || []).some(([a, b, half]) => { const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1))); return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < half; });
-  // Not on parking lots, paved commercial land or industrial yards: trees grow in yards.
-  const lots = blockers(ground.surfaces.filter((s) => s.kind === SURF_PARKING || s.kind === SURF_PAVED || s.kind === SURF_INDUSTRIAL).map((s) => s.rings.map(open)));
   for (const s of ground.surfaces) {
     if (s.kind !== SURF_YARD) continue;
     const r = s.rings.map(open), o = r[0];
@@ -295,7 +334,7 @@ function decorate(tile, ground) {
     }
   }
   const pack = (l) => ({ pts: new Float32Array(l.pts), counts: new Uint16Array(l.counts) });
-  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps), parked: new Float32Array(parked), lanes: pack(lanes), walks: pack(walks), solids: pack(solids), heights: new Float32Array(heights) };
+  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps), parked: new Float32Array(parked), boats: new Float32Array(boats), lanes: pack(lanes), walks: pack(walks), solids: pack(solids), heights: new Float32Array(heights) };
 }
 
 // A main-line railway: at grade a ballast bed; raised, an earth embankment (sloped sides) or a
@@ -335,9 +374,21 @@ function ground(tile) {
   // Ground cover in finished neighborhoods: yards (grass), paved and industrial land, parking
   // lots and alleys, all below the sidewalks.
   const yard = new Soup(), paved = new Soup(), industrial = new Soup(), parking = new Soup(), alley = new Soup(), parkway = new Soup(), plaza = new Soup();
-  const cover = { [SURF_YARD]: [yard, 0.03], [SURF_PAVED]: [paved, 0.04], [SURF_INDUSTRIAL]: [industrial, 0.045], [SURF_PARKING]: [parking, 0.085], [SURF_PLAZA]: [plaza, 0.05] };
+  const lawn = new Soup(), sand = new Soup(), prairie = new Soup(), infield = new Soup(), tennis = new Soup(), hardcourt = new Soup(), play = new Soup(), pool = new Soup(), vacant = new Soup(), ballast = new Soup();
+  const trail = new Soup(), parkwalk = new Soup(), fieldlines = new Soup(), dock = new Soup();
+  // Heights above the land: yards, then park lawns, then paving; explicit park features above those.
+  const cover = { [SURF_YARD]: [yard, 0.03], [SURF_PAVED]: [paved, 0.04], [SURF_INDUSTRIAL]: [industrial, 0.045], [SURF_VACANT]: [vacant, 0.046], [SURF_BALLAST]: [ballast, 0.047],
+    [SURF_PLAZA]: [plaza, 0.05], [SURF_LAWN]: [lawn, 0.055], [SURF_PRAIRIE]: [prairie, 0.056], [SURF_SAND]: [sand, 0.057],
+    [SURF_INFIELD]: [infield, 0.07], [SURF_TENNIS]: [tennis, 0.07], [SURF_HARDCOURT]: [hardcourt, 0.07], [SURF_PLAY]: [play, 0.07], [SURF_POOL]: [pool, 0.075], [SURF_PARKING]: [parking, 0.085] };
   for (const s of tile.surfaces) { const [soup, y] = cover[s.kind] || []; if (soup) soup.flat(s.rings.map(open), y); }
-  for (const p of tile.paths) if (p.kind === PATH_ALLEY) alley.ribbon(p.points, 4.6, 0.085);
+  for (const p of tile.paths) {
+    if (p.kind === PATH_ALLEY) alley.ribbon(p.points, 4.6, 0.085);
+    else if (p.kind === PATH_TRAIL) trail.ribbon(p.points, 5, 0.09);
+    else if (p.kind === PATH_WALK) parkwalk.ribbon(p.points, 3.5, 0.09);
+    else if (p.kind === PATH_LINE) fieldlines.ribbon(p.points, 0.22, 0.095);
+    else if (p.kind === PATH_DOCK) dock.ribbon(p.points, p.points.length === 2 && Math.hypot(p.points[1][0] - p.points[0][0], p.points[1][1] - p.points[0][1]) > 20 ? 3 : 1.2, 0.55);
+    else if (p.kind === PATH_RAMP) { walks.ribbon(p.points, 10, 0.1); roads.ribbon(p.points, 7.5, 0.155); }
+  }
   for (const s of tile.streets) {
     const w = ROAD_WIDTH[s.class] || 8.5; roads.ribbon(s.points, w, 0.16);
     // Residential streets in finished neighborhoods: a grass parkway (with the street trees)
@@ -348,11 +399,13 @@ function ground(tile) {
     if (s.flags & FINISHED && (s.class === 2 || s.class === 3)) lines.ribbon(s.points, 0.35, 0.2);
   }
   // Water sits above park lawns, so lagoons and ponds inside parks show.
-  for (const p of tile.parks) parks.flat(p.rings.map(open), 0.06);
+  for (const p of tile.parks) parks.flat(p.rings.map(open), 0.035);
   for (const p of tile.water) water.flat(p.rings.map(open), 0.12);
   const pick = ({ position, normal }) => ({ position, normal });
   return { roads: pick(roads.arrays()), walks: pick(walks.arrays()), parks: pick(parks.arrays()), water: pick(water.arrays()), lines: pick(lines.arrays()), fill: pick(fill.arrays()), steel: pick(steel.arrays()), track: pick(track.arrays()), wall: pick(wall.arrays()),
-    yard: pick(yard.arrays()), paved: pick(paved.arrays()), industrial: pick(industrial.arrays()), parking: pick(parking.arrays()), alley: pick(alley.arrays()), parkway: pick(parkway.arrays()), plaza: pick(plaza.arrays()) };
+    yard: pick(yard.arrays()), paved: pick(paved.arrays()), industrial: pick(industrial.arrays()), parking: pick(parking.arrays()), alley: pick(alley.arrays()), parkway: pick(parkway.arrays()), plaza: pick(plaza.arrays()),
+    lawn: pick(lawn.arrays()), sand: pick(sand.arrays()), prairie: pick(prairie.arrays()), infield: pick(infield.arrays()), tennis: pick(tennis.arrays()), hardcourt: pick(hardcourt.arrays()), play: pick(play.arrays()), pool: pick(pool.arrays()),
+    vacant: pick(vacant.arrays()), ballast: pick(ballast.arrays()), trail: pick(trail.arrays()), parkwalk: pick(parkwalk.arrays()), fieldlines: pick(fieldlines.arrays()), dock: pick(dock.arrays()) };
 }
 
 const buffers = (o) => { const out = []; const walk = (v) => { if (ArrayBuffer.isView(v)) out.push(v.buffer); else if (v && typeof v === 'object') Object.values(v).forEach(walk); }; walk(o); return out; };

@@ -47,10 +47,11 @@ export class TileManager {
       return [tileKey(tx, tz), { tx, tz, path, bytes, count, mesh: null, state: 'idle', lastWanted: 0, real: { path, mode: 'real', bytes: 0, mesh: null, state: 'idle', lastWanted: 0 } }];
     }));
     this.ground = (index.ground || []).map(([sx, sz, hash, bytes]) => ({ sx, sz, path: `g/${sx}_${sz}.${hash}.bin`, mode: 'ground', bytes, mesh: null, state: 'idle' }));
+    const offset = (m, f) => { m.polygonOffset = true; m.polygonOffsetFactor = f; m.polygonOffsetUnits = f; return m; };
     this.groundMaterials = {
       roads: new THREE.MeshStandardMaterial({ color: 0x363c40, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }),
       walks: new THREE.MeshStandardMaterial({ color: 0xa7a499, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
-      parks: new THREE.MeshStandardMaterial({ color: 0x7c9a5e, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
+      parks: new THREE.MeshStandardMaterial({ color: 0xbfd49c, map: grassTexture(), roughness: 1, polygonOffset: true, polygonOffsetFactor: -0.25, polygonOffsetUnits: -0.25 }),
       water: ctx.riverMaterial || new THREE.MeshStandardMaterial({ color: 0x285957, roughness: 0.3, metalness: 0.18 }),
       lines: new THREE.MeshStandardMaterial({ color: 0xd2b14c, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
       fill: new THREE.MeshStandardMaterial({ color: 0x77705f, roughness: 1, side: THREE.DoubleSide }),
@@ -66,6 +67,21 @@ export class TileManager {
       alley: new THREE.MeshStandardMaterial({ color: 0x9b978c, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 }),
       wall: new THREE.MeshStandardMaterial({ color: 0x8f897d, roughness: 0.95, side: THREE.DoubleSide }),
       track: new THREE.MeshStandardMaterial({ color: 0x3b3632, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+      // Parks and the lakefront.
+      lawn: offset(new THREE.MeshStandardMaterial({ color: 0xc6dc9c, map: grassTexture(), roughness: 1 }), -0.75),
+      prairie: offset(new THREE.MeshStandardMaterial({ color: 0x9c9b5f, roughness: 1 }), -0.75),
+      sand: offset(new THREE.MeshStandardMaterial({ color: 0xdccca0, roughness: 1 }), -0.75),
+      infield: offset(new THREE.MeshStandardMaterial({ color: 0xa8714a, roughness: 1 }), -1),
+      tennis: offset(new THREE.MeshStandardMaterial({ color: 0x4d7a63, roughness: 0.8 }), -1),
+      hardcourt: offset(new THREE.MeshStandardMaterial({ color: 0x5e6468, roughness: 0.85 }), -1),
+      play: offset(new THREE.MeshStandardMaterial({ color: 0xb98f63, roughness: 1 }), -1),
+      pool: offset(new THREE.MeshStandardMaterial({ color: 0x58b8cf, roughness: 0.15, metalness: 0.1 }), -1),
+      vacant: offset(new THREE.MeshStandardMaterial({ color: 0x9c9482, roughness: 1 }), -0.6),
+      ballast: offset(new THREE.MeshStandardMaterial({ color: 0x6e675d, roughness: 1 }), -0.6),
+      trail: offset(new THREE.MeshStandardMaterial({ color: 0x4f5458, roughness: 0.9 }), -1.75),
+      parkwalk: offset(new THREE.MeshStandardMaterial({ color: 0xc4bdae, roughness: 0.95 }), -1.75),
+      fieldlines: offset(new THREE.MeshStandardMaterial({ color: 0xf1f1ea, roughness: 0.9 }), -2),
+      dock: new THREE.MeshStandardMaterial({ color: 0x8c7d69, roughness: 0.9, side: THREE.DoubleSide }),
     };
     this.groundByCell = new Map(this.ground.map((g) => [tileKey(g.sx, g.sz), g]));
     this.buildDecor(ctx);
@@ -202,12 +218,17 @@ export class TileManager {
     // Parked cars: body and cabin, the same proportions as the moving ones.
     const carBody = new THREE.BoxGeometry(1.9, 1.15, 4.5); carBody.translate(0, 0.16 + 0.78, 0);
     const carCabin = new THREE.BoxGeometry(1.7, 0.62, 2.4); carCabin.translate(0, 0.16 + 1.64, -0.2);
+    // Moored boats: a pointed white hull (length 9 m at scale 1) and a small cabin.
+    const hull = new THREE.CylinderGeometry(1.5, 1.1, 9, 6, 1); hull.rotateX(Math.PI / 2); hull.scale(1, 0.55, 1); hull.translate(0, 0.35, 0);
+    const boatCabin = new THREE.BoxGeometry(1.8, 1.0, 3.2); boatCabin.translate(0, 1.4, -0.6);
     const head = new THREE.BoxGeometry(1.3, 0.18, 0.7); head.translate(0.55, 7.2 + 0.6, 0);
-    for (const g of [canopy, trunk, post, head, carBody, carCabin]) g.userData.shared = true;
+    for (const g of [canopy, trunk, post, head, carBody, carCabin, hull, boatCabin]) g.userData.shared = true;
     const glow = new THREE.MeshStandardMaterial({ color: 0xe3d7bd, emissive: 0xffc982, emissiveIntensity: 0, roughness: 0.65 });
     ctx.glows?.push({ mat: glow, day: 0, night: 0.8 });
     this.decor = {
-      canopy, trunk, post, head, glow, carBody, carCabin,
+      canopy, trunk, post, head, glow, carBody, carCabin, hull, boatCabin,
+      hullPaint: new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.5 }),
+      boatGlass: new THREE.MeshStandardMaterial({ color: 0x3a4a52, roughness: 0.3, metalness: 0.2 }),
       paint: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.2 }),
       carGlass: new THREE.MeshStandardMaterial({ color: 0x22343c, roughness: 0.25, metalness: 0.3 }),
       leaf: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 }),
@@ -223,7 +244,7 @@ export class TileManager {
   }
 
   // Instanced street trees, park trees and lamps for one real tile.
-  addDecor(group, { trees, lamps, parked = new Float32Array(0) }) {
+  addDecor(group, { trees, lamps, parked = new Float32Array(0), boats = new Float32Array(0) }) {
     if (!group) return;
     const D = this.decor, m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
     const nt = trees.length / 4, nl = lamps.length / 3;
@@ -241,6 +262,8 @@ export class TileManager {
     if (cars) { const col = new Float32Array(np * 3); for (let i = 0; i < np; i++) c.set(PAINT[parked[i * 4 + 3] % PAINT.length]).toArray(col, i * 3); cars.instanceColor = new THREE.InstancedBufferAttribute(col, 3); }
     add(D.carCabin, D.carGlass, np, (i) => { const [x, z, a] = parked.subarray(i * 4, i * 4 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
     add(D.head, D.glow, nl, (i) => { const [x, z, a] = lamps.subarray(i * 3, i * 3 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
+    const nb = boats.length / 4, boat = (i) => { const [x, z, a, k] = boats.subarray(i * 4, i * 4 + 4); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(k, k, k)); };
+    add(D.hull, D.hullPaint, nb, boat); add(D.boatCabin, D.boatGlass, nb, boat);
   }
 
   // Real footprints for one tile: a merged mesh per facade family, like downtown's near chunks.
@@ -263,7 +286,7 @@ export class TileManager {
   // Streets, parks and rivers for one ground tile.
   makeGround(parts, name) {
     const group = new THREE.Group(); group.name = name; group.visible = false;
-    for (const key of ['yard', 'plaza', 'paved', 'industrial', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
+    for (const key of ['yard', 'plaza', 'paved', 'industrial', 'vacant', 'ballast', 'lawn', 'prairie', 'sand', 'infield', 'tennis', 'hardcourt', 'play', 'pool', 'trail', 'parkwalk', 'fieldlines', 'dock', 'parking', 'alley', 'water', 'parks', 'walks', 'parkway', 'roads', 'lines', 'fill', 'steel', 'track', 'wall']) {
       const { position, normal } = parts[key];
       if (!position.length) continue;
       const geometry = new THREE.BufferGeometry();

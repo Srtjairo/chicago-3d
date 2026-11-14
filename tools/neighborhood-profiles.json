@@ -894,6 +894,12 @@
           "name": "Soldier Field",
           "kind": "stadium",
           "family": 2
+        },
+        {
+          "id": "946610-0",
+          "name": "Soldier Field Waldron Deck",
+          "kind": "landmark",
+          "family": 25
         }
       ],
       "minNamed": 1
@@ -2394,6 +2400,9 @@
     },
     "loft-district": {
       "about": "Brick warehouse lofts, newer glass and concrete mid- and high-rises",
+      "ground": {
+        "business": "plaza"
+      },
       "rules": [
         {
           "maxH": 11.5,
@@ -2487,6 +2496,10 @@
     },
     "lakefront-highrise": {
       "about": "Greystone and brownstone row houses and mansions among lakefront apartment towers",
+      "ground": {
+        "business": "plaza",
+        "residential": "auto"
+      },
       "rules": [
         {
           "maxH": 11.5,
@@ -2531,6 +2544,9 @@
     },
     "loop-masonry": {
       "about": "The Loop: terracotta, limestone and brick Chicago School office blocks, Art Deco towers, modern glass skyscrapers",
+      "ground": {
+        "business": "plaza"
+      },
       "rules": [
         {
           "maxH": 11.5,
@@ -2579,6 +2595,10 @@
     },
     "streeterville-glass": {
       "about": "Streeterville and the Magnificent Mile: limestone and greystone pre-war towers, lakefront glass and concrete high-rises",
+      "ground": {
+        "business": "plaza",
+        "residential": "auto"
+      },
       "rules": [
         {
           "maxH": 11.5,
@@ -2623,6 +2643,9 @@
     },
     "printers-row-brick": {
       "about": "Printers Row: brick and terracotta printing lofts",
+      "ground": {
+        "business": "plaza"
+      },
       "rules": [
         {
           "maxH": 11.5,

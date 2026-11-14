@@ -170,6 +170,16 @@ log('Parks:', parks.length, 'over 25 acres:', parks.filter((p) => p.acres > 25).
   write('landmarks.json', landmarks);
   log('City landmarks in the circle:', landmarks.length);
 }
+// Chicago Park District facilities (City of Chicago, eix4-gf83): points for ball diamonds, soccer
+// fields, tennis and basketball courts, playgrounds, pools, beaches, harbors... Finished parks draw
+// them at their real positions (tools/build-tiles.mjs).
+{
+  const rows = await cachedJson(lock, 'city/src-park-facilities', soda('eix4-gf83', { $select: 'the_geom,park,facility_n,facility_t', $limit: '10000' }));
+  const facilities = rows.filter((r) => r.the_geom?.coordinates && r.facility_n).map((r) => ({ park: String(r.park || ''), kind: String(r.facility_n).trim(), type: String(r.facility_t || ''), at: project(r.the_geom.coordinates).map((v) => Math.round(v * 10) / 10) }))
+    .filter((f) => Math.hypot(f.at[0], f.at[1]) < DETAIL_RADIUS);
+  write('park-facilities.json', facilities);
+  log('Park District facilities in the circle:', facilities.length);
+}
 // Wikidata (CC0): named places with coordinates in the circle and what they are (church building,
 // stadium, theatre, museum...). A dependable source of named buildings when Overpass is busy;
 // demolished ones are marked so tools/find-named.mjs can skip them.
