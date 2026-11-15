@@ -38,6 +38,8 @@ export const PATH_TRAIL = 2, PATH_WALK = 3, PATH_LINE = 4, PATH_DOCK = 5, PATH_R
 // Mapped surveys (OpenStreetMap areas): service roads, single trees (each point is a tree) and the
 // box the survey covers (its four corners: no made-up park or yard trees inside it).
 export const PATH_SERVICE = 9, PATH_TREE_POINTS = 10, PATH_SURVEYED = 11, PATH_LAMP_POINTS = 12;
+// Rail yard sidings and spurs (surveyed): a ballast bed with two rails.
+export const PATH_SIDING = 13;
 // Park flag: its trees are mapped (PATH_TREE_POINTS), so no made-up trees are added in it.
 export const PARK_MAPPED_TREES = 8;
 export const ROOF_FLAT = 0, ROOF_GABLE = 1, ROOF_CORNICE = 2, ROOF_CHURCH = 3, ROOF_OPEN = 4, ROOF_GREENHOUSE = 5;

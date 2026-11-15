@@ -10,10 +10,10 @@
 // Ground tiles (streets, parks, rivers) are loaded once for the whole circle. Beyond the circle a
 // static backdrop (one instanced draw of the taller buildings out to the city limits) is always shown.
 import * as THREE from 'three';
-import { facadeMaterial, grassTexture } from './textures.js?v=43b95e9bc34c6435';
-import { FAMILIES, polygonGeometry } from './city-data.js?v=43b95e9bc34c6435';
-import { tileKey, VERSION } from './tile-format.js?v=43b95e9bc34c6435';
-import { fadeBeyondCity } from './terrain.js?v=43b95e9bc34c6435';
+import { facadeMaterial, grassTexture } from './textures.js?v=42e067a138bc0b8f';
+import { FAMILIES, polygonGeometry } from './city-data.js?v=42e067a138bc0b8f';
+import { tileKey, VERSION } from './tile-format.js?v=42e067a138bc0b8f';
+import { fadeBeyondCity } from './terrain.js?v=42e067a138bc0b8f';
 
 const STRIDE = 8; // must match BOX_STRIDE in tile-worker.js
 const version = new URL(import.meta.url).search;
@@ -224,12 +224,13 @@ export class TileManager {
     // Moored boats: a pointed white hull (length 9 m at scale 1) and a small cabin.
     const hull = new THREE.CylinderGeometry(1.5, 1.1, 9, 6, 1); hull.rotateX(Math.PI / 2); hull.scale(1, 0.55, 1); hull.translate(0, 0.35, 0);
     const boatCabin = new THREE.BoxGeometry(1.8, 1.0, 3.2); boatCabin.translate(0, 1.4, -0.6);
+    const trailer = new THREE.BoxGeometry(2.5, 2.9, 13.6); trailer.translate(0, 1.3 + 1.45, 0);
     const head = new THREE.BoxGeometry(1.3, 0.18, 0.7); head.translate(0.55, 7.2 + 0.6, 0);
-    for (const g of [canopy, trunk, post, head, carBody, carCabin, hull, boatCabin]) g.userData.shared = true;
+    for (const g of [canopy, trunk, post, head, carBody, carCabin, hull, boatCabin, trailer]) g.userData.shared = true;
     const glow = new THREE.MeshStandardMaterial({ color: 0xe3d7bd, emissive: 0xffc982, emissiveIntensity: 0, roughness: 0.65 });
     ctx.glows?.push({ mat: glow, day: 0, night: 0.8 });
     this.decor = {
-      canopy, trunk, post, head, glow, carBody, carCabin, hull, boatCabin,
+      canopy, trunk, post, head, glow, carBody, carCabin, hull, boatCabin, trailer,
       hullPaint: new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.5 }),
       boatGlass: new THREE.MeshStandardMaterial({ color: 0x3a4a52, roughness: 0.3, metalness: 0.2 }),
       paint: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.2 }),
@@ -247,7 +248,7 @@ export class TileManager {
   }
 
   // Instanced street trees, park trees and lamps for one real tile.
-  addDecor(group, { trees, lamps, parked = new Float32Array(0), boats = new Float32Array(0) }) {
+  addDecor(group, { trees, lamps, parked = new Float32Array(0), boats = new Float32Array(0), trailers = new Float32Array(0) }) {
     if (!group) return;
     const D = this.decor, m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
     const nt = trees.length / 4, nl = lamps.length / 3;
@@ -267,6 +268,10 @@ export class TileManager {
     add(D.head, D.glow, nl, (i) => { const [x, z, a] = lamps.subarray(i * 3, i * 3 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
     const nb = boats.length / 4, boat = (i) => { const [x, z, a, k] = boats.subarray(i * 4, i * 4 + 4); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(k, k, k)); };
     add(D.hull, D.hullPaint, nb, boat); add(D.boatCabin, D.boatGlass, nb, boat);
+    // Truck trailers in industrial yards: a 13.6 m box on wheels, white, grey or faded colours.
+    const nt2 = trailers.length / 4, TRAILER = [0xe8e8e3, 0xcfd2d0, 0x9aa1a5, 0x8a3b32, 0x3c5a7a];
+    const tr = add(D.trailer, D.paint, nt2, (i) => { const [x, z, a] = trailers.subarray(i * 4, i * 4 + 3); e.set(0, a, 0); q.setFromEuler(e); m.compose(v.set(x, 0, z), q, s.set(1, 1, 1)); });
+    if (tr) { const col = new Float32Array(nt2 * 3); for (let i = 0; i < nt2; i++) c.set(TRAILER[trailers[i * 4 + 3] % TRAILER.length]).toArray(col, i * 3); tr.instanceColor = new THREE.InstancedBufferAttribute(col, 3); }
   }
 
   // Real footprints for one tile: a merged mesh per facade family, like downtown's near chunks.

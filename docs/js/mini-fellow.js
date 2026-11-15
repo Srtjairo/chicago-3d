@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import {createMiniWorld,EYE_HEIGHT} from './mini-fellow-world.js?v=43b95e9bc34c6435';
-import {closedTransitRoad} from './transit-data.js?v=43b95e9bc34c6435';
-import {toAddress} from './geo.js?v=43b95e9bc34c6435';
+import {createMiniWorld,EYE_HEIGHT} from './mini-fellow-world.js?v=42e067a138bc0b8f';
+import {closedTransitRoad} from './transit-data.js?v=42e067a138bc0b8f';
+import {toAddress} from './geo.js?v=42e067a138bc0b8f';
 
 export function setupMiniFellow({scene,ctx,camera,controls,flyer,ui,canvas}){
   const aerialLabel=canvas.getAttribute('aria-label');

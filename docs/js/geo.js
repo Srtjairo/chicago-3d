@@ -1,4 +1,4 @@
-import {waterfrontAt,waterfrontLand} from './waterfront-data.js?v=43b95e9bc34c6435';
+import {waterfrontAt,waterfrontLand} from './waterfront-data.js?v=42e067a138bc0b8f';
 // World layout for downtown Chicago.
 // Units are meters. The origin is State & Madison, the zero point of Chicago's address grid.
 // +X runs east (toward the lake), +Z runs south, +Y is up.

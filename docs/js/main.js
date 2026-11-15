@@ -5,36 +5,36 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { toAddress, configureShore } from './geo.js?v=43b95e9bc34c6435';
-import { FEATURED_LANDMARKS, featuredName } from './featured.js?v=43b95e9bc34c6435';
-import {loadSites} from './site-data.js?v=43b95e9bc34c6435';
-import {buildSites} from './sites.js?v=43b95e9bc34c6435';
-import {loadWaterfront} from './waterfront-data.js?v=43b95e9bc34c6435';
-import {buildWaterfront} from './waterfront.js?v=43b95e9bc34c6435';
-import { loadCityData } from './city-data.js?v=43b95e9bc34c6435';
-import {loadLakeShore} from './lake-shore-data.js?v=43b95e9bc34c6435';
-import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=43b95e9bc34c6435';
-import { buildSignatureArchitecture } from './architecture.js?v=43b95e9bc34c6435';
-import { buildOfficeArchitecture } from './offices.js?v=43b95e9bc34c6435';
-import { buildCityLife } from './city-life.js?v=43b95e9bc34c6435';
-import { setupExplorer } from './explorer.js?v=43b95e9bc34c6435';
-import { setupMinimap } from './minimap.js?v=43b95e9bc34c6435';
-import { loadNeighborhoods, setupNeighborhoods, neighborhoodWalk } from './neighborhoods.js?v=43b95e9bc34c6435';
-import { setupNeighborhoodLife } from './neighborhood-life.js?v=43b95e9bc34c6435';
-import { buildDowntownTouchup } from './downtown-touchup.js?v=43b95e9bc34c6435';
-import { buildSoldierField } from './soldier-field.js?v=43b95e9bc34c6435';
-import { loadTransit } from './transit-data.js?v=43b95e9bc34c6435';
-import { buildTransit } from './transit.js?v=43b95e9bc34c6435';
-import { setupMiniFellow } from './mini-fellow.js?v=43b95e9bc34c6435';
-import { buildTerrain, SLAB_TOP } from './terrain.js?v=43b95e9bc34c6435';
-import { buildLandmarks } from './landmarks.js?v=43b95e9bc34c6435';
-import { buildCity } from './city.js?v=43b95e9bc34c6435';
-import { loadTileIndex, TileManager } from './tile-manager.js?v=43b95e9bc34c6435';
-import { CITY_RADIUS } from './coverage.js?v=43b95e9bc34c6435';
-import { buildParks } from './parks.js?v=43b95e9bc34c6435';
-import { buildNavyPier } from './navypier.js?v=43b95e9bc34c6435';
-import { Lighting, PRESETS } from './lighting.js?v=43b95e9bc34c6435';
-import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=43b95e9bc34c6435';
+import { toAddress, configureShore } from './geo.js?v=42e067a138bc0b8f';
+import { FEATURED_LANDMARKS, featuredName } from './featured.js?v=42e067a138bc0b8f';
+import {loadSites} from './site-data.js?v=42e067a138bc0b8f';
+import {buildSites} from './sites.js?v=42e067a138bc0b8f';
+import {loadWaterfront} from './waterfront-data.js?v=42e067a138bc0b8f';
+import {buildWaterfront} from './waterfront.js?v=42e067a138bc0b8f';
+import { loadCityData } from './city-data.js?v=42e067a138bc0b8f';
+import {loadLakeShore} from './lake-shore-data.js?v=42e067a138bc0b8f';
+import { prepareWorld, buildStreets, buildWaterGeometry } from './city-world.js?v=42e067a138bc0b8f';
+import { buildSignatureArchitecture } from './architecture.js?v=42e067a138bc0b8f';
+import { buildOfficeArchitecture } from './offices.js?v=42e067a138bc0b8f';
+import { buildCityLife } from './city-life.js?v=42e067a138bc0b8f';
+import { setupExplorer } from './explorer.js?v=42e067a138bc0b8f';
+import { setupMinimap } from './minimap.js?v=42e067a138bc0b8f';
+import { loadNeighborhoods, setupNeighborhoods, neighborhoodWalk } from './neighborhoods.js?v=42e067a138bc0b8f';
+import { buildDowntownTouchup } from './downtown-touchup.js?v=42e067a138bc0b8f';
+import { buildSoldierField } from './soldier-field.js?v=42e067a138bc0b8f';
+import { buildExpressways } from './expressways.js?v=42e067a138bc0b8f';
+import { loadTransit } from './transit-data.js?v=42e067a138bc0b8f';
+import { buildTransit } from './transit.js?v=42e067a138bc0b8f';
+import { setupMiniFellow } from './mini-fellow.js?v=42e067a138bc0b8f';
+import { buildTerrain, SLAB_TOP } from './terrain.js?v=42e067a138bc0b8f';
+import { buildLandmarks } from './landmarks.js?v=42e067a138bc0b8f';
+import { buildCity } from './city.js?v=42e067a138bc0b8f';
+import { loadTileIndex, TileManager } from './tile-manager.js?v=42e067a138bc0b8f';
+import { CITY_RADIUS } from './coverage.js?v=42e067a138bc0b8f';
+import { buildParks } from './parks.js?v=42e067a138bc0b8f';
+import { buildNavyPier } from './navypier.js?v=42e067a138bc0b8f';
+import { Lighting, PRESETS } from './lighting.js?v=42e067a138bc0b8f';
+import { Flyer, OVERVIEW, overviewPos } from './tour.js?v=42e067a138bc0b8f';
 
 const $ = (id) => document.getElementById(id);
 const status = (msg) => { $('load-msg').textContent = msg; };
@@ -111,17 +111,18 @@ async function init() {
   // Streamed tiles live on layer 1, which the main camera sees and the lake's mirror camera doesn't.
   if (ctx.cityTiles) {
     ctx.tiles = new TileManager(scene, ctx, ctx.cityTiles); camera.layers.enable(1);
-    // Cars and people on the lanes of nearby finished neighborhood tiles.
-    ctx.hoodLife = setupNeighborhoodLife(scene, ctx, camera);
+    // No moving cars or people in the neighborhoods (removed to keep the model light; parked cars stay).
     // Mini Fellow can walk finished neighborhoods; their nearby real footprints are solid.
     ctx.hoodWalk = neighborhoodWalk(ctx.neighborhoods);
-    ctx.tiles.onReal = (entry, decor) => { ctx.hoodLife.add(entry.path, decor); ctx.hoodWalk.add(entry.path, decor); };
-    ctx.tiles.onRealGone = (entry) => { ctx.hoodLife.remove(entry.path); ctx.hoodWalk.remove(entry.path); };
+    ctx.tiles.onReal = (entry, decor) => { ctx.hoodWalk.add(entry.path, decor); };
+    ctx.tiles.onRealGone = (entry) => { ctx.hoodWalk.remove(entry.path); };
   }
   buildStreets(scene, ctx);
   // Parked cars on downtown side streets and lit lobbies (no building changes).
   ctx.downtownTouchup = buildDowntownTouchup(scene, ctx);
   // Soldier Field's own model (the tiles leave its footprint to it).
+  // The expressways and their ramps and flyovers, downtown and across the circle.
+  buildExpressways(scene, ctx).then((r) => { ctx.expressways = r; }).catch((e) => console.warn('Expressways', e));
   // Its materials compile in the background, so the first view of the stadium doesn't stall a frame.
   buildSoldierField(scene, ctx).then((r) => { ctx.soldierField = r; if (r) (renderer.compileAsync ? renderer.compileAsync(r.group, camera, scene) : Promise.resolve(renderer.compile(r.group, camera, scene))).catch(() => {}); }).catch((e) => console.warn('Soldier Field', e));
   buildSites(scene, ctx);

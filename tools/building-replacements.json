@@ -1,0 +1,22 @@
+{
+  "about": "County footprints that merge several real buildings into one block, replaced by the surveyed buildings inside them (OpenStreetMap, ODbL; cached by tools/fetch-osm-area.mjs). Heights: the mapped height in metres, or floors x 3.4 m where the mapped height is missing or clearly too low for the floor count; 'heights' overrides individual ways. Roof canopies, sky bridges and parts under 150 m2 are left out (they can't stand on the ground). 'family' (FAMILIES index in js/city-data.js) styles the replacements, 'families' individual ways.",
+  "replacements": {
+    "962191-0": {
+      "name": "McCormick Place",
+      "survey": "mccormick",
+      "why": "The County footprint merges the whole McCormick Place campus, with the roads and rail lines under it, into one 64 m block covering 753 x 833 m.",
+      "heights": {
+        "w769724044": 30
+      },
+      "skip": [
+        "w769427391",
+        "w769435661",
+        "w1286933676"
+      ],
+      "family": 24,
+      "families": {
+        "w204866683": 25
+      }
+    }
+  }
+}

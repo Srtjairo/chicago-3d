@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {highwayOffset,highwayFade} from './lake-shore-data.js?v=43b95e9bc34c6435';
+import {highwayOffset,highwayFade} from './lake-shore-data.js?v=42e067a138bc0b8f';
 
 // All pavement and paint are joined static ribbons, batched by material.
 export function buildLakeShore(scene,ctx){

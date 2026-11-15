@@ -1,11 +1,22 @@
 {
+ "osm/area-bridgeport-east": "a152521d85ca3160db5f07d3250c15d5553b7d31a1fe62fab4be9ce1851cf410",
+ "osm/area-bridgeport-west": "0ed1beae44496c60c029c05350cbe41ddf4c7d824eecb8f0858d24cc381a28c2",
+ "osm/area-chinatown-river": "388b6e45f928ccc739c8cf04f9762504fbd370258e5ec23613ff64486e2b001a",
  "osm/area-dt-north": "567a795463a3191ebe2b6193999ddb922c5622990197fb1f04386af6218bfb34",
+ "osm/area-eisenhower-west": "9cec71ea5a4e859d83e3f78ba37dc0e8a4834bbfe7204e8f32d9d75c8b0f2e71",
+ "osm/area-goose-island": "d0513a2d9a3fe5a9febeebd0cd48409f78017aa9fb21995205fbf7bdb7ec71ff",
  "osm/area-grant-park": "657811c603b45a2fd851d25c9cb5455fbacf7f4d1d46b8970d01bb0c8b96b820",
+ "osm/area-little-italy-yards": "d2792ba563d24492c5e0c1b5bfc36d6cfa8ff424e7a866cacca34a9e289d34f1",
+ "osm/area-loop-southwest": "0ad0faeeb32ba9a5c5781f9911beaa38186793a971135b8810670f75be9db577",
+ "osm/area-mccormick": "1ccdeaab7c44f51a36f353286f32d7b1c6fbd89391cec3dfd7d425eb3dd0bdeb",
  "osm/area-north-1": "4720151b905bf3589885b00281acd10d0f1eea7298eba2d2d17dff97e723e915",
  "osm/area-north-2": "70faea924a51c11cc2ceafe1c6ae76c1f78af40d70403ef27ab6bb57f11d8318",
  "osm/area-north-3": "82d64ac52c33dffa747e06f9a07dc2144099b9d4271091d83b38506cd2352367",
+ "osm/area-pilsen-east": "79634abac1352a85cb4bc77ac27039abde4c9bc68f5adc16a22e307cc401b4f8",
+ "osm/area-river-west": "4f79627a5651d4dc15b74edb86997c8ada3a27616588f6d66fa73f1d48217e68",
  "osm/area-soldier-field": "960e85bb3520df63f44785933875e8627fe0da07b3611b5932d019d8406bd1dc",
  "osm/area-south-1": "98e90069072f8ff23c05383488f6ca579e6c957935e91684337bbc5502464fca",
  "osm/area-south-2": "d5699eeedfa163fda0234ad7f892b55cc5dccbacc71452d6df806100622d7125",
+ "osm/area-stevenson-sw": "0f6caf20f519697e0c1e30811c26b083ef8b1b9e9815b01fad55736d478310a8",
  "osm/named-rush-and-division": "9958725be0c66ddc75215567e7cbeb70b84f6ce22f02d1d4fdc71ebae184dbe0"
 }

@@ -1,8 +1,8 @@
-import { boxesIn } from './spatial.js?v=43b95e9bc34c6435';
+import { boxesIn } from './spatial.js?v=42e067a138bc0b8f';
 import * as THREE from 'three';
-import { LANDMARKS } from './geo.js?v=43b95e9bc34c6435';
-import { FEATURED_IDS } from './featured.js?v=43b95e9bc34c6435';
-import { SLAB_TOP } from './terrain.js?v=43b95e9bc34c6435';
+import { LANDMARKS } from './geo.js?v=42e067a138bc0b8f';
+import { FEATURED_IDS } from './featured.js?v=42e067a138bc0b8f';
+import { SLAB_TOP } from './terrain.js?v=42e067a138bc0b8f';
 
 const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 

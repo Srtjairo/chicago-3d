@@ -1,0 +1,176 @@
+{
+  "about": "Surveyed OpenStreetMap areas (tools/fetch-osm-area.mjs <name>), box in local metres [x0, z0, x1, z1]. scope 'lakefront': everything mapped, on the lakefront and in parks. scope 'land': land use only (lots, grass, scrub, rail yards and sidings, construction, park features, mapped trees), anywhere in the box; streets and sidewalks stay the City's.",
+  "areas": {
+    "soldier-field": {
+      "box": [
+        600,
+        1550,
+        1950,
+        3500
+      ],
+      "scope": "lakefront"
+    },
+    "south-1": {
+      "box": [
+        900,
+        3400,
+        2600,
+        5200
+      ],
+      "scope": "lakefront"
+    },
+    "south-2": {
+      "box": [
+        1400,
+        5200,
+        3200,
+        7500
+      ],
+      "scope": "lakefront"
+    },
+    "north-1": {
+      "box": [
+        -900,
+        -4300,
+        1100,
+        -2250
+      ],
+      "scope": "lakefront"
+    },
+    "north-2": {
+      "box": [
+        -1700,
+        -6000,
+        500,
+        -4300
+      ],
+      "scope": "lakefront"
+    },
+    "north-3": {
+      "box": [
+        -2100,
+        -7900,
+        -200,
+        -6000
+      ],
+      "scope": "lakefront"
+    },
+    "grant-park": {
+      "box": [
+        150,
+        -300,
+        1700,
+        1650
+      ],
+      "scope": "lakefront"
+    },
+    "dt-north": {
+      "box": [
+        150,
+        -2300,
+        2600,
+        -300
+      ],
+      "scope": "lakefront"
+    },
+    "mccormick": {
+      "box": [
+        300,
+        2850,
+        1350,
+        3950
+      ],
+      "scope": "lakefront"
+    },
+    "chinatown-river": {
+      "box": [
+        -2000,
+        1800,
+        0,
+        3800
+      ],
+      "scope": "land"
+    },
+    "pilsen-east": {
+      "box": [
+        -3800,
+        1800,
+        -2000,
+        3800
+      ],
+      "scope": "land"
+    },
+    "little-italy-yards": {
+      "box": [
+        -3800,
+        -200,
+        -1700,
+        1800
+      ],
+      "scope": "land"
+    },
+    "river-west": {
+      "box": [
+        -2500,
+        -2600,
+        -900,
+        -200
+      ],
+      "scope": "land"
+    },
+    "goose-island": {
+      "box": [
+        -4000,
+        -4600,
+        -2000,
+        -2600
+      ],
+      "scope": "land"
+    },
+    "eisenhower-west": {
+      "box": [
+        -6200,
+        -400,
+        -3800,
+        1600
+      ],
+      "scope": "land"
+    },
+    "stevenson-sw": {
+      "box": [
+        -6000,
+        3800,
+        -3000,
+        5800
+      ],
+      "scope": "land"
+    },
+    "bridgeport-west": {
+      "box": [
+        -3000,
+        3800,
+        -1800,
+        5400
+      ],
+      "scope": "land"
+    },
+    "bridgeport-east": {
+      "box": [
+        -1800,
+        3800,
+        -600,
+        5400
+      ],
+      "scope": "land"
+    },
+    "loop-southwest": {
+      "box": [
+        -1800,
+        -300,
+        0,
+        1800
+      ],
+      "scope": "land"
+    }
+  }
+}
