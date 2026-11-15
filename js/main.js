@@ -23,6 +23,7 @@ import { loadNeighborhoods, setupNeighborhoods, neighborhoodWalk } from './neigh
 import { setupNeighborhoodLife } from './neighborhood-life.js';
 import { buildDowntownTouchup } from './downtown-touchup.js';
 import { buildSoldierField } from './soldier-field.js';
+import { buildExpressways } from './expressways.js';
 import { loadTransit } from './transit-data.js';
 import { buildTransit } from './transit.js';
 import { setupMiniFellow } from './mini-fellow.js';
@@ -122,6 +123,8 @@ async function init() {
   // Parked cars on downtown side streets and lit lobbies (no building changes).
   ctx.downtownTouchup = buildDowntownTouchup(scene, ctx);
   // Soldier Field's own model (the tiles leave its footprint to it).
+  // The expressways and their ramps and flyovers, downtown and across the circle.
+  buildExpressways(scene, ctx).then((r) => { ctx.expressways = r; }).catch((e) => console.warn('Expressways', e));
   // Its materials compile in the background, so the first view of the stadium doesn't stall a frame.
   buildSoldierField(scene, ctx).then((r) => { ctx.soldierField = r; if (r) (renderer.compileAsync ? renderer.compileAsync(r.group, camera, scene) : Promise.resolve(renderer.compile(r.group, camera, scene))).catch(() => {}); }).catch((e) => console.warn('Soldier Field', e));
   buildSites(scene, ctx);

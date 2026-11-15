@@ -58,7 +58,7 @@ const paths = (kind) => all((g) => g.paths.filter((p) => p.kind === kind)).lengt
 assert(count(SURF_SAND) >= 4, 'beaches missing');
 assert(paths(PATH_DOCK) > 100, 'harbor docks missing');
 assert(paths(PATH_TRAIL) >= 1, 'Lakefront Trail missing');
-assert(paths(PATH_RAMP) > 30, 'Lake Shore Drive ramps missing');
+{ const ex = JSON.parse(readFileSync(join(root, 'assets', 'expressways.json'), 'utf8')).segments; assert(ex.filter((s) => s.kind === 'ramp' && /LSD/.test(s.name)).length > 30, 'Lake Shore Drive ramps missing'); assert(ex.filter((s) => s.kind === 'main').length > 500, 'expressway mainlines missing'); }
 for (const k of [SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL]) assert(count(k) > 10, `park facility surfaces missing (kind ${k})`);
 // Lake Shore Drive is drawn by js/lake-shore.js; the tiles keep only its far ends.
 const lsd = all((g) => g.streets.filter((s) => /LAKE SHORE/.test(s.name) && s.class === 1 && s.points.every(([, z]) => z > -5300 && z < 4700)));
