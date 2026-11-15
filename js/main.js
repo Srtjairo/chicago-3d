@@ -20,7 +20,6 @@ import { buildCityLife } from './city-life.js';
 import { setupExplorer } from './explorer.js';
 import { setupMinimap } from './minimap.js';
 import { loadNeighborhoods, setupNeighborhoods, neighborhoodWalk } from './neighborhoods.js';
-import { setupNeighborhoodLife } from './neighborhood-life.js';
 import { buildDowntownTouchup } from './downtown-touchup.js';
 import { buildSoldierField } from './soldier-field.js';
 import { buildExpressways } from './expressways.js';
@@ -112,12 +111,11 @@ async function init() {
   // Streamed tiles live on layer 1, which the main camera sees and the lake's mirror camera doesn't.
   if (ctx.cityTiles) {
     ctx.tiles = new TileManager(scene, ctx, ctx.cityTiles); camera.layers.enable(1);
-    // Cars and people on the lanes of nearby finished neighborhood tiles.
-    ctx.hoodLife = setupNeighborhoodLife(scene, ctx, camera);
+    // No moving cars or people in the neighborhoods (removed to keep the model light; parked cars stay).
     // Mini Fellow can walk finished neighborhoods; their nearby real footprints are solid.
     ctx.hoodWalk = neighborhoodWalk(ctx.neighborhoods);
-    ctx.tiles.onReal = (entry, decor) => { ctx.hoodLife.add(entry.path, decor); ctx.hoodWalk.add(entry.path, decor); };
-    ctx.tiles.onRealGone = (entry) => { ctx.hoodLife.remove(entry.path); ctx.hoodWalk.remove(entry.path); };
+    ctx.tiles.onReal = (entry, decor) => { ctx.hoodWalk.add(entry.path, decor); };
+    ctx.tiles.onRealGone = (entry) => { ctx.hoodWalk.remove(entry.path); };
   }
   buildStreets(scene, ctx);
   // Parked cars on downtown side streets and lit lobbies (no building changes).

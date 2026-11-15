@@ -22,7 +22,9 @@ export function buildCityLife(scene,ctx,camera) {
       edges.push(edge);if(!byNode.has(start))byNode.set(start,[]);byNode.get(start).push(edge);
     }
   }
-  const carCount=480,pedCount=800,walkerCount=720,cyclistCount=80;
+  // Moving cars, buses, walkers and cyclists were removed to keep the model light (parked cars,
+  // the river boats and the CTA trains stay); set these back to bring them back.
+  const carCount=0,pedCount=0,walkerCount=0,cyclistCount=0;
   const eligible=edges.filter(e=>e.length>45&&!e.road.bridge);
   const cars=Array.from({length:carCount},(_,i)=>{const edge=eligible[Math.floor(rand()*eligible.length)];return {id:i,edge,d:rand()*edge.length,previous:0,speed:5+rand()*4,bus:i%19===0,paint:palette[i%palette.length]};});
   // Avoid initial overlap on lanes before the first simulation step.
