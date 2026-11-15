@@ -860,10 +860,10 @@
           "family": 24
         },
         {
-          "id": "962191-0",
+          "id": "204886155-0",
           "name": "McCormick Place",
           "kind": "venue",
-          "family": 5
+          "family": 24
         }
       ]
     },
@@ -900,7 +900,7 @@
           "id": "946610-0",
           "name": "Soldier Field Waldron Deck",
           "kind": "landmark",
-          "family": 25
+          "family": 24
         }
       ],
       "minNamed": 1

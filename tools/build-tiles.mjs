@@ -61,6 +61,31 @@ const shoreAt = (z) => { const line = SHORE_LINE; for (let i = 1; i < line.lengt
 // .cache/city/height-review.json; confirmed fixes go in tools/height-overrides.json.
 const N = 150, buckets = new Map();
 const items = raw.map(([id, h, rings]) => { const v = ringBounds(rings[0]); return { id, h, rings, x: v.x, z: v.z, area: ringArea(rings[0]), v }; });
+// County footprints that merge several real buildings into one block (McCormick Place) give way to
+// the surveyed buildings inside them, with their own heights (tools/building-replacements.json).
+{
+  const cfg = JSON.parse(readFileSync(join(root, 'tools', 'building-replacements.json'), 'utf8')).replacements;
+  for (const [id, r] of Object.entries(cfg)) {
+    const i = items.findIndex((b) => b.id === id), feats = i >= 0 && loadOsmArea(r.survey);
+    if (i < 0 || !feats) { log(`Replacement for ${id} (${r.name}) skipped: ${i < 0 ? 'footprint not found' : 'no survey cached, run tools/fetch-osm-area.mjs ' + r.survey}`); continue; }
+    const big = items[i], inBig = polygonTester([big.rings]);
+    const others = items.filter((b) => b !== big && b.v.x1 > big.v.x0 && b.v.x0 < big.v.x1 && b.v.z1 > big.v.z0 && b.v.z0 < big.v.z1).map((b) => ({ v: b.v, test: polygonTester([b.rings]) }));
+    const add = [];
+    for (const f of feats) {
+      const t = f.tags;
+      if (!f.poly || !(t.building || t['building:part']) || t.building === 'roof' || t['building:part'] === 'roof' || (r.skip || []).includes(f.id)) continue;
+      const ring = f.poly[0], cx = ring.reduce((s, p) => s + p[0], 0) / ring.length, cz = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+      if (ringArea(ring) < 150 || !inBig(cx, cz)) continue;
+      if (others.some((o) => cx >= o.v.x0 && cx <= o.v.x1 && cz >= o.v.z0 && cz <= o.v.z1 && o.test(cx, cz))) continue; // has its own County footprint
+      const lv = Number(t['building:levels']) || 0, mh = parseFloat(t.height) || 0;
+      const h = r.heights?.[f.id] ?? (mh && !(lv && mh < lv * 2.4) ? mh : lv ? lv * 3.4 : 15);
+      const rings = f.poly.map((rr) => [...rr, rr[0]]), v = ringBounds(rings[0]);
+      add.push({ id: `${f.id.slice(1)}-0`, h: Math.round(h * 10) / 10, rings, x: v.x, z: v.z, area: ringArea(rings[0]), v, family: r.families?.[f.id] ?? r.family });
+    }
+    items.splice(i, 1, ...add);
+    log(`${r.name}: County footprint ${id} (${big.h} m, ${Math.round(big.area / 1000)}k m2) replaced by ${add.length} surveyed buildings (${add.map((b) => b.h).sort((a, b) => b - a).slice(0, 6).join(', ')} m...)`);
+  }
+}
 for (const b of items) if (b.h > 2 && b.h < 600) { const k = Math.floor(b.x / N) + ',' + Math.floor(b.z / N); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(b.h); }
 const quantile = (arr, q) => { const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; };
 const statsCache = new Map();
@@ -117,6 +142,7 @@ const styleStats = {};
 const inFinished = (x, z) => finished.some((n) => x >= n.bbox[0] && x <= n.bbox[1] && z >= n.bbox[2] && z <= n.bbox[3] && n.inside(x, z));
 function styleFor(b, seed) {
   if (namedStyle.has(b.id)) return namedStyle.get(b.id);
+  if (b.family != null) return styleOf(b.family); // surveyed replacements carry their own facade
   const hood = finished.find((n) => b.x >= n.bbox[0] && b.x <= n.bbox[1] && b.z >= n.bbox[2] && b.z <= n.bbox[3] && n.inside(b.x, b.z));
   if (!hood) return styleOf(familyFor(b.h, seed));
   const rule = ruleFor(hood.rules, b.h, b.area);
