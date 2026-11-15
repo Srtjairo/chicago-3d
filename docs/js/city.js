@@ -1,12 +1,12 @@
-import {landscapeAt} from './waterfront-data.js?v=43b95e9bc34c6435';
+import {landscapeAt} from './waterfront-data.js?v=42e067a138bc0b8f';
 import * as THREE from 'three';
 import {
   BLOCK, STREET, EXTENT, distToRiver, heightAt, isLake, inGrantPark, landmarkInRect, rng, NAVY_PIER,
-} from './geo.js?v=43b95e9bc34c6435';
-import { facadeMaterial, glowSprite } from './textures.js?v=43b95e9bc34c6435';
-import { SLAB_TOP, addTrees } from './terrain.js?v=43b95e9bc34c6435';
-import { inCoverage, buildMeasuredCity } from './city-data.js?v=43b95e9bc34c6435';
-import {lakeShoreIntersects} from './lake-shore-data.js?v=43b95e9bc34c6435';
+} from './geo.js?v=42e067a138bc0b8f';
+import { facadeMaterial, glowSprite } from './textures.js?v=42e067a138bc0b8f';
+import { SLAB_TOP, addTrees } from './terrain.js?v=42e067a138bc0b8f';
+import { inCoverage, buildMeasuredCity } from './city-data.js?v=42e067a138bc0b8f';
+import {lakeShoreIntersects} from './lake-shore-data.js?v=42e067a138bc0b8f';
 
 // Building palettes: [color, glass, style]  style 0 = masonry, 1 = curtain wall
 const PALETTE = [

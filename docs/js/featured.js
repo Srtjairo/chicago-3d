@@ -1,4 +1,4 @@
-import { LANDMARKS } from './geo.js?v=43b95e9bc34c6435';
+import { LANDMARKS } from './geo.js?v=42e067a138bc0b8f';
 
 // The public menu, labels, map and guided tour share this curated order.
 export const FEATURED_IDS = Object.freeze([

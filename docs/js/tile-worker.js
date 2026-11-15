@@ -1,7 +1,7 @@
 // Background thread for the streamed city: downloads a tile, inflates it, decodes it and turns
 // it into typed arrays the main thread can upload to the GPU without further work.
 // Module workers don't see the page's import map, so three's Earcut comes from its pinned URL.
-import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, ROOF_CUSTOM, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, TILE, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_TRAIL, PATH_WALK, PATH_LINE, PATH_DOCK, PATH_RAMP, PATH_TREES, PATH_CLEAR, SURF_GARDEN, SURF_LAKE, PATH_SERVICE, PATH_TREE_POINTS, PATH_LAMP_POINTS, PARK_MAPPED_TREES } from './tile-format.js?v=43b95e9bc34c6435';
+import { decode, orientedBox, familyFor, familyOfStyle, roofOfStyle, frontOfStyle, twinOfStyle, ROOF_GABLE, ROOF_CORNICE, ROOF_CHURCH, ROOF_OPEN, ROOF_GREENHOUSE, ROOF_CUSTOM, FINISHED, RAIL_BRIDGE, RAIL_RAISED, SURF_YARD, SURF_PAVED, SURF_INDUSTRIAL, SURF_PARKING, SURF_PLAZA, PATH_ALLEY, TILE, SURF_LAWN, SURF_SAND, SURF_PRAIRIE, SURF_INFIELD, SURF_TENNIS, SURF_HARDCOURT, SURF_PLAY, SURF_POOL, SURF_VACANT, SURF_BALLAST, PATH_TRAIL, PATH_WALK, PATH_LINE, PATH_DOCK, PATH_RAMP, PATH_TREES, PATH_CLEAR, SURF_GARDEN, SURF_LAKE, PATH_SERVICE, PATH_TREE_POINTS, PATH_LAMP_POINTS, PARK_MAPPED_TREES, PATH_SIDING } from './tile-format.js?v=42e067a138bc0b8f';
 import { Earcut } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/src/extras/Earcut.js';
 
 // Box instances, stride 8: x, z, width, depth, height, angle (atan2 dz,dx), seed, facade family.
@@ -294,6 +294,34 @@ function decorate(tile, ground) {
       if (inRing(px, pz, o) && !r.slice(1).some((h) => inRing(px, pz, h)) && !blocked(px, pz) && !nearRoad(px, pz)) trees.push(px, pz, 0.7 + rand() * 0.6, Math.floor(rand() * 1000));
     }
   }
+  // Parked cars in parking lots (rows of stalls along the lot's long side, about 55% taken) and
+  // truck trailers in industrial yards (small groups, side by side).
+  const trailers = [];
+  for (const s of ground.surfaces) {
+    if (s.kind !== SURF_PARKING && s.kind !== SURF_INDUSTRIAL) continue;
+    const r = s.rings.map(open), o = r[0];
+    let ax = Infinity, bx = -Infinity, az = Infinity, bz = -Infinity;
+    for (const [x, z] of o) { ax = Math.min(ax, x); bx = Math.max(bx, x); az = Math.min(az, z); bz = Math.max(bz, z); }
+    if (!inTile((ax + bx) / 2, (az + bz) / 2)) continue;
+    const ob = orientedBox(o), c = Math.cos(ob.angle), sn = Math.sin(ob.angle), rand = rng(Math.round(ax * 3 + az * 19) >>> 0);
+    const inside = (x, z) => inRing(x, z, o) && !r.slice(1).some((h) => inRing(x, z, h)) && !blocked(x, z) && !nearRoad(x, z);
+    const at = (u, v) => [ob.x + u * c - v * sn, ob.z + u * sn + v * c];
+    if (s.kind === SURF_PARKING) {
+      // Double rows of 2.7 m stalls, 5.4 m deep, with a 7 m aisle: an 18 m module across the lot.
+      for (let v = -ob.d / 2 + 3; v < ob.d / 2 - 2.5; v += 18) for (const row of [0, 5.6]) for (let u = -ob.w / 2 + 2; u < ob.w / 2 - 1.5; u += 2.7) {
+        if (rand() > 0.55) continue;
+        const [x, z] = at(u, v + row); if (!inside(x, z)) continue;
+        parked.push(x, z, ob.angle + Math.PI / 2 + (row ? Math.PI : 0), Math.floor(rand() * 9));
+      }
+    } else if (ob.w * ob.d > 1500) {
+      // A few groups of trailers in the yard.
+      for (let u = -ob.w / 2 + 12; u < ob.w / 2 - 12; u += 34) for (let v = -ob.d / 2 + 10; v < ob.d / 2 - 10; v += 30) {
+        if (rand() > 0.22) continue;
+        const n = 1 + Math.floor(rand() * 4);
+        for (let k = 0; k < n; k++) { const [x, z] = at(u + k * 3.4, v); if (inside(x, z)) trailers.push(x, z, ob.angle + Math.PI / 2, Math.floor(rand() * 5)); }
+      }
+    }
+  }
   // Rows of trees (allées along lawns and walks), and boats moored at the harbor docks.
   const boats = [];
   for (const p of ground.paths) {
@@ -339,7 +367,7 @@ function decorate(tile, ground) {
     }
   }
   const pack = (l) => ({ pts: new Float32Array(l.pts), counts: new Uint16Array(l.counts) });
-  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps), parked: new Float32Array(parked), boats: new Float32Array(boats), lanes: pack(lanes), walks: pack(walks), solids: pack(solids), heights: new Float32Array(heights) };
+  return { trees: new Float32Array(trees), lamps: new Float32Array(lamps), parked: new Float32Array(parked), boats: new Float32Array(boats), trailers: new Float32Array(trailers), lanes: pack(lanes), walks: pack(walks), solids: pack(solids), heights: new Float32Array(heights) };
 }
 
 // A main-line railway: at grade a ballast bed; raised, an earth embankment (sloped sides) or a
@@ -394,6 +422,11 @@ function ground(tile) {
     else if (p.kind === PATH_DOCK) dock.ribbon(p.points, p.points.length > 2 || Math.hypot(p.points[1][0] - p.points[0][0], p.points[1][1] - p.points[0][1]) > 20 ? 2.4 : 1.2, 0.55);
     else if (p.kind === PATH_RAMP) { walks.ribbon(p.points, 10, 0.1); roads.ribbon(p.points, 7.5, 0.155); }
     else if (p.kind === PATH_SERVICE) roads.ribbon(p.points, 5.5, 0.15);
+    else if (p.kind === PATH_SIDING) {
+      // A siding: a ballast bed and two rails 1.5 m apart.
+      ballast.ribbon(p.points, 3.4, 0.065);
+      for (const off of [-0.75, 0.75]) track.ribbon(p.points.map((q, i) => { const a = p.points[Math.max(0, i - 1)], b = p.points[Math.min(p.points.length - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [q[0] - dz / l * off, q[1] + dx / l * off]; }), 0.14, 0.09);
+    }
   }
   for (const s of tile.streets) {
     const w = ROAD_WIDTH[s.class] || 8.5; roads.ribbon(s.points, w, 0.16);

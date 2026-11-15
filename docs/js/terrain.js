@@ -3,11 +3,11 @@ import { Water } from 'three/addons/objects/Water.js';
 import {
   BLOCK, STREET, EXTENT, RIVER,
   polylineAt, inGrantPark, RIVER_PATHS,
-} from './geo.js?v=43b95e9bc34c6435';
-import { waterNormals, grassTexture } from './textures.js?v=43b95e9bc34c6435';
-import { inCoverage, polygonGeometry } from './city-data.js?v=43b95e9bc34c6435';
+} from './geo.js?v=42e067a138bc0b8f';
+import { waterNormals, grassTexture } from './textures.js?v=42e067a138bc0b8f';
+import { inCoverage, polygonGeometry } from './city-data.js?v=42e067a138bc0b8f';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { CITY_RADIUS } from './coverage.js?v=43b95e9bc34c6435';
+import { CITY_RADIUS } from './coverage.js?v=42e067a138bc0b8f';
 
 // Ground beyond the explorable circle is a backdrop: it darkens gradually past the wall so the
 // detailed city reads as the bright centre of a larger, hazier Chicago.

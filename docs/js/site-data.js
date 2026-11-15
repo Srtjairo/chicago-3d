@@ -1,4 +1,4 @@
-import {inPoly} from './waterfront-data.js?v=43b95e9bc34c6435';
+import {inPoly} from './waterfront-data.js?v=42e067a138bc0b8f';
 export async function loadSites(){
  const url=new URL('../assets/sites.json',import.meta.url);url.search=new URL(import.meta.url).search;
  const r=await fetch(url);if(!r.ok)throw Error('Chicago site details could not load. Please reload.');

@@ -1,8 +1,8 @@
-import {boxesAt} from './spatial.js?v=43b95e9bc34c6435';
-import {closedTransitRoad} from './transit-data.js?v=43b95e9bc34c6435';
+import {boxesAt} from './spatial.js?v=42e067a138bc0b8f';
+import {closedTransitRoad} from './transit-data.js?v=42e067a138bc0b8f';
 import * as THREE from 'three';
-import { rng } from './geo.js?v=43b95e9bc34c6435';
-import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=43b95e9bc34c6435';
+import { rng } from './geo.js?v=42e067a138bc0b8f';
+import { makeRoute,atDistance,offsetPath,signalGreen,canCross,trimRoute } from './movement.js?v=42e067a138bc0b8f';
 
 const palette=[0xe8e4da,0x364655,0x8b3f36,0x293138,0xafa997,0xd5ad44,0x587475,0x6e7384];
 function pool(scene,name,geometry,material,count){const m=new THREE.InstancedMesh(geometry,material,count);m.name=name;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;scene.add(m);return m;}
@@ -22,7 +22,9 @@ export function buildCityLife(scene,ctx,camera) {
       edges.push(edge);if(!byNode.has(start))byNode.set(start,[]);byNode.get(start).push(edge);
     }
   }
-  const carCount=480,pedCount=800,walkerCount=720,cyclistCount=80;
+  // Moving cars, buses, walkers and cyclists were removed to keep the model light (parked cars,
+  // the river boats and the CTA trains stay); set these back to bring them back.
+  const carCount=0,pedCount=0,walkerCount=0,cyclistCount=0;
   const eligible=edges.filter(e=>e.length>45&&!e.road.bridge);
   const cars=Array.from({length:carCount},(_,i)=>{const edge=eligible[Math.floor(rand()*eligible.length)];return {id:i,edge,d:rand()*edge.length,previous:0,speed:5+rand()*4,bus:i%19===0,paint:palette[i%palette.length]};});
   // Avoid initial overlap on lanes before the first simulation step.
